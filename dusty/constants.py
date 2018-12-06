@@ -17,7 +17,7 @@ NON_SCANNERS_CONFIG_KEYS = ['target_host', 'target_port', 'protocol', "/",
                             'safe_pipeline_mode', 'project_name', 'environment',
                             'test_type', 'junit_report']
 READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'environment']
-PATH_TO_CONFIG = "/tmp/test_config.yaml"
+PATH_TO_CONFIG = "/tmp/scan-config.yaml"
 SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,
               'High': 1, 'Critical': 0}
 MAX_MESSAGE_LEN = 30000
