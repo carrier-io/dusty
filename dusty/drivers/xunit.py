@@ -24,7 +24,7 @@ class XUnitReport(object):
         if not test_cases:
             return
         test_name = f'{config["project_name"]}-{config["environment"]}-{config["test_type"]}'
-        report_name = path.join(report_path, f'TEST-{test_name}.xml')
-        with open(report_name, 'w') as f:
+        self.report_name = path.join(report_path, f'TEST-{test_name}.xml')
+        with open(self.report_name, 'w') as f:
             TestSuite.to_file(f, [TestSuite(test_name, test_cases)], prettyprint=False)
         print(f"Generated report:  <reports folder>/TEST-{test_name}.xml")

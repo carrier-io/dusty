@@ -26,6 +26,7 @@ from dusty.dustyWrapper import DustyWrapper
 from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
+from dusty.drivers.redis_file import RedisFile
 
 requests.packages.urllib3.disable_warnings()
 
@@ -51,6 +52,8 @@ def main():
     rp_config = None
     rp_service = None
     html_report = None
+    html_report_file = None
+    xml_report_file = None
     test_name = args.suite
     execution_config = config[test_name]
     generate_html = execution_config.get("html_report", False)
@@ -114,9 +117,11 @@ def main():
         rp_service.finish_test()
     default_config['execution_time'] = int(time()-start_time)
     if generate_html:
-        HTMLReport(global_results, default_config)
+        html_report_file = HTMLReport(global_results, default_config).report_name
     if generate_junit:
-        XUnitReport(global_results, default_config)
+        xml_report_file = XUnitReport(global_results, default_config).report_name
+    if os.environ.get("redis_connection"):
+        RedisFile(os.environ.get("redis_connection"), html_report_file, xml_report_file)
 
 
 if __name__ == "__main__":

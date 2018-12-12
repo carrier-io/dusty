@@ -6,3 +6,4 @@ lxml==4.2.5
 qualysapi==5.0.4
 jinja2==2.10
 junit-xml==1.8
+redis==3.0.1
