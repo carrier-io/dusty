@@ -15,6 +15,7 @@
 from dusty.utils import execute, report_to_rp, process_false_positives
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
+from dusty.data_model.spotbugs.parser import SpotbugsParser
 
 
 class SastyWrapper(object):
