@@ -47,8 +47,8 @@ class SastyWrapper(object):
         result = process_false_positives(result)
         report_to_rp(config, result, "brakeman")
         return result
-     @staticmethod
-        
+    
+    @staticmethod
     def java(config):
         exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml /code/*.jar "
         res = execute(exec_cmd, cwd='/code')
