@@ -1,53 +1,56 @@
 __author__ = 'aaronweaver'
 # Modified for Dusty by arozumenko
 
-from datetime import datetime
-import json
+import xml.etree.ElementTree
 from dusty.data_model.canonical_model import DefaultModel as Finding
 
 
 class SpotbugsParser(object):
     def __init__(self, filename, test):
-        with open(filename, 'rb') as f:
-            data = json.load(f)
         dupes = dict()
         find_date = None
-        if "generated_at" in data:
-            find_date = datetime.strptime(data["generated_at"], '%Y-%m-%dT%H:%M:%SZ').strftime("%Y-%m-%d %H:%M:%S")
 
-        for item in data["results"]:
-            impact = ''
-            findingdetail = ''
+        data = xml.etree.ElementTree.parse(filename).getroot()
 
-            title = "Test Name: " + item["test_name"] + " Test ID: " + item["test_id"]
+        for item in data.findall('BugInstance'):
+            title = item.find('ShortMessage').text
+            description = item.find('LongMessage').text
+            category = item.get('category')
+            type = item.get('type')
+            severity = item.get('priority')
+            path = item.find('Class').find('SourceLine').get('sourcefile')
+            line = item.find('Class').find('SourceLine').find('Message').text
 
-            ###### Finding details information ######
-            findingdetail += "Filename: " + item["filename"] + "\n"
-            findingdetail += "Line number: " + str(item["line_number"]) + "\n"
-            findingdetail += "Issue Confidence: " + item["issue_confidence"] + "\n\n"
-            findingdetail += "Code:\n"
-            findingdetail += item["code"] + "\n"
+            str = ''
+            for element in item.findall('SourceLine'):
+                str += (element.find('Message').text + "\n\n")
 
-            sev = item["issue_severity"]
-            mitigation = item["issue_text"]
-            references = item["test_id"]
-
-            dupe_key = title + item["filename"] + str(item["line_number"])
+            dupe_key = title + ' ' + type + ' ' + category
+            severity_type = {
+                0: 'Critical',
+                1: 'High',
+                2: 'Medium',
+                3: 'Low'
+            }
+            severity_level = ''
+            if int(severity) in severity_type:
+                severity_level = severity_type[int(severity)]
 
             if dupe_key not in dupes:
-                dupes[dupe_key] = Finding(title=title,
-                                          tool="bandit",
-                                          active=False,
-                                          verified=False,
-                                          description=findingdetail,
-                                          severity= sev.title(),
-                                          numerical_severity=Finding.get_numerical_severity(sev),
-                                          mitigation=mitigation,
-                                          impact=impact,
-                                          references=references,
-                                          file_path=item["filename"],
-                                          line=item["line_number"],
-                                          url='N/A',
-                                          date=find_date,
-                                          static_finding=True)
+                dupes[dupe_key] = Finding(title = title,
+                                          tool = "spotbugs",
+                                          active = False,
+                                          verified = False,
+                                          description = description,
+                                          severity = severity_level,
+                                          numerical_severity = severity,
+                                          mitigation = False,
+                                          impact = False,
+                                          references = False,
+                                          file_path = path,
+                                          line = line,
+                                          url = 'N/A',
+                                          date = find_date,
+                                          steps_to_reproduce = str,
+                                          static_finding = True)
         self.items = dupes.values()
