@@ -54,5 +54,5 @@ class SpotbugsParser(object):
                                           date = find_date,
                                           steps_to_reproduce = str,
                                           static_finding = True)
-                prinr (dupes[dupe_key])
+                print (dupes[dupe_key])
         self.items = dupes.values()
