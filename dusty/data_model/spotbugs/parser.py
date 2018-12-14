@@ -26,6 +26,7 @@ class SpotbugsParser(object):
                 str += (element.find('Message').text + "\n\n")
 
             dupe_key = title + ' ' + type + ' ' + category
+
             severity_type = {
                 0: 'Critical',
                 1: 'High',
@@ -53,4 +54,5 @@ class SpotbugsParser(object):
                                           date = find_date,
                                           steps_to_reproduce = str,
                                           static_finding = True)
+                prinr (dupes[dupe_key])
         self.items = dupes.values()
