@@ -1,8 +1,9 @@
 __author__ = 'aaronweaver'
-# Modified for Dusty by arozumenko
+# Modified for Dusty by akaminski
 
 import xml.etree.ElementTree
 from dusty.data_model.canonical_model import DefaultModel as Finding
+from dusty.constants import SEVERITY_TYPE
 
 
 class SpotbugsParser(object):
@@ -16,7 +17,7 @@ class SpotbugsParser(object):
             title = item.find('ShortMessage').text
             description = item.find('LongMessage').text
             category = item.get('category')
-            type = item.get('type')
+            issue_type = item.get('type')
             severity = item.get('priority')
             path = item.find('Class').find('SourceLine').get('sourcefile')
             line = item.find('Class').find('SourceLine').find('Message').text
@@ -25,17 +26,17 @@ class SpotbugsParser(object):
             for element in item.findall('SourceLine'):
                 str += (element.find('Message').text + "\n\n")
 
-            dupe_key = title + ' ' + type + ' ' + category
+            dupe_key = title + ' ' + issue_type + ' ' + category
 
-            severity_type = {
-                0: 'Critical',
-                1: 'High',
-                2: 'Medium',
-                3: 'Low'
-            }
+            #severity_type = {
+            #    0: 'Critical',
+            #    1: 'High',
+            #    2: 'Medium',
+            #    3: 'Low'
+            #}
             severity_level = ''
-            if int(severity) in severity_type:
-                severity_level = severity_type[int(severity)]
+            if int(severity) in SEVERITY_TYPE:
+                severity_level = SEVERITY_TYPE[int(severity)]
 
             if dupe_key not in dupes:
                 dupes[dupe_key] = Finding(title = title,
@@ -54,5 +55,4 @@ class SpotbugsParser(object):
                                           date = find_date,
                                           steps_to_reproduce = str,
                                           static_finding = True)
-                print (dupes[dupe_key])
         self.items = dupes.values()
