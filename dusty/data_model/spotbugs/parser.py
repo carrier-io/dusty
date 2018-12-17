@@ -28,12 +28,6 @@ class SpotbugsParser(object):
 
             dupe_key = title + ' ' + issue_type + ' ' + category
 
-            #severity_type = {
-            #    0: 'Critical',
-            #    1: 'High',
-            #    2: 'Medium',
-            #    3: 'Low'
-            #}
             severity_level = ''
             if int(severity) in SEVERITY_TYPE:
                 severity_level = SEVERITY_TYPE[int(severity)]
