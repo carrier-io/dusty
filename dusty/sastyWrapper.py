@@ -53,8 +53,6 @@ class SastyWrapper(object):
     def java(config):
         exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml /code"
         res = execute(exec_cmd, cwd='/code')
-        #with open("/tmp/spotbugs.xml", "w") as f:
-        #    f.write(res[0].decode('utf-8', errors='ignore'))
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
         result = process_false_positives(result)
         report_to_rp(config, result, "spotbugs")
