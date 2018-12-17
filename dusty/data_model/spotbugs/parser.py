@@ -41,9 +41,7 @@ class SpotbugsParser(object):
 
             dupe_key = title + ' ' + issue_type + ' ' + category
 
-            severity_level = ''
-            if int(severity) in SEVERITY_TYPE:
-                severity_level = SEVERITY_TYPE[int(severity)]
+            severity_level = SEVERITY_TYPE.get(int(severity), "")
 
             if dupe_key not in dupes:
                 dupes[dupe_key] = Finding(title = title,
