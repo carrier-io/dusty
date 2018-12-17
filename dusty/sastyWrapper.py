@@ -15,6 +15,7 @@
 from dusty.utils import execute, report_to_rp, process_false_positives
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
+from dusty.data_model.spotbugs.parser import SpotbugsParser
 
 
 class SastyWrapper(object):
@@ -46,4 +47,13 @@ class SastyWrapper(object):
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
         result = process_false_positives(result)
         report_to_rp(config, result, "brakeman")
+        return result
+    
+    @staticmethod
+    def java(config):
+        exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml /code"
+        res = execute(exec_cmd, cwd='/code')
+        result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
+        result = process_false_positives(result)
+        report_to_rp(config, result, "spotbugs")
         return result
