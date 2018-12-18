@@ -17,7 +17,7 @@ import re
 from time import sleep
 
 from dusty import constants as c
-from dusty.utils import execute, report_to_rp, find_ip, process_false_positives
+from dusty.utils import execute, find_ip, common_post_processing
 from dusty.data_model.nikto.parser import NiktoXMLParser
 from dusty.data_model.nmap.parser import NmapXMLParser
 from dusty.data_model.zap.parser import ZapXmlParser
@@ -32,8 +32,7 @@ class DustyWrapper(object):
         exec_cmd = f'sslyze --regular --json_out=/tmp/sslyze.json --quiet {config["host"]}:{config["port"]}'
         execute(exec_cmd)
         result = SslyzeJSONParser("/tmp/sslyze.json", "SSlyze").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "SSlyze")
+        common_post_processing(config, result, "SSlyze")
         return result
 
     @staticmethod
@@ -49,8 +48,7 @@ class DustyWrapper(object):
             exec_cmd = f'masscan {host} -p {ports} -pU:{ports} --rate 1000 -oJ /tmp/masscan.json {excluded_addon}'
             execute(exec_cmd)
             result = MasscanJSONParser("/tmp/masscan.json", "masscan").items
-            result = process_false_positives(result)
-            report_to_rp(config, result, "masscan")
+            common_post_processing(config, result, "masscan")
             return result
         return []
 
@@ -63,8 +61,7 @@ class DustyWrapper(object):
         cwd = '/opt/nikto/program'
         execute(exec_cmd, cwd)
         result = NiktoXMLParser("/tmp/nikto.xml", "Nikto").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "Nikto")
+        common_post_processing(config, result, "nikto")
         return result
 
     @staticmethod
@@ -95,8 +92,7 @@ class DustyWrapper(object):
                    f'--script={nse_scripts} {config["host"]} -oX /tmp/nmap.xml'
         execute(exec_cmd)
         result = NmapXMLParser('/tmp/nmap.xml', "NMAP").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "NMAP")
+        common_post_processing(config, result, "NMAP")
         return result
 
 
@@ -117,11 +113,9 @@ class DustyWrapper(object):
                     f'-l Informational {config.get("protocol")}://{config.get("host")}:{config.get("port")}')
         execute('zap-cli report -o /tmp/zap.xml -f xml')
         result = ZapXmlParser('/tmp/zap.xml', "ZAP").items
-        result = process_false_positives(result)
         execute('supervisorctl stop zap')
-        report_to_rp(config, result, "ZAP")
+        common_post_processing(config, result, "ZAP")
         return result
-
 
     @staticmethod
     def w3af(config):
@@ -137,10 +131,8 @@ class DustyWrapper(object):
             f.write(config_content)
         execute(w3af_execution_command)
         result = W3AFXMLParser("/tmp/w3af.xml", "w3af").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "w3af")
+        common_post_processing(config, result, "w3af")
         return result
-
 
     @staticmethod
     def qualys(config):

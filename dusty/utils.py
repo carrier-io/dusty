@@ -29,6 +29,16 @@ def report_to_rp(config, result, issue_name):
         rp_data_writer.finish_test_item()
 
 
+def report_to_jira(config, result):
+    if config.get('jira_service') and config.get('jira_service').valid:
+        config.get('jira_service').connect()
+        print(config.get('jira_service').client)
+        for issue in result:
+            issue.jira(config['jira_service'])
+    elif config.get('jira_service') and not config.get('jira_service').valid:
+        print("Jira Configuration incorrect, please fix ... ")
+
+
 def execute(exec_cmd, cwd='/tmp', communicate=True):
     print(f'Running: {exec_cmd}')
     proc = Popen(exec_cmd.split(" "), cwd=cwd, stdout=PIPE, stderr=PIPE)
@@ -65,3 +75,9 @@ def process_false_positives(results):
     for _ in to_remove:
         results.pop(results.index(_))
     return results
+
+
+def common_post_processing(config, result, tool_name):
+    result = process_false_positives(result)
+    report_to_rp(config, result, tool_name)
+    report_to_jira(config, result)
