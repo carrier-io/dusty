@@ -12,7 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from dusty.utils import execute, report_to_rp, process_false_positives
+from dusty.utils import execute, common_post_processing
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
@@ -26,8 +26,7 @@ class SastyWrapper(object):
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "pybandit")
+        common_post_processing(config, result, "pybandit")
         return result
 
     @staticmethod
@@ -45,8 +44,7 @@ class SastyWrapper(object):
                    f"-o /tmp/brakeman.json /code"
         execute(exec_cmd, cwd='/code')
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "brakeman")
+        common_post_processing(config, result, "brakeman")
         return result
     
     @staticmethod
@@ -54,6 +52,5 @@ class SastyWrapper(object):
         exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml /code"
         res = execute(exec_cmd, cwd='/code')
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
-        result = process_false_positives(result)
-        report_to_rp(config, result, "spotbugs")
+        common_post_processing(config, result, "spotbugs")
         return result

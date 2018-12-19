@@ -15,7 +15,7 @@
 import hashlib
 import markdown2
 from junit_xml import TestCase
-
+from dusty import constants as c
 
 class Endpoint(object):
     def __init__(self, protocol=None, host=None, fqdn=None, port=None, path=None, query=None, fragment=None, **kwargs):
@@ -161,6 +161,11 @@ class DefaultModel(object):
         message = self.__str__()
         tc.add_error_info(message=message, error_type=self.finding['severity'])
         return tc
+
+    def jira(self, jira_client):
+        jira_client.create_issue(self.finding["title"], c.SEVERITY_MAPPING[self.finding['severity']],
+                                 self.__str__(), self.get_hash_code(),
+                                 additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
 
     def influx_item(self):
         pass

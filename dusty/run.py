@@ -22,6 +22,7 @@ from time import time
 
 from dusty import constants
 from dusty.drivers.rp.report_portal_writer import ReportPortalDataWriter
+from dusty.drivers.jira import JiraWrapper
 from dusty.dustyWrapper import DustyWrapper
 from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
@@ -51,6 +52,7 @@ def main():
     args = arg_parse(suites)
     rp_config = None
     rp_service = None
+    jira_service = None
     html_report = None
     html_report_file = None
     xml_report_file = None
@@ -80,6 +82,22 @@ def main():
             launch_id = rp_service.start_test()
             rp_config = dict(rp_url=rp_url, rp_token=rp_token, rp_project=rp_project,
                              rp_launch_name=rp_launch_name, launch_id=launch_id)
+    if execution_config.get("jira", None):
+        # basic_auth
+        jira_url = execution_config['jira'].get("url", None)
+        jira_user = execution_config['jira'].get("username", None)
+        jira_pwd = execution_config['jira'].get("password", None)
+        jira_project = execution_config['jira'].get("project", None)
+        jira_assignee = execution_config['jira'].get("assignee", None)
+        jira_issue_type = execution_config['jira'].get("issue_type", 'Bug')
+        jira_lables = execution_config['jira'].get("labels", '')
+        jira_watchers = execution_config['jira'].get("watchers", '')
+        if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
+            print("Jira integration configuration is messed up , proceeding without Jira")
+        else:
+            jira_service = JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
+                                       jira_assignee, jira_issue_type, jira_lables,
+                                       jira_watchers)
     default_config = dict(host=execution_config.get('target_host', None),
                           port=execution_config.get('target_port', None),
                           protocol=execution_config.get('protocol', None),
@@ -87,6 +105,7 @@ def main():
                           environment=execution_config.get('environment', None),
                           test_type=execution_config.get('test_type', None),
                           rp_data_writer=rp_service,
+                          jira_service=jira_service,
                           rp_config=rp_config,
                           html_report=html_report)
     for each in execution_config:
