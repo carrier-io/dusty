@@ -60,6 +60,8 @@ class SastyWrapper(object):
     def nodejs(config):
         exec_cmd = "nodejsscan -o nodejsscan -d /code"
         res = execute(exec_cmd, cwd='/tmp')
+        with open("/tmp/nodejsscan.json", "w") as f:
+            f.write(res[0].decode('utf-8', errors='ignore'))
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         common_post_processing(config, result, "NodeJsScan")
         return result
