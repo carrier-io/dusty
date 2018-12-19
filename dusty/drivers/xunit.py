@@ -17,6 +17,8 @@ from junit_xml import TestSuite
 
 
 class XUnitReport(object):
+    report_name = None
+
     def __init__(self, findings, config, report_path='/tmp/reports'):
         test_cases = []
         for finding in findings:

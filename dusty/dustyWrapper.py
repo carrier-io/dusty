@@ -14,7 +14,9 @@
 
 import os
 import re
-from time import sleep
+from time import sleep, time
+from datetime import datetime
+from random import randrange
 
 from dusty import constants as c
 from dusty.utils import execute, find_ip, common_post_processing
@@ -24,6 +26,8 @@ from dusty.data_model.zap.parser import ZapXmlParser
 from dusty.data_model.sslyze.parser import SslyzeJSONParser
 from dusty.data_model.masscan.parser import MasscanJSONParser
 from dusty.data_model.w3af.parser import W3AFXMLParser
+from dusty.data_model.qualys.parser import QualysWebAppParser
+from dusty.drivers.qualys import WAS
 
 
 class DustyWrapper(object):
@@ -136,7 +140,52 @@ class DustyWrapper(object):
 
     @staticmethod
     def qualys(config):
-        print(config)
+        qualys_scanner_type = config.get("qualys_scanner_type", "EXTERNAL").upper()
+        # TODO : think on optimization or unification of Qualys pools for Internal scanners
+        qualys_scanner = config.get("qualys_scanner", '')
+        qualys_scanners_pool = config.get("scanners_pool", '')
+        if qualys_scanners_pool:
+            qualys_scanners_pool = randrange(1, int(qualys_scanners_pool)+1)  # randrange specifics
+        qualys_profile_id = config.get("qualys_profile_id", None)
+        qualys_template_id = config.get("qualys_template_id", None)
+        if not (qualys_profile_id or qualys_template_id):
+            return []
+        project_name = config.get('project_name')
+        target = f'{config.get("protocol")}://{config.get("host")}:{config.get("port")}'
+        qualys = WAS()
+        ts = datetime.utcfromtimestamp(int(time())).strftime('%Y-%m-%d %H:%M:%S')
+        project_id = qualys.search_for_project(project_name)
+        if qualys_scanner_type == 'INTERNAL':
+            scanner_appliance = f"<type>{qualys_scanner_type}</type>" \
+                                f"<friendlyName>{qualys_scanner}{qualys_scanners_pool}</friendlyName>"
+        else:
+            scanner_appliance = f"<type>{qualys_scanner_type}</type>"
+        if not project_id:
+            project_id = qualys.create_webapp_request(project_name, target, qualys_profile_id)
+        if not project_id:
+            print("Something went wrong and project wasn't found and created")
+            return []
+        scan_id = qualys.start_scan(project_name, ts, project_id, qualys_profile_id, scanner_appliance)
+        if not scan_id:
+            print("Scan haven't been started")
+            return []
+        while not qualys.scan_status(scan_id):
+            sleep(30)
+        # qualys.download_scan_report(scan_id)
+        report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
+        if not report_id:
+            print("Request report failed")
+            return []
+        while not qualys.get_report_status(report_id):
+            sleep(30)
+        qualys.download_report(report_id)
+        qualys.delete_asset("report", report_id)
+        qualys.delete_asset("wasscan", scan_id)
+        qualys.delete_asset("webapp", project_id)
+        result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
+        common_post_processing(config, result, "qualys_was")
+        return result
+
 
     @staticmethod
     def burp(config):

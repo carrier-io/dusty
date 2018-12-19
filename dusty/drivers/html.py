@@ -17,6 +17,8 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 
 class HTMLReport(object):
+    report_name = None
+
     def __init__(self, findings, config, report_path='/tmp/reports'):
         env = Environment(
             loader=PackageLoader('dusty', 'templates'),

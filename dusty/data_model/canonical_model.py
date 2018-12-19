@@ -134,8 +134,9 @@ class DefaultModel(object):
             finding += "### Endpoints:\n"
             for endpoint in endpoints:
                 finding += f'{str(endpoint)}\n\n'
-        if self.finding['dynamic_finding_details']['payload']:
-            finding += f"**Payload:** {self.finding[each]['payload']}\n\n"
+        if self.finding['dynamic_finding_details']["payload"] is not None:
+            self.scan_type = "DAST"
+            finding += f"**Payload:** {self.finding['dynamic_finding_details']['payload']}\n\n"
         return finding
 
     def rp_item(self, rp_data_writer):

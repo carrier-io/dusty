@@ -1,92 +1,72 @@
-import defusedxml.lxml as lxml
-from lxml import etree
-from urllib.parse import urlparse
-from markdownify import markdownify as md
+#   Copyright 2018 getcarrier.io
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
-from dusty.data_model.canonical_model import Endpoint, DefaultModel as Finding
+import base64
+from lxml import etree
+from dusty import constants as c
+from dusty.data_model.canonical_model import DefaultModel as Finding
+
+__author__ = "arozumenko"
 
 
 class QualysWebAppParser(object):
     def __init__(self, file, test):
-        self.items = self.qualys_webapp_parser(file, test)
-
-    def qualys_webapp_parser(self, qualys_xml_file, test):
+        self.items = []
         parser = etree.XMLParser(remove_blank_text=True, no_network=True, recover=True)
-        d = etree.parse(qualys_xml_file, parser)
+        d = etree.parse(file, parser)
+        qids = d.xpath('/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID')
+        for qid in qids:
+            _qid = qid.findtext('QID')
+            qid_title = qid.findtext('TITLE')
+            qid_solution = qid.findtext('SOLUTION')
+            qid_description = qid.findtext('DESCRIPTION')
+            qid_impact = qid.findtext('IMPACT')
+            qid_category = qid.findtext('CATEGORY')
+            qid_severity = 'Info'
+            owasp = qid.findtext('OWASP') if qid.findtext('OWASP') else ''
+            wasc = qid.findtext('WASC') if qid.findtext('WASC') else ''
+            cwe = qid.findtext('CWE') if qid.findtext('CWE') else ''
+            cvss_base = qid.findtext('CVSS_BASE') if qid.findtext('CVSS_BASE') else ''
+            if qid.xpath('SEVERITY'):
+                qid_severity = c.SEVERITIES_INVERSED[int(qid.findtext('SEVERITY'))]
+            description = f'{qid_description}\n\n**OWASP**:{owasp}\n\n**WASC**:{wasc}\n\n**CVSS_BASE**:{cvss_base}\n\n'
+            references = []
+            entrypoints = []
+            if 'Information Gathered' in qid_category:
+                records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[contains(text(),{_qid})]/..')
+                for record in records:
+                    references.append(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore"))
+            else:
+                records = d.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[contains(text(),{_qid})]/..')
+                for record in records:
+                    url = record.findtext('URL')
+                    access_pass = [a.text for a in records[0].xpath('ACCESS_PATH/URL')]
+                    method = record.findtext('PAYLOADS/PAYLOAD/REQUEST/METHOD')
+                    request = record.findtext('PAYLOADS/PAYLOAD/REQUEST/URL')
+                    response = record.findtext('PAYLOADS/PAYLOAD/RESPONSE/CONTENTS')
+                    response = base64.b64decode(response).decode("utf-8", errors="ignore")
+                    entrypoints.append(url)
+                    entrypoints.extend(access_pass)
+                    references.append(f"{method.upper()}: {request}\n\nResponse: {response}\n\n")
+            for reference in references:
+                finding = Finding(title=f'{qid_title} - {qid_category}', tool="QualysWAS", cwe=cwe,
+                                  description=description, test=test, severity=qid_severity,
+                                  mitigation=qid_solution, references=reference,
+                                  active=False, verified=False, false_p=False, duplicate=False,
+                                  out_of_scope=False, mitigated=None, impact=qid_impact)
+                finding.unsaved_endpoints.extend(entrypoints)
+                self.items.append(finding)
 
-        r = d.xpath('/WAS_WEBAPP_REPORT/RESULTS/WEB_APPLICATION/VULNERABILITY_LIST/VULNERABILITY')
-        # r = d.xpath('/WAS_SCAN_REPORT/RESULTS/VULNERABILITY_LIST/VULNERABILITY')
-        l = d.xpath('/WAS_WEBAPP_REPORT/RESULTS/WEB_APPLICATION/INFORMATION_GATHERED_LIST/INFORMATION_GATHERED')
-        # l = d.xpath('/WAS_SCAN_REPORT/RESULTS/INFORMATION_GATHERED_LIST/INFORMATION_GATHERED')
 
-        master_list = []
-
-        for issue in r:
-            master_list += self.issue_r(issue, d, test, "vul")
-
-        for issue in l:
-            master_list += self.issue_r(issue, d, test, "info")
-
-        return master_list
-
-    def issue_r(self, raw_row, vuln, test, issueType):
-        ret_rows = []
-        issue_row = {}
-
-        _gid = raw_row.findtext('QID')
-        _temp = issue_row
-        param = None
-        payload = None
-        ep = None
-        if issueType == "vul":
-            url = raw_row.findtext('URL')
-            param = raw_row.findtext('PARAM')
-            payload = raw_row.findtext('PAYLOADS/PAYLOAD/PAYLOAD')
-            parts = urlparse(url)
-
-            ep = Endpoint(protocol=parts.scheme,
-                          host=parts.netloc,
-                          path=parts.path,
-                          query=parts.query,
-                          fragment=parts.fragment,
-                          product=test.engagement.product)
-
-        r = vuln.xpath('/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID')
-
-        for vuln_item in r:
-            if vuln_item is not None:
-                if vuln_item.findtext('QID') == _gid:
-                    _temp['vuln_name'] = vuln_item.findtext('TITLE')
-                    _temp['vuln_solution'] = vuln_item.findtext('SOLUTION')
-                    _temp['vuln_description'] = md(vuln_item.findtext('DESCRIPTION'))
-                    _temp['impact'] = md(vuln_item.findtext('IMPACT'))
-                    _temp['CVSS_score'] = vuln_item.findtext('CVSS_BASE')
-                    _temp['Severity'] = vuln_item.findtext('SEVERITY')
-
-                    if _temp['Severity'] is not None:
-                        if float(_temp['Severity']) == 1:
-                            _temp['Severity'] = "Info"
-                        elif float(_temp['Severity']) == 2:
-                            _temp['Severity'] = "Low"
-                        elif float(_temp['Severity']) == 3:
-                            _temp['Severity'] = "Medium"
-                        elif float(_temp['Severity']) == 4:
-                            _temp['Severity'] = "High"
-                        else:
-                            _temp['Severity'] = "Critical"
-
-                    if issueType == "vul":
-                        finding = Finding(title=_temp['vuln_name'], mitigation=_temp['vuln_solution'],
-                                          description=_temp['vuln_description'], param=param, payload=payload,
-                                          severity=_temp['Severity'], impact=_temp['impact'], tool="QualysWAS")
-
-                        finding.unsaved_endpoints = list()
-                        if ep:
-                            finding.unsaved_endpoints.append(ep)
-                    else:
-                        finding = Finding(title=_temp['vuln_name'], mitigation=_temp['vuln_solution'],
-                                          description=_temp['vuln_description'], param=param, payload=payload,
-                                          severity=_temp['Severity'], impact=_temp['impact'], tool="QualysWAS")
-                    ret_rows.append(finding)
-        return ret_rows
 

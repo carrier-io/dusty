@@ -20,6 +20,7 @@ READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'e
 PATH_TO_CONFIG = "/tmp/scan-config.yaml"
 SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,
               'High': 1, 'Critical': 0}
+SEVERITIES_INVERSED = {v: k for k, v in SEVERITIES.items()}
 SEVERITY_MAPPING = {
     'Critical': 'Blocker',
     'High': 'Critical',
