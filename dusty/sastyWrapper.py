@@ -58,7 +58,7 @@ class SastyWrapper(object):
 
     @staticmethod
     def nodejs(config):
-        exec_cmd = "nodejsscan -o nodejsscan.json -d /code"
+        exec_cmd = "nodejsscan -o nodejsscan -d /code"
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         common_post_processing(config, result, "NodeJsScan")
