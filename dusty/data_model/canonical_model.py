@@ -17,6 +17,7 @@ import markdown2
 from junit_xml import TestCase
 from dusty import constants as c
 
+
 class Endpoint(object):
     def __init__(self, protocol=None, host=None, fqdn=None, port=None, path=None, query=None, fragment=None, **kwargs):
 
@@ -106,7 +107,6 @@ class DefaultModel(object):
 
     def get_hash_code(self) -> str:
         hash_string = self.finding_error_string().strip()
-        #print(hash_string)
         return hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
 
     def __str__(self):
@@ -137,6 +137,7 @@ class DefaultModel(object):
         if self.finding['dynamic_finding_details']["payload"] is not None:
             self.scan_type = "DAST"
             finding += f"**Payload:** {self.finding['dynamic_finding_details']['payload']}\n\n"
+            finding += f"**Issue Hash**: {self.get_hash_code()}\n\n"
         return finding
 
     def rp_item(self, rp_data_writer):

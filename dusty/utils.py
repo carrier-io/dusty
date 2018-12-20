@@ -70,7 +70,7 @@ def process_false_positives(results):
         return results
     to_remove = []
     for index in range(len(results)):
-        if results[index].finding['title'] in false_positives:
+        if results[index].get_hash_code() in false_positives:
             to_remove.append(results[index])
     for _ in to_remove:
         results.pop(results.index(_))
