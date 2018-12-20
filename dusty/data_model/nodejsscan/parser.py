@@ -15,6 +15,7 @@ __author__ = 'akaminski'
 
 
 import json
+import re
 from dusty.data_model.canonical_model import DefaultModel as Finding
 
 
@@ -33,7 +34,7 @@ class NodeJsScanParser(object):
                     description = value['description']
                     file_path = value['path']
                     line = value['line']
-                    steps_to_reproduce = value['lines']
+                    steps_to_reproduce = '<pre>' + value['lines'] + '</pre>\n\n'
                     dupe_key = item + ': ' + value['title'] + ' with file ' + value['filename']
 
                     if dupe_key not in dupes:
@@ -42,7 +43,7 @@ class NodeJsScanParser(object):
                                                   active = False,
                                                   verified = False,
                                                   description = description,
-                                                  severity = False,
+                                                  severity = 'Medium',
                                                   numerical_severity = False,
                                                   mitigation = False,
                                                   impact = False,
@@ -51,7 +52,7 @@ class NodeJsScanParser(object):
                                                   line = line,
                                                   url = 'N/A',
                                                   date = find_date,
-                                                  steps_to_reproduce = steps_to_reproduce.encode('utf-8'),
+                                                  steps_to_reproduce = re.sub(r'[^\x00-\x7f]',r'',steps_to_reproduce ),
                                                   static_finding = True)
         if len(data['missing_sec_header']) > 0:
             for item in data['missing_sec_header']:
@@ -66,7 +67,7 @@ class NodeJsScanParser(object):
                                                   active = False,
                                                   verified = False,
                                                   description = description,
-                                                  severity = False,
+                                                  severity = 'Medium',
                                                   numerical_severity = False,
                                                   mitigation = False,
                                                   impact = False,
@@ -93,7 +94,7 @@ class NodeJsScanParser(object):
                                                   active = False,
                                                   verified = False,
                                                   description = description,
-                                                  severity = False,
+                                                  severity = 'Medium',
                                                   numerical_severity = False,
                                                   mitigation = False,
                                                   impact = False,
