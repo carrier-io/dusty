@@ -85,7 +85,7 @@ class NodeJsScanParser(object):
                     description = value['description']
                     file_path = value['path']
                     line = value['line']
-                    steps_to_reproduce = value['lines']
+                    steps_to_reproduce = '<pre>' + value['lines'] + '</pre>\n\n'
                     dupe_key = item + ': ' + value['title'] + ' with file ' + value['filename']
 
                     if dupe_key not in dupes:
@@ -103,6 +103,6 @@ class NodeJsScanParser(object):
                                                   line = line,
                                                   url = 'N/A',
                                                   date = find_date,
-                                                  steps_to_reproduce = steps_to_reproduce.encode('utf-8'),
+                                                  steps_to_reproduce = steps_to_reproduce,
                                                   static_finding = True)
         self.items = dupes.values()
