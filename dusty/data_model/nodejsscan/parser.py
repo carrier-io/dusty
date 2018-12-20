@@ -15,7 +15,6 @@ __author__ = 'akaminski'
 
 
 import json
-import io
 from dusty.data_model.canonical_model import DefaultModel as Finding
 
 
@@ -24,7 +23,7 @@ class NodeJsScanParser(object):
         dupes = dict()
         find_date = None
 
-        with io.open(filename, 'r', encoding='utf8') as f:
+        with open(filename) as f:
             data = json.load(f)
 
         if len(data['good_finding']) > 0:
@@ -52,7 +51,7 @@ class NodeJsScanParser(object):
                                                   line = line,
                                                   url = 'N/A',
                                                   date = find_date,
-                                                  steps_to_reproduce = steps_to_reproduce,
+                                                  steps_to_reproduce = steps_to_reproduce.encode('utf-8'),
                                                   static_finding = True)
         if len(data['missing_sec_header']) > 0:
             for item in data['missing_sec_header']:
@@ -103,6 +102,6 @@ class NodeJsScanParser(object):
                                                   line = line,
                                                   url = 'N/A',
                                                   date = find_date,
-                                                  steps_to_reproduce = steps_to_reproduce,
+                                                  steps_to_reproduce = steps_to_reproduce.encode('utf-8'),
                                                   static_finding = True)
         self.items = dupes.values()
