@@ -84,14 +84,14 @@ def main():
                              rp_launch_name=rp_launch_name, launch_id=launch_id)
     if execution_config.get("jira", None):
         # basic_auth
-        jira_url = execution_config['jira'].get("url", None)
-        jira_user = execution_config['jira'].get("username", None)
-        jira_pwd = execution_config['jira'].get("password", None)
-        jira_project = execution_config['jira'].get("project", None)
-        jira_assignee = execution_config['jira'].get("assignee", None)
-        jira_issue_type = execution_config['jira'].get("issue_type", 'Bug')
-        jira_lables = execution_config['jira'].get("labels", '')
-        jira_watchers = execution_config['jira'].get("watchers", '')
+        jira_url = proxy_through_env(execution_config['jira'].get("url", None))
+        jira_user = proxy_through_env(execution_config['jira'].get("username", None))
+        jira_pwd = proxy_through_env(execution_config['jira'].get("password", None))
+        jira_project = proxy_through_env(execution_config['jira'].get("project", None))
+        jira_assignee = proxy_through_env(execution_config['jira'].get("assignee", None))
+        jira_issue_type = proxy_through_env(execution_config['jira'].get("issue_type", 'Bug'))
+        jira_lables = proxy_through_env(execution_config['jira'].get("labels", ''))
+        jira_watchers = proxy_through_env(execution_config['jira'].get("watchers", ''))
         if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
             print("Jira integration configuration is messed up , proceeding without Jira")
         else:

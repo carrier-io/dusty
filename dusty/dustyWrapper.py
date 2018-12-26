@@ -47,10 +47,13 @@ class DustyWrapper(object):
             if len(host) > 0:
                 host = host[0].strip()
         if host:
-            excluded_addon = f'--exclude-ports {config.get("exclusions", None)}' if config.get("exclusions", None) else ""
+            if config.get("exclusions", None):
+                excluded_addon = f'--exclude-ports {config.get("exclusions", None)}'
+            else:
+                excluded_addon = ''
             ports = config.get("inclusions", "0-65535")
             exec_cmd = f'masscan {host} -p {ports} -pU:{ports} --rate 1000 -oJ /tmp/masscan.json {excluded_addon}'
-            execute(exec_cmd)
+            execute(exec_cmd.strip())
             result = MasscanJSONParser("/tmp/masscan.json", "masscan").items
             common_post_processing(config, result, "masscan")
             return result
@@ -61,7 +64,7 @@ class DustyWrapper(object):
         if os.path.exists("/tmp/nikto.xml"):
             os.remove("/tmp/nikto.xml")
         exec_cmd = f'perl nikto.pl {config.get("param", "")} -h {config["host"]} -p {config["port"]} ' \
-                   f'-Format xml -output /tmp/nikto.xml -Save /tmp/extended_nikto.xml'
+                   f'-Format xml -output /tmp/nikto.xml -Save /tmp/extended_nikto'
         cwd = '/opt/nikto/program'
         execute(exec_cmd, cwd)
         result = NiktoXMLParser("/tmp/nikto.xml", "Nikto").items
@@ -104,7 +107,10 @@ class DustyWrapper(object):
     def zap(config):
         if 'supervisor.sock no such file' in execute('supervisorctl restart zap')[0].decode('utf-8'):
             execute('/usr/bin/supervisord', communicate=False)
-        sleep(20)
+        status = execute('zap-cli status')[0].decode('utf-8')
+        while 'ZAP is running' not in status:
+            sleep(10)
+            status = execute('zap-cli status')[0].decode('utf-8')
         if config.get('zap_context_file_path', None):
             context = os.path.join('/tmp', config.get('zap_context_file_path'))
             if os.path.exists(context):

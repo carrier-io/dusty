@@ -31,8 +31,7 @@ class W3AFXMLParser(object):
             severity = vulnerability.attrib["severity"]
             description = "%s are:\n\n" % vulnerability.find("description").text.split("are:")[0]
             transactions = vulnerability.find("http-transactions")
-            print(transactions)
-            if transactions:
+            if transactions is not None:
                 transactions = transactions.findall("http-transaction")
             for transaction in transactions:
                 request = transaction.find("http-request")
