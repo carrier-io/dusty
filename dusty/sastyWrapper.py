@@ -16,6 +16,7 @@ from dusty.utils import execute, common_post_processing
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
+from dusty.data_model.nodejsscan.parser import NodeJsScanParser
 
 
 class SastyWrapper(object):
@@ -53,4 +54,12 @@ class SastyWrapper(object):
         res = execute(exec_cmd, cwd='/code')
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
         common_post_processing(config, result, "spotbugs")
+        return result
+
+    @staticmethod
+    def nodejs(config):
+        exec_cmd = "nodejsscan -o nodejsscan -d /code"
+        res = execute(exec_cmd, cwd='/tmp')
+        result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
+        common_post_processing(config, result, "NodeJsScan")
         return result
