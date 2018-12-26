@@ -1,4 +1,3 @@
-__author__ = 'akaminski'
 #   Copyright 2018 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,94 +14,44 @@ __author__ = 'akaminski'
 
 
 import json
+import os
 import re
 from dusty.data_model.canonical_model import DefaultModel as Finding
+
+
+__author__ = 'akaminski, arozumenko'
 
 
 class NodeJsScanParser(object):
     def __init__(self, filename, test):
         dupes = dict()
         find_date = None
-
-        with open(filename) as f:
-            data = json.load(f)
-
-        if len(data['good_finding']) > 0:
-            for item in data['good_finding']:
-                for value in data['good_finding'][item]:
-                    title = value['title']
-                    description = value['description']
-                    file_path = value['path']
-                    line = value['line']
-                    steps_to_reproduce = '<pre>' + value['lines'] + '</pre>\n\n'
-                    dupe_key = item + ': ' + value['title'] + ' with file ' + value['filename']
-
-                    if dupe_key not in dupes:
-                        dupes[dupe_key] = Finding(title = title,
-                                                  tool = "NodeJsScan",
-                                                  active = False,
-                                                  verified = False,
-                                                  description = description,
-                                                  severity = 'Medium',
-                                                  numerical_severity = False,
-                                                  mitigation = False,
-                                                  impact = False,
-                                                  references = False,
-                                                  file_path = file_path,
-                                                  line = line,
-                                                  url = 'N/A',
-                                                  date = find_date,
-                                                  steps_to_reproduce = re.sub(r'[^\x00-\x7f]',r'',steps_to_reproduce ),
-                                                  static_finding = True)
-        if len(data['missing_sec_header']) > 0:
-            for item in data['missing_sec_header']:
-                for value in data['missing_sec_header'][item]:
-                    description = value['description']
-                    title = value['title']
-
-                    dupe_key = item + ": " + title
-                    if dupe_key not in dupes:
-                        dupes[dupe_key] = Finding(title = title,
-                                                  tool = "NodeJsScan",
-                                                  active = False,
-                                                  verified = False,
-                                                  description = description,
-                                                  severity = 'Medium',
-                                                  numerical_severity = False,
-                                                  mitigation = False,
-                                                  impact = False,
-                                                  references = False,
-                                                  file_path = False,
-                                                  line = False,
-                                                  url = 'N/A',
-                                                  date = find_date,
-                                                  steps_to_reproduce = False,
-                                                  static_finding = True)
-        if len(data['sec_issues']) > 0:
-            for item in data['sec_issues']:
-                for value in data['sec_issues'][item]:
-                    title = value['title']
-                    description = value['description']
-                    file_path = value['path']
-                    line = value['line']
-                    steps_to_reproduce = '<pre>' + value['lines'] + '</pre>\n\n'
-                    dupe_key = item + ': ' + value['title'] + ' with file ' + value['filename']
-
-                    if dupe_key not in dupes:
-                        dupes[dupe_key] = Finding(title = title,
-                                                  tool = "NodeJsScan",
-                                                  active = False,
-                                                  verified = False,
-                                                  description = description,
-                                                  severity = 'Medium',
-                                                  numerical_severity = False,
-                                                  mitigation = False,
-                                                  impact = False,
-                                                  references = False,
-                                                  file_path = file_path,
-                                                  line = line,
-                                                  url = 'N/A',
-                                                  date = find_date,
-                                                  steps_to_reproduce = steps_to_reproduce,
-                                                  static_finding = True)
+        self.items = []
+        if not os.path.exists(filename):
+            return
+        data = json.load(open(filename))
+        for item in ['good_finding', 'sec_issues', 'missing_sec_header']:
+            for key, value in data[item].items():
+                title = value['title']
+                description = value['description']
+                file_path = value.get('path', None)
+                line = value.get('line', None)
+                steps_to_reproduce = f'<pre>{value.get("lines", "")}</pre>\n\n'
+                dupe_key = key + ': ' + value['title'] + ' with file ' + value['filename']
+                if dupe_key not in dupes:
+                    dupes[dupe_key] = Finding(title=title,
+                                              tool=test,
+                                              active=False,
+                                              verified=False,
+                                              description=description,
+                                              severity='Medium',
+                                              file_path=file_path,
+                                              line=line,
+                                              url='N/A',
+                                              date=find_date,
+                                              steps_to_reproduce=re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce),
+                                              static_finding=True)
+                else:
+                    dupes[dupe_key].finding['steps_to_reproduce'] += "\n\n"
+                    dupes[dupe_key].finding['steps_to_reproduce'] += re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce)
         self.items = dupes.values()
