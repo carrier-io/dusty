@@ -32,26 +32,27 @@ class NodeJsScanParser(object):
         data = json.load(open(filename))
         for item in ['good_finding', 'sec_issues', 'missing_sec_header']:
             for key, value in data[item].items():
-                title = value['title']
-                description = value['description']
-                file_path = value.get('path', None)
-                line = value.get('line', None)
-                steps_to_reproduce = f'<pre>{value.get("lines", "")}</pre>\n\n'
-                dupe_key = key + ': ' + value['title'] + ' with file ' + value['filename']
-                if dupe_key not in dupes:
-                    dupes[dupe_key] = Finding(title=title,
-                                              tool=test,
-                                              active=False,
-                                              verified=False,
-                                              description=description,
-                                              severity='Medium',
-                                              file_path=file_path,
-                                              line=line,
-                                              url='N/A',
-                                              date=find_date,
-                                              steps_to_reproduce=re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce),
-                                              static_finding=True)
-                else:
-                    dupes[dupe_key].finding['steps_to_reproduce'] += "\n\n"
-                    dupes[dupe_key].finding['steps_to_reproduce'] += re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce)
+                for sub_value in value:
+                    title = sub_value['title']
+                    description = sub_value['description']
+                    file_path = sub_value.get('path', None)
+                    line = sub_value.get('line', None)
+                    steps_to_reproduce = f'<pre>{sub_value.get("lines", "")}</pre>\n\n'
+                    dupe_key = key + ': ' + sub_value['title'] + ' with file ' + sub_value.get('filename', '')
+                    if dupe_key not in dupes:
+                        dupes[dupe_key] = Finding(title=title,
+                                                  tool=test,
+                                                  active=False,
+                                                  verified=False,
+                                                  description=description,
+                                                  severity='Medium',
+                                                  file_path=file_path,
+                                                  line=line,
+                                                  url='N/A',
+                                                  date=find_date,
+                                                  steps_to_reproduce=re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce),
+                                                  static_finding=True)
+                    else:
+                        dupes[dupe_key].finding['steps_to_reproduce'] += "\n\n"
+                        dupes[dupe_key].finding['steps_to_reproduce'] += re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce)
         self.items = dupes.values()
