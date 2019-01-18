@@ -12,11 +12,14 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import json
 from dusty.utils import execute, common_post_processing
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
 from dusty.data_model.nodejsscan.parser import NodeJsScanParser
+from dusty.data_model.npm.parser import NpmScanParser
+from dusty.data_model.retire.parser import RetireScanParser
 
 
 class SastyWrapper(object):
@@ -62,4 +65,27 @@ class SastyWrapper(object):
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         common_post_processing(config, result, "NodeJsScan")
+        return result
+
+    @staticmethod
+    def npm(config):
+        devdeps = [] if config.get('devdep') \
+            else json.load(open('/code/package.json')).get('devDependencies', {}).keys()
+        exec_cmd = "npm audit --json"
+        res = execute(exec_cmd, cwd='/code')
+        with open('/tmp/npm_audit.json', 'w') as npm_audit:
+            print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
+        result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
+        common_post_processing(config, result, "NpmScan")
+        return result
+
+    @staticmethod
+    def retirejs(config):
+        devdeps = [] if config.get('devdep') \
+            else json.load(open('/code/package.json')).get('devDependencies', {}).keys()
+        exec_cmd = "retire --jspath=/code --outputformat=json  " \
+                   "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"
+        res = execute(exec_cmd, cwd='/tmp')
+        result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
+        common_post_processing(config, result, "RetireScan")
         return result

@@ -116,11 +116,12 @@ def main():
             for item in execution_config[each]:
                 config[item] = execution_config[each][item]
         results = []
-        if 'language' in each:
+        if each in constants.SASTY_SCANNERS_CONFIG_KEYS:
             try:
-                results = getattr(SastyWrapper, execution_config[each])(config)
+                attr_name = execution_config[each] if 'language' in each else each
+                results = getattr(SastyWrapper, attr_name)(config)
             except:
-                print("Exception during %s Scanning" % execution_config[each])
+                print("Exception during %s Scanning" % attr_name)
                 if os.environ.get("debug", False):
                     print(format_exc())
         else:
