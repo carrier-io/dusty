@@ -28,6 +28,7 @@ class JiraWrapper(object):
         self.labels = list()
         if labels:
             self.labels = [label.strip() for label in labels.split(",")]
+        self.watchers = list()
         if watchers:
             self.watchers = [watchers.strip() for watchers in watchers.split(",")]
         self.client.close()
