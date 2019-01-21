@@ -49,3 +49,4 @@ SEVERITY_TYPE = {
     2: 'Medium',
     3: 'Low'
 }
+NVD_URL = 'https://nvd.nist.gov/vuln/detail/'

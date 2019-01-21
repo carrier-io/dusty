@@ -27,9 +27,6 @@ __author__ = 'KarynaTaranova'
 
 
 class RetireScanParser(object):
-
-    NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
-
     def __init__(self, filename, test, devdeps):
         dupes = dict()
         find_date = None
@@ -57,7 +54,7 @@ class RetireScanParser(object):
                         for reference in vulnerability.get('info'):
                             if reference not in components_data[component]['references']:
                                 components_data[component]['references'][summary].add(reference)
-                                if self.NVD_URL in reference:
+                                if constants.NVD_URL in reference:
                                     url_text = requests.get(reference).text
                                     soup = BeautifulSoup(url_text, 'html.parser')
                                     recomendation = soup.find_all('a', {'id': 'showCPERanges'})
