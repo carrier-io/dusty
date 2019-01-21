@@ -15,8 +15,9 @@
 
 import json
 import os
-import urllib
 import re
+import requests
+from bs4 import BeautifulSoup
 from distutils.version import LooseVersion
 from dusty import constants
 from dusty.data_model.canonical_model import DefaultModel as Finding
@@ -26,6 +27,9 @@ __author__ = 'KarynaTaranova'
 
 
 class RetireScanParser(object):
+
+    NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
+
     def __init__(self, filename, test, devdeps):
         dupes = dict()
         find_date = None
@@ -53,21 +57,21 @@ class RetireScanParser(object):
                         for reference in vulnerability.get('info'):
                             if reference not in components_data[component]['references']:
                                 components_data[component]['references'][summary].add(reference)
-                                if 'https://nvd.nist.gov/vuln/detail/' in reference:
-                                    with urllib.request.urlopen(reference) as file:
-                                        url_text = (file.read().decode('utf-8'))
-                                    recomendation = re.findall(
-                                        'data-range-description=\'(.*)\' data-range-cpe23shown', url_text)
+                                if self.NVD_URL in reference:
+                                    url_text = requests.get(reference).text
+                                    soup = BeautifulSoup(url_text, 'html.parser')
+                                    recomendation = soup.find_all('a', {'id': 'showCPERanges'})
                                     if recomendation:
-                                        ver_res = re.findall('versions up to \(excluding\)(.*)', recomendation[0])
+                                        ver_res = re.findall('versions up to \(excluding\)(.*)',
+                                                             recomendation[0].attrs['data-range-description'])
                                         if ver_res:
                                             ver = ver_res[0].strip()
                                             if (LooseVersion(components_data[component]['version_to_update'])
                                                     < LooseVersion(ver)):
                                                 components_data[component]['version_to_update'] = ver
-                                    description = re.findall('<p data-testid="vuln-description">(.*)</p>', url_text)
+                                    description = soup.find_all('p', {'data-testid': 'vuln-description'})
                                     if description:
-                                        components_data[component]['descriptions'][summary] = description[0]
+                                        components_data[component]['descriptions'][summary] = description[0].text
                         cur_severity = vulnerability.get('severity').title()
                         if constants.SEVERITIES.get(components_data[component]['severity']) \
                                 > constants.SEVERITIES.get(cur_severity):
@@ -95,7 +99,6 @@ class RetireScanParser(object):
                                       description=description,
                                       severity=severity,
                                       file_path=file_path,
-                                      line=' ',
                                       date=find_date,
                                       references=references,
                                       static_finding=True)

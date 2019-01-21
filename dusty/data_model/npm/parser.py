@@ -80,7 +80,6 @@ class NpmScanParser(object):
                                               description=description,
                                               severity=severity,
                                               file_path=file_path,
-                                              line=' ',
                                               url=url,
                                               date=find_date,
                                               references=references,

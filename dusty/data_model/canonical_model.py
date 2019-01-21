@@ -122,12 +122,13 @@ class DefaultModel(object):
                 if self.finding[each] and 'N/A' not in self.finding[each] and not isinstance(self.finding[each], dict):
                     finding += f"**{each}**: {self.finding[each]}\n"
 
-        if self.finding['static_finding_details']['file_name'] and \
-                self.finding['static_finding_details']['line_number']:
+        if self.finding['static_finding_details']['file_name']:
             self.scan_type = 'SAST'
             finding += f'**Please review**: ' \
-                       f'{self.finding["static_finding_details"]["file_name"]}: ' \
-                       f'{self.finding["static_finding_details"]["line_number"]}\n\n'
+                       f'{self.finding["static_finding_details"]["file_name"]}'
+            if self.finding["static_finding_details"]["line_number"]:
+                finding += f': {self.finding["static_finding_details"]["line_number"]}'
+            finding += '\n\n'
         endpoints = set(self.finding['dynamic_finding_details']['endpoints'] + self.unsaved_endpoints + self.endpoints)
         if endpoints:
             self.scan_type = "DAST"
