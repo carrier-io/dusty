@@ -7,7 +7,7 @@ class JiraWrapper(object):
     JIRA_REQUEST = 'project={} AND labels in ({})'
 
     def __init__(self, url, user, password, project, assignee, issue_type='Bug', labels=None, watchers=None,
-                 jira_epic_link=None):
+                 jira_epic_key=None):
         self.valid = True
         self.url = url
         self.password = password
@@ -32,7 +32,7 @@ class JiraWrapper(object):
         self.watchers = list()
         if watchers:
             self.watchers = [watchers.strip() for watchers in watchers.split(",")]
-        self.jira_epic_link = jira_epic_link
+        self.jira_epic_key = jira_epic_key
         self.client.close()
 
     def connect(self):
@@ -71,8 +71,8 @@ class JiraWrapper(object):
                                         filename=attachment['message'])
         for watcher in self.watchers:
             self.client.add_watcher(issue.id, watcher)
-        if self.jira_epic_link:
-            self.client.add_issues_to_epic(self.jira_epic_link, issue.id)
+        if self.jira_epic_key:
+            self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
         return issue, created
 
     def add_attachment(self, issue_key, attachment, filename=None):

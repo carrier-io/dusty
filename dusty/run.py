@@ -92,13 +92,13 @@ def main():
         jira_issue_type = proxy_through_env(execution_config['jira'].get("issue_type", 'Bug'))
         jira_lables = proxy_through_env(execution_config['jira'].get("labels", ''))
         jira_watchers = proxy_through_env(execution_config['jira'].get("watchers", ''))
-        jira_epic_link = proxy_through_env(execution_config['jira'].get("epic_link", None))
+        jira_epic_key = proxy_through_env(execution_config['jira'].get("epic_link", None))
         if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
             print("Jira integration configuration is messed up , proceeding without Jira")
         else:
             jira_service = JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
                                        jira_assignee, jira_issue_type, jira_lables,
-                                       jira_watchers, jira_epic_link)
+                                       jira_watchers, jira_epic_key)
     default_config = dict(host=execution_config.get('target_host', None),
                           port=execution_config.get('target_port', None),
                           protocol=execution_config.get('protocol', None),
