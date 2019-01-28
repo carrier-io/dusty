@@ -21,7 +21,6 @@ from traceback import format_exc
 from time import time
 
 from dusty import constants
-from dusty import utils
 from dusty.drivers.rp.report_portal_writer import ReportPortalDataWriter
 from dusty.drivers.jira import JiraWrapper
 from dusty.dustyWrapper import DustyWrapper
