@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import hashlib
+import re
 import markdown2
 from junit_xml import TestCase
 from dusty import constants as c
@@ -59,7 +60,7 @@ class DefaultModel(object):
                  **kwags):
         endpoints = [] if not endpoints else endpoints
         self.finding = {
-            "title": title,
+            "title": re.sub('[^A-Za-z0-9//\. _]+', '', title),
             "date": date,
             "description": description.replace("\n", "\n\n"),
             "severity": severity,
@@ -166,9 +167,10 @@ class DefaultModel(object):
         return tc
 
     def jira(self, jira_client):
-        jira_client.create_issue(self.finding["title"], c.SEVERITY_MAPPING[self.finding['severity']],
+        issue, created = jira_client.create_issue(self.finding["title"], c.SEVERITY_MAPPING[self.finding['severity']],
                                  self.__str__(), self.get_hash_code(),
                                  additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
+        return issue
 
     def influx_item(self):
         pass
