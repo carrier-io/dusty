@@ -1,4 +1,3 @@
-import re
 import logging
 from jira import JIRA
 
@@ -50,7 +49,7 @@ class JiraWrapper(object):
         _labels.extend(self.labels)
         issue_data = {
             'project': {'key': self.project},
-            'summary': re.sub('[^A-Za-z0-9//\. _]+', '', title),
+            'summary': title,
             'description': description,
             'issuetype': {'name': self.issue_type},
             'assignee': {'name': self.assignee},
@@ -83,7 +82,6 @@ class JiraWrapper(object):
         self.client.add_attachment(issue, attachment, filename)
 
     def post_issue(self, issue_data):
-        print(issue_data)
         issue = self.client.create_issue(fields=issue_data)
         logging.info(f'  \u2713 {issue_data["issuetype"]["name"]} issue was created: {issue.key}')
         return issue
@@ -106,5 +104,8 @@ class JiraWrapper(object):
             issue = self.post_issue(issue_data)
             created = True
         return issue, created
+
+    def add_comment_to_issue(self, issue, data):
+        return self.client.add_comment(issue, data)
 
 

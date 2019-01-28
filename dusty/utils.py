@@ -81,3 +81,8 @@ def common_post_processing(config, result, tool_name):
     result = process_false_positives(result)
     report_to_rp(config, result, tool_name)
     report_to_jira(config, result)
+
+
+def ptai_post_processing(config, result):
+    result = process_false_positives(result)
+    report_to_jira(config, result)
