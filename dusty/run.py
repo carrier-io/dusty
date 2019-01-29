@@ -100,6 +100,8 @@ def main():
             jira_service = JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
                                        jira_assignee, jira_issue_type, jira_lables,
                                        jira_watchers, jira_epic_key, jira_fields)
+    ptai_report_name = proxy_through_env(execution_config['ptai'].get("report_name", None))
+
     default_config = dict(host=execution_config.get('target_host', None),
                           port=execution_config.get('target_port', None),
                           protocol=execution_config.get('protocol', None),
@@ -109,7 +111,8 @@ def main():
                           rp_data_writer=rp_service,
                           jira_service=jira_service,
                           rp_config=rp_config,
-                          html_report=html_report)
+                          html_report=html_report,
+                          ptai_report_name=ptai_report_name)
     for each in execution_config:
         if each in constants.NON_SCANNERS_CONFIG_KEYS:
             continue

@@ -13,13 +13,14 @@
 #   limitations under the License.
 
 import json
-from dusty.utils import execute, common_post_processing
+from dusty.utils import execute, common_post_processing, ptai_post_processing
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
 from dusty.data_model.nodejsscan.parser import NodeJsScanParser
 from dusty.data_model.npm.parser import NpmScanParser
 from dusty.data_model.retire.parser import RetireScanParser
+from dusty.data_model.ptai.parser import PTAIScanParser
 
 
 class SastyWrapper(object):
@@ -88,4 +89,11 @@ class SastyWrapper(object):
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
         common_post_processing(config, result, "RetireScan")
+        return result
+
+    @staticmethod
+    def ptai(config):
+        file_path = '/tmp/reports/' + config['ptai_report_name']
+        result = PTAIScanParser(file_path).items
+        ptai_post_processing(config, result)
         return result
