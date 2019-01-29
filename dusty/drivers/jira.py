@@ -7,7 +7,7 @@ class JiraWrapper(object):
     JIRA_REQUEST = 'project={} AND labels in ({})'
 
     def __init__(self, url, user, password, project, assignee, issue_type='Bug', labels=None, watchers=None,
-                 jira_epic_key=None):
+                 jira_epic_key=None, fields=None):
         self.valid = True
         self.url = url
         self.password = password
@@ -33,6 +33,9 @@ class JiraWrapper(object):
         if watchers:
             self.watchers = [watchers.strip() for watchers in watchers.split(",")]
         self.jira_epic_key = jira_epic_key
+        self.fields = {}
+        if fields and isinstance(fields, dict):
+            self.fields = fields
         self.client.close()
 
     def connect(self):
@@ -57,6 +60,11 @@ class JiraWrapper(object):
             'priority': {'name': priority},
             'labels': _labels
         }
+        for key, value in self.fields.items():
+            if not key in issue_data:
+                issue_data[key] = value
+            else:
+                print('field {} is already set and has \'{}\' value'.format(key, issue_data[key]))
         jira_request = self.JIRA_REQUEST.format(issue_data["project"]["key"], issue_hash)
         if get_or_create:
             issue, created = self.get_or_create_issue(jira_request, issue_data)
