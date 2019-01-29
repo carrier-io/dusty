@@ -93,7 +93,7 @@ class SastyWrapper(object):
 
     @staticmethod
     def ptai(config):
-        file_path = '/tmp/reports/' + config['report_name']
+        file_path = '/tmp/reports/' + config['ptai_report_name']
         result = PTAIScanParser(file_path).items
         ptai_post_processing(config, result)
         return result
