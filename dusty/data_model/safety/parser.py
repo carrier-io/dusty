@@ -56,6 +56,3 @@ class SafetyScanParser(object):
                         dupes[package].finding['title'] = title.replace(prev_version, fixed_version)
                         dupes[package].finding['description'] += '  \n  \n' + description
         self.items = dupes.values()
-
-
-# SafetyScanParser('C:\\Users\\Karyna_Taranova\\AppData\\Local\\Temp\\reports\\test.json', 'safety')
