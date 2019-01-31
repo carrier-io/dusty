@@ -21,6 +21,7 @@ from dusty.data_model.nodejsscan.parser import NodeJsScanParser
 from dusty.data_model.npm.parser import NpmScanParser
 from dusty.data_model.retire.parser import RetireScanParser
 from dusty.data_model.ptai.parser import PTAIScanParser
+from dusty.data_model.safety.parser import SafetyScanParser
 
 
 class SastyWrapper(object):
@@ -96,4 +97,17 @@ class SastyWrapper(object):
         file_path = '/tmp/reports/' + config['ptai_report_name']
         result = PTAIScanParser(file_path).items
         ptai_post_processing(config, result)
+        return result
+
+    @staticmethod
+    def safety(config):
+        params_str = ''
+        for file_path in config.get('files', []):
+            params_str += '-r {} '.format(file_path)
+        exec_cmd = "safety check {}--full-report --json".format(params_str)
+        res = execute(exec_cmd, cwd='/code')
+        with open('/tmp/safety_report.json', 'w') as safety_audit:
+            print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
+        result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items
+        common_post_processing(config, result, "SafetyScan")
         return result

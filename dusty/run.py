@@ -100,7 +100,7 @@ def main():
             jira_service = JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
                                        jira_assignee, jira_issue_type, jira_lables,
                                        jira_watchers, jira_epic_key, jira_fields)
-    ptai_report_name = proxy_through_env(execution_config['ptai'].get("report_name", None))
+    ptai_report_name = proxy_through_env(execution_config.get('ptai', {}).get("report_name", None))
 
     default_config = dict(host=execution_config.get('target_host', None),
                           port=execution_config.get('target_port', None),
