@@ -35,10 +35,13 @@ def report_to_jira(config, result):
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
         for item in result:
-            issue = item.jira(config['jira_service'])
-            jira_tickets_info.append({'summary': issue.fields.summary,
-                                      'priority': issue.fields.priority,
-                                      'key': issue.key})
+            issue, created = item.jira(config['jira_service'])
+            if created:
+                print(issue.key)
+                jira_tickets_info.append({'summary': issue.fields.summary,
+                                          'priority': issue.fields.priority,
+                                          'key': issue.key,
+                                          'link': config.get('jira_service').url + '/browse/' + issue.key})
     elif config.get('jira_service') and not config.get('jira_service').valid:
         print("Jira Configuration incorrect, please fix ... ")
     return jira_tickets_info
@@ -48,8 +51,8 @@ def send_emails(emails_service, jira_tickets_info, attachments):
     if emails_service and emails_service.valid:
         if jira_tickets_info:
             body = 'Here’s the list of security issues found: '
-            body += '\n\n'.join(['\n\nISSUE PRIORITY: {}\nISSUE KEY: {}\nISSUE SUMMARY: {}'.format(
-                x['priority'], x['key'], x['summary']) for x in jira_tickets_info])
+            body += ''.join(['\n\nISSUE PRIORITY: {}\nISSUE KEY: {}\nISSUE SUMMARY: {}\n\nISSUE LINK: {}'.format(
+                x['priority'], x['key'], x['summary'], x['link']) for x in jira_tickets_info])
         else:
             body = 'No new security issues bugs found.'
         emails_service.send(body=body, attachments=attachments)

@@ -175,7 +175,7 @@ class DefaultModel(object):
         issue, created = jira_client.create_issue(self.finding["title"], c.SEVERITY_MAPPING[self.finding['severity']],
                                  self.__str__(), self.get_hash_code(),
                                  additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
-        return issue
+        return issue, created
 
     def influx_item(self):
         pass
