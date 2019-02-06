@@ -125,7 +125,6 @@ def main():
                           test_type=execution_config.get('test_type', None),
                           rp_data_writer=rp_service,
                           jira_service=jira_service,
-                          # emails_service=emails_service,
                           rp_config=rp_config,
                           html_report=html_report,
                           ptai_report_name=ptai_report_name)

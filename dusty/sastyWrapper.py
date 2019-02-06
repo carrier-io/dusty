@@ -58,8 +58,8 @@ class SastyWrapper(object):
         exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml /code"
         res = execute(exec_cmd, cwd='/code')
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
-        jira_tickets_info = common_post_processing(config, result, "spotbugs")
-        return result, jira_tickets_info
+        common_post_processing(config, result, "spotbugs")
+        return result
 
     @staticmethod
     def nodejs(config):
@@ -91,6 +91,7 @@ class SastyWrapper(object):
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
         common_post_processing(config, result, "RetireScan")
         return result
+
     @staticmethod
     def ptai(config):
         file_path = '/tmp/reports/' + config['ptai_report_name']
