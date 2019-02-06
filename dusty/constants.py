@@ -15,7 +15,7 @@
 NON_SCANNERS_CONFIG_KEYS = ['target_host', 'target_port', 'protocol', "/",
                             'reportportal', 'html_report', 'xml_report',
                             'safe_pipeline_mode', 'project_name', 'environment',
-                            'test_type', 'junit_report', 'jira']
+                            'test_type', 'junit_report', 'jira', 'emails']
 SASTY_SCANNERS_CONFIG_KEYS = ['language', 'npm', 'retirejs', 'ptai', 'safety']
 READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'environment']
 PATH_TO_CONFIG = "/tmp/scan-config.yaml"

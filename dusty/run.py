@@ -23,11 +23,13 @@ from time import time
 from dusty import constants
 from dusty.drivers.rp.report_portal_writer import ReportPortalDataWriter
 from dusty.drivers.jira import JiraWrapper
+from dusty.drivers.emails import EmailWrapper
 from dusty.dustyWrapper import DustyWrapper
 from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
+from dusty.utils import send_emails
 
 requests.packages.urllib3.disable_warnings()
 
@@ -53,6 +55,7 @@ def main():
     rp_config = None
     rp_service = None
     jira_service = None
+    emails_service = None
     html_report = None
     html_report_file = None
     xml_report_file = None
@@ -100,8 +103,20 @@ def main():
             jira_service = JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
                                        jira_assignee, jira_issue_type, jira_lables,
                                        jira_watchers, jira_epic_key, jira_fields)
-    ptai_report_name = proxy_through_env(execution_config.get('ptai', {}).get("report_name", None))
-
+    ptai_report_name = proxy_through_env(execution_config.get('ptai', {}).get('report_name', None))
+    if execution_config.get('emails', None):
+        emails_smtp_server = proxy_through_env(execution_config['emails'].get('smtp_server', None))
+        emails_port = proxy_through_env(execution_config['emails'].get('port', None))
+        emails_login = proxy_through_env(execution_config['emails'].get('login', None))
+        emails_password = proxy_through_env(execution_config['emails'].get('password', None))
+        emails_receivers_email_list = proxy_through_env(execution_config['emails'].get('receivers_email_list', None))
+        emails_subject = proxy_through_env(execution_config['emails'].get('subject', None))
+        emails_body = proxy_through_env(execution_config['emails'].get('body', None))
+        if not (emails_smtp_server and emails_login and emails_password and emails_receivers_email_list):
+            print("Emails integration configuration is messed up , proceeding without Emails")
+        else:
+            emails_service = EmailWrapper(emails_smtp_server, emails_login, emails_password, emails_port,
+                                          emails_receivers_email_list, emails_subject, emails_body)
     default_config = dict(host=execution_config.get('target_host', None),
                           port=execution_config.get('target_port', None),
                           protocol=execution_config.get('protocol', None),
@@ -136,6 +151,9 @@ def main():
                 print("Exception during %s Scanning" % each)
                 if os.environ.get("debug", False):
                     print(format_exc())
+        created_jira_tickets = []
+        if config['jira_service']:
+            created_jira_tickets = config['jira_service'].get_created_tickets()
         if generate_html or generate_junit:
             global_results.extend(results)
     if rp_service:
@@ -147,6 +165,15 @@ def main():
         xml_report_file = XUnitReport(global_results, default_config).report_name
     if os.environ.get("redis_connection"):
         RedisFile(os.environ.get("redis_connection"), html_report_file, xml_report_file)
+    if emails_service:
+        attachments = []
+        if execution_config['emails'].get('attach_html_report', False):
+            attachments.append(html_report_file)
+        for item in execution_config['emails'].get('attachments', []):
+            attachments.append('/attachments/' + item)
+        send_emails(emails_service, bool(jira_service),
+                    jira_tickets_info=created_jira_tickets if jira_service else [],
+                    attachments=attachments)
 
 
 if __name__ == "__main__":

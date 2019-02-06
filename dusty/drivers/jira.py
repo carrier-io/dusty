@@ -36,6 +36,7 @@ class JiraWrapper(object):
         if fields and isinstance(fields, dict):
             self.fields = fields
         self.client.close()
+        self.created_jira_tickets = list()
 
     def connect(self):
         self.client = JIRA(self.url, basic_auth=(self.user, self.password))
@@ -80,6 +81,11 @@ class JiraWrapper(object):
             self.client.add_watcher(issue.id, watcher)
         if self.jira_epic_key:
             self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
+        if created:
+            self.created_jira_tickets.append({'summary': issue.fields.summary,
+                                              'priority': issue.fields.priority,
+                                              'key': issue.key,
+                                              'link': self.url + '/browse/' + issue.key})
         return issue, created
 
     def add_attachment(self, issue_key, attachment, filename=None):
@@ -115,5 +121,8 @@ class JiraWrapper(object):
 
     def add_comment_to_issue(self, issue, data):
         return self.client.add_comment(issue, data)
+
+    def get_created_tickets(self):
+        return self.created_jira_tickets
 
 
