@@ -137,22 +137,24 @@ def main():
             for item in execution_config[each]:
                 config[item] = execution_config[each][item]
         results = []
-        jira_tickets_info = []
         if each in constants.SASTY_SCANNERS_CONFIG_KEYS:
             try:
                 attr_name = execution_config[each] if 'language' in each else each
-                results, jira_tickets_info = getattr(SastyWrapper, attr_name)(config)
+                results = getattr(SastyWrapper, attr_name)(config)
             except:
                 print("Exception during %s Scanning" % attr_name)
                 if os.environ.get("debug", False):
                     print(format_exc())
         else:
             try:
-                results, jira_tickets_info = getattr(DustyWrapper, each)(config)
+                results = getattr(DustyWrapper, each)(config)
             except:
                 print("Exception during %s Scanning" % each)
                 if os.environ.get("debug", False):
                     print(format_exc())
+        created_jira_tickets = []
+        if config['jira_service']:
+            created_jira_tickets = config['jira_service'].get_created_tickets()
         if generate_html or generate_junit:
             global_results.extend(results)
     if rp_service:
@@ -170,7 +172,9 @@ def main():
             attachments.append(html_report_file)
         for item in execution_config['emails'].get('attachments', []):
             attachments.append('/attachments/' + item)
-        send_emails(emails_service, jira_tickets_info, attachments)
+        send_emails(emails_service, bool(jira_service),
+                    jira_tickets_info=created_jira_tickets if jira_service else [],
+                    attachments=attachments)
 
 
 if __name__ == "__main__":

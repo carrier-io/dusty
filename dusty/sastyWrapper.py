@@ -32,8 +32,8 @@ class SastyWrapper(object):
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
-        jira_tickets_info = common_post_processing(config, result, "pybandit")
-        return result, jira_tickets_info
+        common_post_processing(config, result, "pybandit")
+        return result
 
     @staticmethod
     def ruby(config):
@@ -50,8 +50,8 @@ class SastyWrapper(object):
                    f"-o /tmp/brakeman.json /code"
         execute(exec_cmd, cwd='/code')
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
-        jira_tickets_info = common_post_processing(config, result, "brakeman")
-        return result, jira_tickets_info
+        common_post_processing(config, result, "brakeman")
+        return result
     
     @staticmethod
     def java(config):
@@ -66,8 +66,8 @@ class SastyWrapper(object):
         exec_cmd = "nodejsscan -o nodejsscan -d /code"
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
-        jira_tickets_info = common_post_processing(config, result, "NodeJsScan")
-        return result, jira_tickets_info
+        common_post_processing(config, result, "NodeJsScan")
+        return result
 
     @staticmethod
     def npm(config):
@@ -78,8 +78,8 @@ class SastyWrapper(object):
         with open('/tmp/npm_audit.json', 'w') as npm_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
         result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
-        jira_tickets_info = common_post_processing(config, result, "NpmScan")
-        return result, jira_tickets_info
+        common_post_processing(config, result, "NpmScan")
+        return result
 
     @staticmethod
     def retirejs(config):
@@ -89,15 +89,14 @@ class SastyWrapper(object):
                    "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
-        jira_tickets_info = common_post_processing(config, result, "RetireScan")
-        return result, jira_tickets_info
-
+        common_post_processing(config, result, "RetireScan")
+        return result
     @staticmethod
     def ptai(config):
         file_path = '/tmp/reports/' + config['ptai_report_name']
         result = PTAIScanParser(file_path).items
-        jira_tickets_info = ptai_post_processing(config, result)
-        return result, jira_tickets_info
+        ptai_post_processing(config, result)
+        return result
 
     @staticmethod
     def safety(config):
@@ -109,5 +108,5 @@ class SastyWrapper(object):
         with open('/tmp/safety_report.json', 'w') as safety_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
         result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items
-        jira_tickets_info = common_post_processing(config, result, "SafetyScan")
-        return result, jira_tickets_info
+        common_post_processing(config, result, "SafetyScan")
+        return result

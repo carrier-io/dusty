@@ -30,7 +30,6 @@ def report_to_rp(config, result, issue_name):
 
 
 def report_to_jira(config, result):
-    jira_tickets_info = []
     if config.get('jira_service') and config.get('jira_service').valid:
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
@@ -38,24 +37,40 @@ def report_to_jira(config, result):
             issue, created = item.jira(config['jira_service'])
             if created:
                 print(issue.key)
-                jira_tickets_info.append({'summary': issue.fields.summary,
-                                          'priority': issue.fields.priority,
-                                          'key': issue.key,
-                                          'link': config.get('jira_service').url + '/browse/' + issue.key})
     elif config.get('jira_service') and not config.get('jira_service').valid:
         print("Jira Configuration incorrect, please fix ... ")
-    return jira_tickets_info
 
 
-def send_emails(emails_service, jira_tickets_info, attachments):
+def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments):
     if emails_service and emails_service.valid:
-        if jira_tickets_info:
-            body = 'Here’s the list of security issues found: '
-            body += ''.join(['\n\nISSUE PRIORITY: {}\nISSUE KEY: {}\nISSUE SUMMARY: {}\n\nISSUE LINK: {}'.format(
-                x['priority'], x['key'], x['summary'], x['link']) for x in jira_tickets_info])
+        if jira_is_used:
+            if jira_tickets_info:
+                html = """\
+                        <p>Here’s the list of security issues found: </p>
+                        <table>
+                            <tr>
+                                <th>PRIORITY</th>
+                                <th>KEY</th>
+                                <th>SUMMARY</th>
+                            </tr>
+                            {}
+                        </table>
+                    """
+                table_rows = '\n'.join(['<tr><td>{}</td><td><a href="{}">{}</a></td><td>{}</td></tr>'.format(
+                    x['priority'], x['link'], x['key'], x['summary']) for x in jira_tickets_info])
+                html_body = html.format(table_rows)
+            else:
+                html_body = '<p>No new security issues bugs found.</p>'
         else:
-            body = 'No new security issues bugs found.'
-        emails_service.send(body=body, attachments=attachments)
+            html_body = '<p>Please see the results attached.</p>'
+        html_style = """
+                    table, th, td {
+                      border: 1px solid black;
+                      border-collapse: collapse;
+                      padding: 0px 5px;
+                    }
+                """
+        emails_service.send(html_body=html_body, html_style=html_style, attachments=attachments)
     elif emails_service and not emails_service.valid:
         print("Email Configuration incorrect, please fix ... ")
 
@@ -101,9 +116,9 @@ def process_false_positives(results):
 def common_post_processing(config, result, tool_name):
     result = process_false_positives(result)
     report_to_rp(config, result, tool_name)
-    return report_to_jira(config, result)
+    report_to_jira(config, result)
 
 
 def ptai_post_processing(config, result):
     result = process_false_positives(result)
-    return report_to_jira(config, result)
+    report_to_jira(config, result)
