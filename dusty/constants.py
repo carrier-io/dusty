@@ -52,3 +52,4 @@ SEVERITY_TYPE = {
 }
 NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
 JIRA_DESCRIPTION_MAX_SIZE = 61908
+JIRA_OPENED_STATUSES = ['Open', 'In Progress']

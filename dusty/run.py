@@ -109,9 +109,11 @@ def main():
         emails_port = proxy_through_env(execution_config['emails'].get('port', None))
         emails_login = proxy_through_env(execution_config['emails'].get('login', None))
         emails_password = proxy_through_env(execution_config['emails'].get('password', None))
-        emails_receivers_email_list = proxy_through_env(execution_config['emails'].get('receivers_email_list', None))
+        emails_receivers_email_list = proxy_through_env(
+            execution_config['emails'].get('receivers_email_list', '')).split(', ')
         emails_subject = proxy_through_env(execution_config['emails'].get('subject', None))
         emails_body = proxy_through_env(execution_config['emails'].get('body', None))
+        email_attachments = proxy_through_env(execution_config['emails'].get('attachments', '')).split(', ')
         if not (emails_smtp_server and emails_login and emails_password and emails_receivers_email_list):
             print("Emails integration configuration is messed up , proceeding without Emails")
         else:
@@ -169,7 +171,7 @@ def main():
         attachments = []
         if execution_config['emails'].get('attach_html_report', False):
             attachments.append(html_report_file)
-        for item in execution_config['emails'].get('attachments', []):
+        for item in email_attachments:
             attachments.append('/attachments/' + item)
         send_emails(emails_service, bool(jira_service),
                     jira_tickets_info=created_jira_tickets if jira_service else [],
