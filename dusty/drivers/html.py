@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import re
 from os import path
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -29,6 +30,6 @@ class HTMLReport(object):
         test_name = f'{config["project_name"]}-{config["environment"]}-{config["test_type"]}'
         self.report_name = path.join(report_path, f'TEST-{test_name}.html')
         with open(self.report_name, "w") as f:
-            f.write(res)
+            f.write(re.sub(r'[^\x00-\x7f]',r'', res))
         print(f"Generated report:  <reports folder>/TEST-{test_name}.html")
 
