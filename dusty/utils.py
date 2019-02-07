@@ -15,7 +15,7 @@
 import re
 import os
 from subprocess import Popen, PIPE
-
+from datetime import datetime
 from dusty import constants
 
 
@@ -34,9 +34,11 @@ def report_to_jira(config, result):
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
         for item in result:
-            issue, created = item.jira(config['jira_service'])
-            if created:
-                print(issue.key)
+            if constants.SEVERITIES.get(item.finding['severity']) <= \
+                    constants.JIRA_SEVERITIES.get(config.get('min_jira_priority', constants.MIN_JIRA_PRIORITY)):
+                issue, created = item.jira(config['jira_service'])
+                if created:
+                    print(issue.key)
     elif config.get('jira_service') and not config.get('jira_service').valid:
         print("Jira Configuration incorrect, please fix ... ")
 
@@ -46,19 +48,39 @@ def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments):
         if jira_is_used:
             if jira_tickets_info:
                 html = """\
-                        <p>Here’s the list of security issues found: </p>
+                        <p>{}</p>
                         <table>
                             <tr>
+                                <th>JIRA ID</th>
                                 <th>PRIORITY</th>
-                                <th>KEY</th>
-                                <th>SUMMARY</th>
+                                <th>STATUS</th>
+                                <th>OPEN DATE</th>
+                                <th>DESCRIPTION</th>
+                                <th>ASSIGNEE</th>
                             </tr>
                             {}
                         </table>
                     """
-                table_rows = '\n'.join(['<tr><td>{}</td><td><a href="{}">{}</a></td><td>{}</td></tr>'.format(
-                    x['priority'], x['link'], x['key'], x['summary']) for x in jira_tickets_info])
-                html_body = html.format(table_rows)
+                tr = '<tr><td><a href="{}">{}</a></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'
+                new_issues_trs = []
+                all_issues_trs = []
+                for issue in jira_tickets_info:
+                    issue_date = datetime.strptime(issue['open_date'],
+                                                   '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%d %b %Y %H:%M')
+                    _tr = tr.format(issue['link'], issue['key'], issue['priority'], issue['status'],
+                                    issue_date, issue['description'], issue['assignee'])
+                    if issue['status'] in constants.JIRA_OPENED_STATUSES:
+                        all_issues_trs.append(_tr)
+                    if issue['new']:
+                        new_issues_trs.append(_tr)
+                if new_issues_trs:
+                    html_body = html.format('Here’s the list of new security issues: ',
+                                            '\n'.join(new_issues_trs))
+                else:
+                    html_body = '<p>No new security issues bugs found.</p>'
+                if all_issues_trs:
+                    html_body += '\n' + html.format('<br><br>Here’s the list of existing security issues: ',
+                                                    '\n'.join(all_issues_trs))
             else:
                 html_body = '<p>No new security issues bugs found.</p>'
         else:

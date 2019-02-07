@@ -15,12 +15,14 @@
 NON_SCANNERS_CONFIG_KEYS = ['target_host', 'target_port', 'protocol', "/",
                             'reportportal', 'html_report', 'xml_report',
                             'safe_pipeline_mode', 'project_name', 'environment',
-                            'test_type', 'junit_report', 'jira', 'emails']
+                            'test_type', 'junit_report', 'jira', 'emails', 'min_jira_priority']
 SASTY_SCANNERS_CONFIG_KEYS = ['language', 'npm', 'retirejs', 'ptai', 'safety']
 READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'environment']
 PATH_TO_CONFIG = "/tmp/scan-config.yaml"
 SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,
               'High': 1, 'Critical': 0}
+JIRA_SEVERITIES = {'Trivial': 4, 'Minor': 3, 'Major': 2,
+                   'Critical': 1, 'Blocker': 0}
 SEVERITIES_INVERSED = {v: k for k, v in SEVERITIES.items()}
 SEVERITY_MAPPING = {
     'Critical': 'Blocker',
@@ -52,3 +54,5 @@ SEVERITY_TYPE = {
 }
 NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
 JIRA_DESCRIPTION_MAX_SIZE = 61908
+JIRA_OPENED_STATUSES = ['Open', 'In Progress']
+MIN_JIRA_PRIORITY = 'Trivial'
