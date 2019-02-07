@@ -34,9 +34,11 @@ def report_to_jira(config, result):
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
         for item in result:
-            issue, created = item.jira(config['jira_service'])
-            if created:
-                print(issue.key)
+            if constants.SEVERITIES.get(item.finding['severity']) <= \
+                    constants.JIRA_SEVERITIES.get(config.get('min_jira_priority', constants.MIN_JIRA_PRIORITY)):
+                issue, created = item.jira(config['jira_service'])
+                if created:
+                    print(issue.key)
     elif config.get('jira_service') and not config.get('jira_service').valid:
         print("Jira Configuration incorrect, please fix ... ")
 
