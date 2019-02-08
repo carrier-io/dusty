@@ -105,6 +105,7 @@ def process_false_positives(results):
     if not false_positives:
         return results
     to_remove = []
+    results = list(results)
     for index in range(len(results)):
         if results[index].get_hash_code() in false_positives:
             to_remove.append(results[index])
