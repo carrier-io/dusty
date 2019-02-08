@@ -16,7 +16,7 @@ import re
 import os
 from subprocess import Popen, PIPE
 from datetime import datetime
-from dusty import constants
+from dusty import constants as c
 
 
 def report_to_rp(config, result, issue_name):
@@ -34,8 +34,8 @@ def report_to_jira(config, result):
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
         for item in result:
-            if constants.SEVERITIES.get(item.finding['severity']) <= \
-                    constants.JIRA_SEVERITIES.get(config.get('min_jira_priority', constants.MIN_JIRA_PRIORITY)):
+            if c.JIRA_SEVERITIES.get(c.SEVERITY_MAPPING.get(item.finding['severity'])) <= \
+                    c.JIRA_SEVERITIES.get(config.get('min_jira_priority', c.MIN_JIRA_PRIORITY)):
                 issue, created = item.jira(config['jira_service'])
                 if created:
                     print(issue.key)
@@ -69,7 +69,7 @@ def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments):
                                                    '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%d %b %Y %H:%M')
                     _tr = tr.format(issue['link'], issue['key'], issue['priority'], issue['status'],
                                     issue_date, issue['description'], issue['assignee'])
-                    if issue['status'] in constants.JIRA_OPENED_STATUSES:
+                    if issue['status'] in c.JIRA_OPENED_STATUSES:
                         all_issues_trs.append(_tr)
                     if issue['new']:
                         new_issues_trs.append(_tr)
@@ -119,8 +119,8 @@ def find_ip(str):
 
 def process_false_positives(results):
     false_positives = []
-    if os.path.exists(constants.FALSE_POSITIVE_CONFIG):
-        with open(constants.FALSE_POSITIVE_CONFIG, 'r') as f:
+    if os.path.exists(c.FALSE_POSITIVE_CONFIG):
+        with open(c.FALSE_POSITIVE_CONFIG, 'r') as f:
             for line in f.readlines():
                 if line.strip():
                     false_positives.append(line.strip())

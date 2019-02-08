@@ -98,7 +98,8 @@ def main():
         jira_watchers = proxy_through_env(execution_config['jira'].get("watchers", ''))
         jira_epic_key = proxy_through_env(execution_config['jira'].get("epic_link", None))
         jira_fields = proxy_through_env(execution_config['jira'].get("fields", None))
-        min_jira_priority = proxy_through_env(execution_config['jira'].get("min_priority", None))
+        min_jira_priority = proxy_through_env(
+            execution_config['jira'].get("min_priority", constants.MIN_JIRA_PRIORITY))
         if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
             print("Jira integration configuration is messed up , proceeding without Jira")
         else:
