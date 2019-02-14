@@ -59,6 +59,8 @@ def main():
     html_report = None
     html_report_file = None
     xml_report_file = None
+    email_attachments = []
+    created_jira_tickets = []
     test_name = args.suite
     execution_config = config[test_name]
     generate_html = execution_config.get("html_report", False)
@@ -116,7 +118,9 @@ def main():
             execution_config['emails'].get('receivers_email_list', '')).split(', ')
         emails_subject = proxy_through_env(execution_config['emails'].get('subject', None))
         emails_body = proxy_through_env(execution_config['emails'].get('body', None))
-        email_attachments = proxy_through_env(execution_config['emails'].get('attachments', '')).split(', ')
+        email_attachments = proxy_through_env(execution_config['emails'].get('attachments', []))
+        if email_attachments:
+            email_attachments = email_attachments.split(',')
         constants.JIRA_OPENED_STATUSES.extend(proxy_through_env(
             execution_config['emails'].get('open_states', '')).split(', '))
         if not (emails_smtp_server and emails_login and emails_password and emails_receivers_email_list):
@@ -145,8 +149,8 @@ def main():
                 config[item] = execution_config[each][item]
         results = []
         if each in constants.SASTY_SCANNERS_CONFIG_KEYS:
+            attr_name = execution_config[each] if 'language' in each else each
             try:
-                attr_name = execution_config[each] if 'language' in each else each
                 results = getattr(SastyWrapper, attr_name)(config)
             except:
                 print("Exception during %s Scanning" % attr_name)
@@ -159,6 +163,7 @@ def main():
                 print("Exception during %s Scanning" % each)
                 if os.environ.get("debug", False):
                     print(format_exc())
+        #TODO: created Jira Tickets are overwrittem by every loop.
         created_jira_tickets = []
         if config['jira_service']:
             created_jira_tickets = config['jira_service'].get_created_tickets()
@@ -178,7 +183,7 @@ def main():
         if execution_config['emails'].get('attach_html_report', False):
             attachments.append(html_report_file)
         for item in email_attachments:
-            attachments.append('/attachments/' + item)
+            attachments.append('/attachments/' + item.strip())
         send_emails(emails_service, bool(jira_service),
                     jira_tickets_info=created_jira_tickets if jira_service else [],
                     attachments=attachments)

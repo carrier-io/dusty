@@ -81,14 +81,13 @@ class JiraWrapper(object):
         if self.jira_epic_key:
             self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
         self.created_jira_tickets.append({'description': issue.fields.summary,
-                                              'priority': issue.fields.priority,
-                                              'key': issue.key,
-                                              'link': self.url + '/browse/' + issue.key,
-                                              'new': created,
-                                              'assignee': issue.fields.assignee,
-                                              'status': issue.fields.status.name,
-                                              'open_date': issue.fields.created
-                                              })
+                                          'priority': issue.fields.priority,
+                                          'key': issue.key,
+                                          'link': self.url + '/browse/' + issue.key,
+                                          'new': created,
+                                          'assignee': issue.fields.assignee,
+                                          'status': issue.fields.status.name,
+                                          'open_date': issue.fields.created})
         return issue, created
 
     def add_attachment(self, issue_key, attachment, filename=None):
