@@ -18,7 +18,6 @@ class JiraWrapper(object):
             return
         self.projects = [project.key for project in self.client.projects()]
         self.project = project.upper()
-        print(self.projects)
         if self.project not in self.projects:
             self.client.close()
             self.valid = False

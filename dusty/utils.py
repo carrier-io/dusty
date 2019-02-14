@@ -14,9 +14,15 @@
 
 import re
 import os
+import random
+import string
 from subprocess import Popen, PIPE
 from datetime import datetime
 from dusty import constants as c
+
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 
 def report_to_rp(config, result, issue_name):

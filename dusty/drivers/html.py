@@ -13,7 +13,7 @@
 #   limitations under the License.
 
 import re
-from os import path
+from os import path, environ
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 
@@ -27,8 +27,13 @@ class HTMLReport(object):
         )
         self.template = env.get_template('html_report_template.html')
         res = self.template.render(config=config, findings=findings)
+
         test_name = f'{config["project_name"]}-{config["environment"]}-{config["test_type"]}'
-        self.report_name = path.join(report_path, f'TEST-{test_name}.html')
+        report_name = environ.get("report_name", None)
+        if report_name:
+            self.report_name = path.join(report_path, f'{report_name}.html')
+        else:
+            self.report_name = path.join(report_path, f'TEST-{test_name}.html')
         with open(self.report_name, "w") as f:
             f.write(re.sub(r'[^\x00-\x7f]',r'', res))
         print(f"Generated report:  <reports folder>/TEST-{test_name}.html")
