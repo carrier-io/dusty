@@ -32,32 +32,36 @@ class SpotbugsParser(object):
             category = item.get('category')
             issue_type = item.get('type')
             severity = item.get('priority')
-            path = item.find('Class').find('SourceLine').get('sourcefile')
+            filename = item.find('Class').find('SourceLine').get('sourcefile')
+            file_path = item.find('Class').find('SourceLine').get('sourcepath')
+
             line = item.find('Class').find('SourceLine').find('Message').text
 
-            str = ''
+            steps_to_reproduce = ''
             for element in item.findall('SourceLine'):
-                str += (element.find('Message').text + "\n\n")
+                steps_to_reproduce += (element.find('Message').text + "\n\n")
 
-            dupe_key = title + ' ' + issue_type + ' ' + category
+            dupe_key = title + ' ' + issue_type + ' ' + category + ' ' + file_path
 
             severity_level = SEVERITY_TYPE.get(int(severity), "")
 
             if dupe_key not in dupes:
-                dupes[dupe_key] = Finding(title = title,
-                                          tool = "spotbugs",
-                                          active = False,
-                                          verified = False,
-                                          description = description,
-                                          severity = severity_level,
-                                          numerical_severity = severity,
-                                          mitigation = False,
-                                          impact = False,
-                                          references = False,
-                                          file_path = path,
-                                          line = line,
-                                          url = 'N/A',
-                                          date = find_date,
-                                          steps_to_reproduce = str,
-                                          static_finding = True)
+                dupes[dupe_key] = Finding(title=title + ' in ' + filename,
+                                          tool="spotbugs",
+                                          active=False,
+                                          verified=False,
+                                          description=description,
+                                          severity=severity_level,
+                                          numerical_severity=severity,
+                                          mitigation=False,
+                                          impact=False,
+                                          references=False,
+                                          file_path=file_path,
+                                          line=line,
+                                          url='N/A',
+                                          date=find_date,
+                                          steps_to_reproduce=steps_to_reproduce,
+                                          static_finding=True)
+            else:
+                dupes[dupe_key].finding['steps_to_reproduce'] += steps_to_reproduce
         self.items = dupes.values()
