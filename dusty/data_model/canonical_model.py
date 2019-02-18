@@ -144,7 +144,7 @@ class DefaultModel(object):
         if self.finding['dynamic_finding_details']["payload"] is not None:
             self.scan_type = "DAST"
             finding += f"**Payload:** {self.finding['dynamic_finding_details']['payload']}\n\n"
-            finding += f"**Issue Hash**: {self.get_hash_code()}\n\n"
+        finding += f"**Issue Hash**: {self.get_hash_code()}\n\n"
         return finding
 
     def rp_item(self, rp_data_writer):
