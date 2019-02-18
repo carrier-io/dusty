@@ -1,4 +1,4 @@
-__author__ = 'akaminski'
+__author__ = 'akaminski, arozumenko'
 #   Copyright 2018 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,28 +40,19 @@ class SpotbugsParser(object):
             steps_to_reproduce = ''
             for element in item.findall('SourceLine'):
                 steps_to_reproduce += (element.find('Message').text + "\n\n")
-
-            dupe_key = title + ' ' + issue_type + ' ' + category + ' ' + file_path
-
             severity_level = SEVERITY_TYPE.get(int(severity), "")
 
+            dupe_key = title + ' ' + issue_type + ' ' + category + ' ' + file_path
             if dupe_key not in dupes:
                 dupes[dupe_key] = Finding(title=title + ' in ' + filename,
-                                          tool="spotbugs",
-                                          active=False,
-                                          verified=False,
-                                          description=description,
-                                          severity=severity_level,
-                                          numerical_severity=severity,
-                                          mitigation=False,
-                                          impact=False,
-                                          references=False,
-                                          file_path=file_path,
-                                          line=line,
-                                          url='N/A',
-                                          date=find_date,
-                                          steps_to_reproduce=steps_to_reproduce,
+                                          tool="spotbugs", active=False,
+                                          verified=False, description=description,
+                                          severity=severity_level, numerical_severity=severity,
+                                          mitigation=False, impact=False, references=False,
+                                          file_path=file_path, line=line,
+                                          url='N/A', date=find_date, steps_to_reproduce=steps_to_reproduce,
                                           static_finding=True)
             else:
                 dupes[dupe_key].finding['steps_to_reproduce'] += steps_to_reproduce
+
         self.items = dupes.values()
