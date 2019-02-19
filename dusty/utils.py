@@ -40,11 +40,9 @@ def report_to_jira(config, result):
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
         for item in result:
-            if c.JIRA_SEVERITIES.get(c.SEVERITY_MAPPING.get(item.finding['severity'])) <= \
-                    c.JIRA_SEVERITIES.get(config.get('min_jira_priority', c.MIN_JIRA_PRIORITY)):
-                issue, created = item.jira(config['jira_service'])
-                if created:
-                    print(issue.key)
+            issue, created = item.jira(config['jira_service'])
+            if created:
+                print(issue.key)
     elif config.get('jira_service') and not config.get('jira_service').valid:
         print("Jira Configuration incorrect, please fix ... ")
 
@@ -142,12 +140,27 @@ def process_false_positives(results):
     return results
 
 
+def process_min_priority(config, results):
+    to_remove = []
+    for item in results:
+        if c.JIRA_SEVERITIES.get(c.SEVERITY_MAPPING.get(item.finding['severity'])) > \
+                c.JIRA_SEVERITIES.get(config.get('min_priority', c.MIN_PRIORITY)):
+            to_remove.append(item)
+    for _ in to_remove:
+        results.pop(results.index(_))
+    return results
+
+
 def common_post_processing(config, result, tool_name):
-    result = process_false_positives(result)
-    report_to_rp(config, result, tool_name)
-    report_to_jira(config, result)
+    filtered_result = process_false_positives(result)
+    filtered_result = process_min_priority(config, filtered_result)
+    report_to_rp(config, filtered_result, tool_name)
+    report_to_jira(config, filtered_result)
+    return filtered_result
 
 
 def ptai_post_processing(config, result):
-    result = process_false_positives(result)
-    report_to_jira(config, result)
+    filtered_result = process_false_positives(result)
+    filtered_result = process_min_priority(config, filtered_result)
+    report_to_jira(config, filtered_result)
+    return filtered_result

@@ -36,8 +36,8 @@ class DustyWrapper(object):
         exec_cmd = f'sslyze --regular --json_out=/tmp/sslyze.json --quiet {config["host"]}:{config["port"]}'
         execute(exec_cmd)
         result = SslyzeJSONParser("/tmp/sslyze.json", "SSlyze").items
-        common_post_processing(config, result, "SSlyze")
-        return result
+        filtered_result = common_post_processing(config, result, "SSlyze")
+        return filtered_result
 
     @staticmethod
     def masscan(config):
@@ -55,8 +55,8 @@ class DustyWrapper(object):
             exec_cmd = f'masscan {host} -p {ports} -pU:{ports} --rate 1000 -oJ /tmp/masscan.json {excluded_addon}'
             execute(exec_cmd.strip())
             result = MasscanJSONParser("/tmp/masscan.json", "masscan").items
-            common_post_processing(config, result, "masscan")
-            return result
+            filtered_result = common_post_processing(config, result, "masscan")
+            return filtered_result
         return []
 
     @staticmethod
@@ -68,8 +68,8 @@ class DustyWrapper(object):
         cwd = '/opt/nikto/program'
         execute(exec_cmd, cwd)
         result = NiktoXMLParser("/tmp/nikto.xml", "Nikto").items
-        common_post_processing(config, result, "nikto")
-        return result
+        filtered_result = common_post_processing(config, result, "nikto")
+        return filtered_result
 
     @staticmethod
     def nmap(config):
@@ -99,8 +99,8 @@ class DustyWrapper(object):
                    f'--script={nse_scripts} {config["host"]} -oX /tmp/nmap.xml'
         execute(exec_cmd)
         result = NmapXMLParser('/tmp/nmap.xml', "NMAP").items
-        common_post_processing(config, result, "NMAP")
-        return result
+        filtered_result = common_post_processing(config, result, "NMAP")
+        return filtered_result
 
 
     @staticmethod
@@ -124,8 +124,8 @@ class DustyWrapper(object):
         execute('zap-cli report -o /tmp/zap.xml -f xml')
         result = ZapXmlParser('/tmp/zap.xml', "ZAP").items
         execute('supervisorctl stop zap')
-        common_post_processing(config, result, "ZAP")
-        return result
+        filtered_result = common_post_processing(config, result, "ZAP")
+        return filtered_result
 
     @staticmethod
     def w3af(config):
@@ -141,8 +141,8 @@ class DustyWrapper(object):
             f.write(config_content)
         execute(w3af_execution_command)
         result = W3AFXMLParser("/tmp/w3af.xml", "w3af").items
-        common_post_processing(config, result, "w3af")
-        return result
+        filtered_result = common_post_processing(config, result, "w3af")
+        return filtered_result
 
     @staticmethod
     def qualys(config):
@@ -192,8 +192,8 @@ class DustyWrapper(object):
         qualys.delete_asset("wasscan", scan_id)
         qualys.delete_asset("webapp", project_id)
         result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
-        common_post_processing(config, result, "qualys_was")
-        return result
+        filtered_result = common_post_processing(config, result, "qualys_was")
+        return filtered_result
 
     @staticmethod
     def burp(config):
