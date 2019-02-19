@@ -87,7 +87,8 @@ def main():
             launch_id = rp_service.start_test()
             rp_config = dict(rp_url=rp_url, rp_token=rp_token, rp_project=rp_project,
                              rp_launch_name=rp_launch_name, launch_id=launch_id)
-    min_jira_priority = None
+    min_priority = proxy_through_env(
+        execution_config.get("min_priority", constants.MIN_PRIORITY))
     if execution_config.get("jira", None):
         # basic_auth
         jira_url = proxy_through_env(execution_config['jira'].get("url", None))
@@ -100,8 +101,6 @@ def main():
         jira_watchers = proxy_through_env(execution_config['jira'].get("watchers", ''))
         jira_epic_key = proxy_through_env(execution_config['jira'].get("epic_link", None))
         jira_fields = proxy_through_env(execution_config['jira'].get("fields", None))
-        min_jira_priority = proxy_through_env(
-            execution_config['jira'].get("min_priority", constants.MIN_JIRA_PRIORITY))
         if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
             print("Jira integration configuration is messed up , proceeding without Jira")
         else:
@@ -136,7 +135,7 @@ def main():
                           test_type=execution_config.get('test_type', None),
                           rp_data_writer=rp_service,
                           jira_service=jira_service,
-                          min_jira_priority=min_jira_priority,
+                          min_priority=min_priority,
                           rp_config=rp_config,
                           html_report=html_report,
                           ptai_report_name=ptai_report_name)
