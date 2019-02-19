@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+	    <meta charset="UTF-8">
+	    <title>Carrier | Continuous Test Execution Platform</title>
+		<link href="https://fonts.googleapis.com/css?family=Cairo:400,700" rel="stylesheet">
+		<link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+		<style type="text/css">
+			body {
+				font-family: 'Cairo', sans-serif;
+				font-weight: 400;
+				color: #464547;
+			}
+	        h1{
+	            font-size: 20px;
+	            font-weight: 700;
+	            text-align: center;
+	            color: #464547;
+	            margin: 30px 0 15px 0;
+	        }
+	        h2{
+	            font-size: 18px;
+	            font-weight: 700;
+	            text-align: left;
+	            color: #5a8e96;
+	            margin: 15px 0 15px 15px;
+	        }
+	        h3{
+	            font-size: 18px;
+	            font-weight: 700;
+	            text-align: left;
+	            color: #000000;
+	        }
+	        .table-sm{
+	            font-size: 16px;
+	            font-weight: 700;
+	            text-align: left;
+	            color: #000000;
+	        }
+	        .status{
+	            border-radius: 3px;
+	            color: #4a4a4a;
+	            margin: 15px 0;
+	            display: inline-block;
+	            padding: 8px 20px;
+	        }
+	        .status > span{
+	            display: inline-block;
+	            margin-left: 15px;
+	        }
+	        .status div{
+	            display: inline-block;
+	            vertical-align: middle;
+	            margin-left: 15px;
+	            min-width: 288px;
+	        }
+	        .status p{
+	            font-weight: 600;
+	            margin: 2px 0;
+	        }
+	        .status svg, .status span{
+	            vertical-align: middle;
+	        }
+	        .status.passed{
+	            background-color: rgba(96, 209, 121, 0.15);
+	            border: solid 2px #60d179;
+	        }
+	        .status.warning{
+	            background-color: rgba(252, 248, 204, 0.3);
+	            border: solid 2px #fcf8cc;
+	        }
+	        .status.failed{
+	            background-color: rgba(230, 98, 199, 0.2);
+	            border: solid 2px #E662C7;
+	        }
+			.footer {
+	            font-size: 16px;
+	            font-weight: 400;
+	            text-align: left;
+	            color: #c9c9c9;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<h1>Security tests has been COMPLETED for the {{ config['html_report']['project_name'] }} project</h1>
+			<div class="row">
+				<div class="col">
+			        <table class="table table-sm table-striped">
+                        <tr><td>Solution name</td> <td> {{ config['project_name'] }} </td></tr>
+                        <tr><td>Security test type</td> <td>{{ config['test_type'] }}</td></tr>
+                        <tr><td>Environment type</td> <td>{{ config['environment'] }}</td></tr>
+                        <tr><td>Target host</td> <td>{{ config['host'] }}</td></tr>
+                        <tr><td>Target port</td> <td>{{ config['port'] }}</td></tr>
+                        <tr><td>Used protocol</td> <td>{{ config['protocol'] }}</td></tr>
+                        <tr><td>Test execution time</td> <td>{{ config['execution_time'] }} seconds</td></tr>
+                    </table>
+				</div>
+				<div class="col">
+		            {% if findings|length > 0 %}
+                    <div class="status failed ">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="31" viewBox="0 0 30 31">
+                            <g fill="none" fill-rule="evenodd">
+                                <path d="M0 0h30v31H0z"/>
+                                <path fill="#E662C7" fill-rule="nonzero" d="M14.5 2C7.6 2 2 7.824 2 15s5.6 13 12.5 13S27 22.176 27 15 21.4 2 14.5 2zM16 22h-3v-3h3v3zm0-6h-3V8h3v8z"/>
+                            </g>
+                        </svg>
+                        <div>
+                            <p>Security tests were FAILED!</p>
+                            <p>{{ findings|length }} vulnerabilities were found</p>
+                            <p>Pipeline will be stopped.</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="status passed ">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="31" viewBox="0 0 30 31">
+                            <g fill="none" fill-rule="evenodd">
+                                <path d="M0 0h30v31H0z"/>
+                                <path fill="#FF8B47" fill-rule="nonzero" d="M14.5 2C7.6 2 2 7.824 2 15s5.6 13 12.5 13S27 22.176 27 15 21.4 2 14.5 2zM16 22h-3v-3h3v3zm0-6h-3V8h3v8z"/>
+                            </g>
+                        </svg>
+                        <div>
+                            <p>Security tests PASSES!</p>
+                        </div>
+                    </div>
+                    {% endif %}
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<table class="table table-striped">
+						<thead class="thead-dark">
+							<tr>
+								<th>Tool name</th>
+								<th>Description</th>
+								<th>Severity</th>
+							</tr>
+						</thead>
+						<tbody>
+                        {% for finding in findings %}
+							<tr class="header">
+								<td>{{ finding.finding['tool'] }}</td>
+								<td>{{ finding.finding['title'] }} <span>+</span></td>
+								<td>{{ finding.finding['severity'] }}</td>
+							</tr>
+							<tr class="description">
+								<td colspan="3">
+									<div>
+										{{ finding.html_item()|safe }}
+									</div>
+								</td>
+							</tr>
+                        {% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col footer"> (c) 2019 Carrier | Continuous Test Execution Platform </div>
+			</div>
+		</div>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+		<script>
+			$( document ).ready(function() {
+				var list = document.getElementsByClassName("description")
+				for (let item of list) { item.style.display="none" }
+			});
+			$('.header').click(function(){
+			   $(this).find('span').text(function(_, value){return value=='-'?'+':'-'});
+			    $(this).nextUntil('tr.header').slideToggle(100, function(){
+			    });
+			});
+		</script>
+	</body>
+</html>

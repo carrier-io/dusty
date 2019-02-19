@@ -59,8 +59,12 @@ class DefaultModel(object):
                  payload=None, line=None, file_path=None,
                  **kwags):
         endpoints = [] if not endpoints else endpoints
+        if not file_path:
+            file_path = sourcefilepath if sourcefilepath else ''
+            if sourcefile:
+                file_path += '.' + sourcefile
         self.finding = {
-            "title": re.sub('[^A-Za-z0-9//\. _]+', '', title),
+            "title": re.sub('[^A-Za-z0-9//\.\- _]+', '', title),
             "date": date,
             "description": description.replace("\n", "\n\n"),
             "severity": severity,
@@ -74,7 +78,7 @@ class DefaultModel(object):
             "mitigation": mitigation,
             "severity_justification": severity_justification,
             "static_finding_details": {
-                "file_name": file_path if file_path else f"{sourcefilepath}.{sourcefile}",
+                "file_name": file_path,
                 "line_number": line if line else line_number,
                 "cwe": cwe,
                 "url": url
@@ -125,8 +129,9 @@ class DefaultModel(object):
 
         if self.finding['static_finding_details']['file_name']:
             self.scan_type = 'SAST'
-            finding += f'**Please review**: ' \
-                       f'{self.finding["static_finding_details"]["file_name"]}'
+            if self.finding["static_finding_details"]["file_name"]:
+                finding += f'**Please review**: ' \
+                           f'{self.finding["static_finding_details"]["file_name"]}'
             if self.finding["static_finding_details"]["line_number"]:
                 finding += f': {self.finding["static_finding_details"]["line_number"]}'
             finding += '\n\n'
@@ -139,7 +144,7 @@ class DefaultModel(object):
         if self.finding['dynamic_finding_details']["payload"] is not None:
             self.scan_type = "DAST"
             finding += f"**Payload:** {self.finding['dynamic_finding_details']['payload']}\n\n"
-            finding += f"**Issue Hash**: {self.get_hash_code()}\n\n"
+        finding += f"**Issue Hash**: {self.get_hash_code()}\n\n"
         return finding
 
     def rp_item(self, rp_data_writer):
@@ -170,7 +175,7 @@ class DefaultModel(object):
         issue, created = jira_client.create_issue(self.finding["title"], c.SEVERITY_MAPPING[self.finding['severity']],
                                  self.__str__(), self.get_hash_code(),
                                  additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
-        return issue
+        return issue, created
 
     def influx_item(self):
         pass

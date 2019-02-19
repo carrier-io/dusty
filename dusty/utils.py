@@ -14,9 +14,15 @@
 
 import re
 import os
+import random
+import string
 from subprocess import Popen, PIPE
+from datetime import datetime
+from dusty import constants as c
 
-from dusty import constants
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
 
 
 def report_to_rp(config, result, issue_name):
@@ -33,10 +39,68 @@ def report_to_jira(config, result):
     if config.get('jira_service') and config.get('jira_service').valid:
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
-        for issue in result:
-            issue.jira(config['jira_service'])
+        for item in result:
+            if c.JIRA_SEVERITIES.get(c.SEVERITY_MAPPING.get(item.finding['severity'])) <= \
+                    c.JIRA_SEVERITIES.get(config.get('min_jira_priority', c.MIN_JIRA_PRIORITY)):
+                issue, created = item.jira(config['jira_service'])
+                if created:
+                    print(issue.key)
     elif config.get('jira_service') and not config.get('jira_service').valid:
         print("Jira Configuration incorrect, please fix ... ")
+
+
+def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments):
+    if emails_service and emails_service.valid:
+        if jira_is_used:
+            if jira_tickets_info:
+                html = """\
+                        <p>{}</p>
+                        <table>
+                            <tr>
+                                <th>JIRA ID</th>
+                                <th>PRIORITY</th>
+                                <th>STATUS</th>
+                                <th>OPEN DATE</th>
+                                <th>DESCRIPTION</th>
+                                <th>ASSIGNEE</th>
+                            </tr>
+                            {}
+                        </table>
+                    """
+                tr = '<tr><td><a href="{}">{}</a></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'
+                new_issues_trs = []
+                all_issues_trs = []
+                for issue in jira_tickets_info:
+                    issue_date = datetime.strptime(issue['open_date'],
+                                                   '%Y-%m-%dT%H:%M:%S.%f%z').strftime('%d %b %Y %H:%M')
+                    _tr = tr.format(issue['link'], issue['key'], issue['priority'], issue['status'],
+                                    issue_date, issue['description'], issue['assignee'])
+                    if issue['status'] in c.JIRA_OPENED_STATUSES:
+                        all_issues_trs.append(_tr)
+                    if issue['new']:
+                        new_issues_trs.append(_tr)
+                if new_issues_trs:
+                    html_body = html.format('Here’s the list of new security issues: ',
+                                            '\n'.join(new_issues_trs))
+                else:
+                    html_body = '<p>No new security issues bugs found.</p>'
+                if all_issues_trs:
+                    html_body += '\n' + html.format('<br><br>Here’s the list of existing security issues: ',
+                                                    '\n'.join(all_issues_trs))
+            else:
+                html_body = '<p>No new security issues bugs found.</p>'
+        else:
+            html_body = '<p>Please see the results attached.</p>'
+        html_style = """
+                    table, th, td {
+                      border: 1px solid black;
+                      border-collapse: collapse;
+                      padding: 0px 5px;
+                    }
+                """
+        emails_service.send(html_body=html_body, html_style=html_style, attachments=attachments)
+    elif emails_service and not emails_service.valid:
+        print("Email Configuration incorrect, please fix ... ")
 
 
 def execute(exec_cmd, cwd='/tmp', communicate=True):
@@ -61,14 +125,15 @@ def find_ip(str):
 
 def process_false_positives(results):
     false_positives = []
-    if os.path.exists(constants.FALSE_POSITIVE_CONFIG):
-        with open(constants.FALSE_POSITIVE_CONFIG, 'r') as f:
+    if os.path.exists(c.FALSE_POSITIVE_CONFIG):
+        with open(c.FALSE_POSITIVE_CONFIG, 'r') as f:
             for line in f.readlines():
                 if line.strip():
                     false_positives.append(line.strip())
     if not false_positives:
         return results
     to_remove = []
+    results = list(results)
     for index in range(len(results)):
         if results[index].get_hash_code() in false_positives:
             to_remove.append(results[index])

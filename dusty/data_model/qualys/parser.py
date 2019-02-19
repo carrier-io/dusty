@@ -26,47 +26,49 @@ class QualysWebAppParser(object):
         parser = etree.XMLParser(remove_blank_text=True, no_network=True, recover=True)
         d = etree.parse(file, parser)
         qids = d.xpath('/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID')
+        disabled_titles = ['Scan Diagnostics']
         for qid in qids:
-            _qid = qid.findtext('QID')
             qid_title = qid.findtext('TITLE')
-            qid_solution = qid.findtext('SOLUTION')
-            qid_description = qid.findtext('DESCRIPTION')
-            qid_impact = qid.findtext('IMPACT')
-            qid_category = qid.findtext('CATEGORY')
-            qid_severity = 'Info'
-            owasp = qid.findtext('OWASP') if qid.findtext('OWASP') else ''
-            wasc = qid.findtext('WASC') if qid.findtext('WASC') else ''
-            cwe = qid.findtext('CWE') if qid.findtext('CWE') else ''
-            cvss_base = qid.findtext('CVSS_BASE') if qid.findtext('CVSS_BASE') else ''
-            if qid.xpath('SEVERITY'):
-                qid_severity = c.SEVERITIES_INVERSED[int(qid.findtext('SEVERITY'))]
-            description = f'{qid_description}\n\n**OWASP**:{owasp}\n\n**WASC**:{wasc}\n\n**CVSS_BASE**:{cvss_base}\n\n'
-            references = []
-            entrypoints = []
-            if 'Information Gathered' in qid_category:
-                records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[contains(text(),{_qid})]/..')
-                for record in records:
-                    references.append(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore"))
-            else:
-                records = d.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[contains(text(),{_qid})]/..')
-                for record in records:
-                    url = record.findtext('URL')
-                    access_pass = [a.text for a in records[0].xpath('ACCESS_PATH/URL')]
-                    method = record.findtext('PAYLOADS/PAYLOAD/REQUEST/METHOD')
-                    request = record.findtext('PAYLOADS/PAYLOAD/REQUEST/URL')
-                    response = record.findtext('PAYLOADS/PAYLOAD/RESPONSE/CONTENTS')
-                    response = base64.b64decode(response).decode("utf-8", errors="ignore")
-                    entrypoints.append(url)
-                    entrypoints.extend(access_pass)
-                    references.append(f"{method.upper()}: {request}\n\nResponse: {response}\n\n")
-            for reference in references:
-                finding = Finding(title=f'{qid_title} - {qid_category}', tool="QualysWAS", cwe=cwe,
-                                  description=description, test=test, severity=qid_severity,
-                                  mitigation=qid_solution, references=reference,
-                                  active=False, verified=False, false_p=False, duplicate=False,
-                                  out_of_scope=False, mitigated=None, impact=qid_impact)
-                finding.unsaved_endpoints.extend(entrypoints)
-                self.items.append(finding)
+            if qid_title not in disabled_titles:
+                _qid = qid.findtext('QID')
+                qid_solution = qid.findtext('SOLUTION')
+                qid_description = qid.findtext('DESCRIPTION')
+                qid_impact = qid.findtext('IMPACT')
+                qid_category = qid.findtext('CATEGORY')
+                qid_severity = 'Info'
+                owasp = qid.findtext('OWASP') if qid.findtext('OWASP') else ''
+                wasc = qid.findtext('WASC') if qid.findtext('WASC') else ''
+                cwe = qid.findtext('CWE') if qid.findtext('CWE') else ''
+                cvss_base = qid.findtext('CVSS_BASE') if qid.findtext('CVSS_BASE') else ''
+                if qid.xpath('SEVERITY'):
+                    qid_severity = c.SEVERITIES_INVERSED[int(qid.findtext('SEVERITY'))]
+                description = f'{qid_description}\n\n**OWASP**:{owasp}\n\n**WASC**:{wasc}\n\n**CVSS_BASE**:{cvss_base}\n\n'
+                references = []
+                entrypoints = []
+                if 'Information Gathered' in qid_category:
+                    records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[contains(text(),{_qid})]/..')
+                    for record in records:
+                        references.append(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore"))
+                else:
+                    records = d.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[contains(text(),{_qid})]/..')
+                    for record in records:
+                        url = record.findtext('URL')
+                        access_pass = [a.text for a in records[0].xpath('ACCESS_PATH/URL')]
+                        method = record.findtext('PAYLOADS/PAYLOAD/REQUEST/METHOD')
+                        request = record.findtext('PAYLOADS/PAYLOAD/REQUEST/URL')
+                        response = record.findtext('PAYLOADS/PAYLOAD/RESPONSE/CONTENTS')
+                        response = base64.b64decode(response).decode("utf-8", errors="ignore")
+                        entrypoints.append(url)
+                        entrypoints.extend(access_pass)
+                        references.append(f"{method.upper()}: {request}\n\nResponse: {response}\n\n")
+                for reference in references:
+                    finding = Finding(title=f'{qid_title} - {qid_category}', tool="QualysWAS", cwe=cwe,
+                                      description=description, test=test, severity=qid_severity,
+                                      mitigation=qid_solution, references=reference,
+                                      active=False, verified=False, false_p=False, duplicate=False,
+                                      out_of_scope=False, mitigated=None, impact=qid_impact)
+                    finding.unsaved_endpoints.extend(entrypoints)
+                    self.items.append(finding)
 
 
 

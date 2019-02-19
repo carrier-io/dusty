@@ -23,11 +23,13 @@ from time import time
 from dusty import constants
 from dusty.drivers.rp.report_portal_writer import ReportPortalDataWriter
 from dusty.drivers.jira import JiraWrapper
+from dusty.drivers.emails import EmailWrapper
 from dusty.dustyWrapper import DustyWrapper
 from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
+from dusty.utils import send_emails
 
 requests.packages.urllib3.disable_warnings()
 
@@ -53,9 +55,12 @@ def main():
     rp_config = None
     rp_service = None
     jira_service = None
+    emails_service = None
     html_report = None
     html_report_file = None
     xml_report_file = None
+    email_attachments = []
+    created_jira_tickets = []
     test_name = args.suite
     execution_config = config[test_name]
     generate_html = execution_config.get("html_report", False)
@@ -82,6 +87,7 @@ def main():
             launch_id = rp_service.start_test()
             rp_config = dict(rp_url=rp_url, rp_token=rp_token, rp_project=rp_project,
                              rp_launch_name=rp_launch_name, launch_id=launch_id)
+    min_jira_priority = None
     if execution_config.get("jira", None):
         # basic_auth
         jira_url = proxy_through_env(execution_config['jira'].get("url", None))
@@ -93,12 +99,35 @@ def main():
         jira_lables = proxy_through_env(execution_config['jira'].get("labels", ''))
         jira_watchers = proxy_through_env(execution_config['jira'].get("watchers", ''))
         jira_epic_key = proxy_through_env(execution_config['jira'].get("epic_link", None))
+        jira_fields = proxy_through_env(execution_config['jira'].get("fields", None))
+        min_jira_priority = proxy_through_env(
+            execution_config['jira'].get("min_priority", constants.MIN_JIRA_PRIORITY))
         if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
             print("Jira integration configuration is messed up , proceeding without Jira")
         else:
             jira_service = JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
                                        jira_assignee, jira_issue_type, jira_lables,
-                                       jira_watchers, jira_epic_key)
+                                       jira_watchers, jira_epic_key, jira_fields)
+    ptai_report_name = proxy_through_env(execution_config.get('ptai', {}).get('report_name', None))
+    if execution_config.get('emails', None):
+        emails_smtp_server = proxy_through_env(execution_config['emails'].get('smtp_server', None))
+        emails_port = proxy_through_env(execution_config['emails'].get('port', None))
+        emails_login = proxy_through_env(execution_config['emails'].get('login', None))
+        emails_password = proxy_through_env(execution_config['emails'].get('password', None))
+        emails_receivers_email_list = proxy_through_env(
+            execution_config['emails'].get('receivers_email_list', '')).split(', ')
+        emails_subject = proxy_through_env(execution_config['emails'].get('subject', None))
+        emails_body = proxy_through_env(execution_config['emails'].get('body', None))
+        email_attachments = proxy_through_env(execution_config['emails'].get('attachments', []))
+        if email_attachments:
+            email_attachments = email_attachments.split(',')
+        constants.JIRA_OPENED_STATUSES.extend(proxy_through_env(
+            execution_config['emails'].get('open_states', '')).split(', '))
+        if not (emails_smtp_server and emails_login and emails_password and emails_receivers_email_list):
+            print("Emails integration configuration is messed up , proceeding without Emails")
+        else:
+            emails_service = EmailWrapper(emails_smtp_server, emails_login, emails_password, emails_port,
+                                          emails_receivers_email_list, emails_subject, emails_body)
     default_config = dict(host=execution_config.get('target_host', None),
                           port=execution_config.get('target_port', None),
                           protocol=execution_config.get('protocol', None),
@@ -107,8 +136,10 @@ def main():
                           test_type=execution_config.get('test_type', None),
                           rp_data_writer=rp_service,
                           jira_service=jira_service,
+                          min_jira_priority=min_jira_priority,
                           rp_config=rp_config,
-                          html_report=html_report)
+                          html_report=html_report,
+                          ptai_report_name=ptai_report_name)
     for each in execution_config:
         if each in constants.NON_SCANNERS_CONFIG_KEYS:
             continue
@@ -118,8 +149,8 @@ def main():
                 config[item] = execution_config[each][item]
         results = []
         if each in constants.SASTY_SCANNERS_CONFIG_KEYS:
+            attr_name = execution_config[each] if 'language' in each else each
             try:
-                attr_name = execution_config[each] if 'language' in each else each
                 results = getattr(SastyWrapper, attr_name)(config)
             except:
                 print("Exception during %s Scanning" % attr_name)
@@ -132,6 +163,10 @@ def main():
                 print("Exception during %s Scanning" % each)
                 if os.environ.get("debug", False):
                     print(format_exc())
+        #TODO: created Jira Tickets are overwrittem by every loop.
+        created_jira_tickets = []
+        if config['jira_service']:
+            created_jira_tickets = config['jira_service'].get_created_tickets()
         if generate_html or generate_junit:
             global_results.extend(results)
     if rp_service:
@@ -143,6 +178,15 @@ def main():
         xml_report_file = XUnitReport(global_results, default_config).report_name
     if os.environ.get("redis_connection"):
         RedisFile(os.environ.get("redis_connection"), html_report_file, xml_report_file)
+    if emails_service:
+        attachments = []
+        if execution_config['emails'].get('attach_html_report', False):
+            attachments.append(html_report_file)
+        for item in email_attachments:
+            attachments.append('/attachments/' + item.strip())
+        send_emails(emails_service, bool(jira_service),
+                    jira_tickets_info=created_jira_tickets if jira_service else [],
+                    attachments=attachments)
 
 
 if __name__ == "__main__":

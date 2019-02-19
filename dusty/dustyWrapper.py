@@ -19,7 +19,7 @@ from datetime import datetime
 from random import randrange
 
 from dusty import constants as c
-from dusty.utils import execute, find_ip, common_post_processing
+from dusty.utils import execute, find_ip, common_post_processing, id_generator
 from dusty.data_model.nikto.parser import NiktoXMLParser
 from dusty.data_model.nmap.parser import NmapXMLParser
 from dusty.data_model.zap.parser import ZapXmlParser
@@ -156,7 +156,10 @@ class DustyWrapper(object):
         qualys_template_id = config.get("qualys_template_id", None)
         if not (qualys_profile_id or qualys_template_id):
             return []
-        project_name = config.get('project_name')
+        if config.get("random_name", None):
+            project_name = f"{config.get('project_name')}_{id_generator(8)}"
+        else:
+            project_name = config.get('project_name')
         target = f'{config.get("protocol")}://{config.get("host")}:{config.get("port")}'
         qualys = WAS()
         ts = datetime.utcfromtimestamp(int(time())).strftime('%Y-%m-%d %H:%M:%S')
@@ -191,7 +194,6 @@ class DustyWrapper(object):
         result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
         common_post_processing(config, result, "qualys_was")
         return result
-
 
     @staticmethod
     def burp(config):

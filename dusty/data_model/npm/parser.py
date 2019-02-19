@@ -72,17 +72,13 @@ class NpmScanParser(object):
                 references = rehearsal_str.join(tmp_values['references_list'])
                 description = rehearsal_str.join(tmp_values['descriptions'])
                 swe = rehearsal_str.join(tmp_values['cwes'])
+                title = ' '.join([action.get('action', ''),
+                                  action.get('module', ''),
+                                  action.get('target', '')])
                 if title not in dupes:
-                    dupes[title] = Finding(title=title,
-                                              tool=test,
-                                              active=False,
-                                              verified=False,
-                                              description=description,
-                                              severity=severity,
-                                              file_path=file_path,
-                                              url=url,
-                                              date=find_date,
-                                              references=references,
-                                              cwe=swe,
-                                              static_finding=True)
+                    dupes[title] = Finding(title=title, tool=test, active=False,
+                                           verified=False, description=description,
+                                           severity=severity, file_path=file_path,
+                                           url=url, date=find_date, references=references,
+                                           cwe=swe, static_finding=True)
         self.items = dupes.values()

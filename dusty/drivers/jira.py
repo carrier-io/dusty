@@ -6,7 +6,7 @@ class JiraWrapper(object):
     JIRA_REQUEST = 'project={} AND labels in ({})'
 
     def __init__(self, url, user, password, project, assignee, issue_type='Bug', labels=None, watchers=None,
-                 jira_epic_key=None):
+                 jira_epic_key=None, fields=None):
         self.valid = True
         self.url = url
         self.password = password
@@ -18,7 +18,6 @@ class JiraWrapper(object):
             return
         self.projects = [project.key for project in self.client.projects()]
         self.project = project.upper()
-        print(self.projects)
         if self.project not in self.projects:
             self.client.close()
             self.valid = False
@@ -32,7 +31,11 @@ class JiraWrapper(object):
         if watchers:
             self.watchers = [watchers.strip() for watchers in watchers.split(",")]
         self.jira_epic_key = jira_epic_key
+        self.fields = {}
+        if fields and isinstance(fields, dict):
+            self.fields = fields
         self.client.close()
+        self.created_jira_tickets = list()
 
     def connect(self):
         self.client = JIRA(self.url, basic_auth=(self.user, self.password))
@@ -56,6 +59,11 @@ class JiraWrapper(object):
             'priority': {'name': priority},
             'labels': _labels
         }
+        for key, value in self.fields.items():
+            if not key in issue_data:
+                issue_data[key] = value
+            else:
+                print('field {} is already set and has \'{}\' value'.format(key, issue_data[key]))
         jira_request = self.JIRA_REQUEST.format(issue_data["project"]["key"], issue_hash)
         if get_or_create:
             issue, created = self.get_or_create_issue(jira_request, issue_data)
@@ -72,6 +80,14 @@ class JiraWrapper(object):
             self.client.add_watcher(issue.id, watcher)
         if self.jira_epic_key:
             self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
+        self.created_jira_tickets.append({'description': issue.fields.summary,
+                                          'priority': issue.fields.priority,
+                                          'key': issue.key,
+                                          'link': self.url + '/browse/' + issue.key,
+                                          'new': created,
+                                          'assignee': issue.fields.assignee,
+                                          'status': issue.fields.status.name,
+                                          'open_date': issue.fields.created})
         return issue, created
 
     def add_attachment(self, issue_key, attachment, filename=None):
@@ -107,5 +123,8 @@ class JiraWrapper(object):
 
     def add_comment_to_issue(self, issue, data):
         return self.client.add_comment(issue, data)
+
+    def get_created_tickets(self):
+        return self.created_jira_tickets
 
 
