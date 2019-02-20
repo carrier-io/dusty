@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import json
+from dusty import constants
 from dusty.utils import execute, common_post_processing, ptai_post_processing
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
@@ -26,9 +27,13 @@ from dusty.data_model.safety.parser import SafetyScanParser
 
 class SastyWrapper(object):
     @staticmethod
+    def get_code_path(config):
+        return config.get("code_path", constants.PATH_TO_CODE)
+
+    @staticmethod
     def python(config):
-        exec_cmd = "bandit -r /code --format json"
-        res = execute(exec_cmd, cwd='/code')
+        exec_cmd = "bandit -r {} --format json".format(SastyWrapper.get_code_path(config))
+        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
@@ -47,23 +52,23 @@ class SastyWrapper(object):
             exclude_checks = f'--skip-files {config.get("excluded_files")} '
         excluded_files = ''
         exec_cmd = f"brakeman {included_checks}{exclude_checks}--no-exit-on-warn --no-exit-on-error {excluded_files}" \
-                   f"-o /tmp/brakeman.json /code"
-        execute(exec_cmd, cwd='/code')
+                   f"-o /tmp/brakeman.json " + SastyWrapper.get_code_path(config)
+        execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
         filtered_result = common_post_processing(config, result, "brakeman")
         return filtered_result
     
     @staticmethod
     def java(config):
-        exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml /code"
-        res = execute(exec_cmd, cwd='/code')
+        exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml {}".format(SastyWrapper.get_code_path(config))
+        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
         filtered_result = common_post_processing(config, result, "spotbugs")
         return filtered_result
 
     @staticmethod
     def nodejs(config):
-        exec_cmd = "nodejsscan -o nodejsscan -d /code"
+        exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         filtered_result = common_post_processing(config, result, "NodeJsScan")
@@ -72,9 +77,10 @@ class SastyWrapper(object):
     @staticmethod
     def npm(config):
         devdeps = [] if config.get('devdep') \
-            else json.load(open('/code/package.json')).get('devDependencies', {}).keys()
+            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
+            .get('devDependencies', {}).keys()
         exec_cmd = "npm audit --json"
-        res = execute(exec_cmd, cwd='/code')
+        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         with open('/tmp/npm_audit.json', 'w') as npm_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
         result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
@@ -84,9 +90,11 @@ class SastyWrapper(object):
     @staticmethod
     def retirejs(config):
         devdeps = [] if config.get('devdep') \
-            else json.load(open('/code/package.json')).get('devDependencies', {}).keys()
-        exec_cmd = "retire --jspath=/code --outputformat=json  " \
-                   "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"
+            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
+            .get('devDependencies', {}).keys()
+        exec_cmd = "retire --jspath={} --outputformat=json  " \
+                   "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"\
+            .format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
         filtered_result = common_post_processing(config, result, "RetireScan")
@@ -105,7 +113,7 @@ class SastyWrapper(object):
         for file_path in config.get('files', []):
             params_str += '-r {} '.format(file_path)
         exec_cmd = "safety check {}--full-report --json".format(params_str)
-        res = execute(exec_cmd, cwd='/code')
+        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         with open('/tmp/safety_report.json', 'w') as safety_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
         result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items

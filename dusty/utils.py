@@ -121,9 +121,10 @@ def find_ip(str):
     return ip
 
 
-def process_false_positives(results):
+def process_false_positives(results, config):
+    path_to_config = config.get('path_to_false_positive', c.FALSE_POSITIVE_CONFIG)
     false_positives = []
-    if os.path.exists(c.FALSE_POSITIVE_CONFIG):
+    if os.path.exists(path_to_config):
         with open(c.FALSE_POSITIVE_CONFIG, 'r') as f:
             for line in f.readlines():
                 if line.strip():
@@ -152,7 +153,7 @@ def process_min_priority(config, results):
 
 
 def common_post_processing(config, result, tool_name):
-    filtered_result = process_false_positives(result)
+    filtered_result = process_false_positives(result, config)
     filtered_result = process_min_priority(config, filtered_result)
     report_to_rp(config, filtered_result, tool_name)
     report_to_jira(config, filtered_result)
@@ -160,7 +161,7 @@ def common_post_processing(config, result, tool_name):
 
 
 def ptai_post_processing(config, result):
-    filtered_result = process_false_positives(result)
+    filtered_result = process_false_positives(result, config)
     filtered_result = process_min_priority(config, filtered_result)
     report_to_jira(config, filtered_result)
     return filtered_result
