@@ -47,7 +47,9 @@ def proxy_through_env(value):
 
 
 def main():
-    with open(constants.PATH_TO_CONFIG, "rb") as f:
+    path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
+    path_to_false_positive = os.environ.get('false_positive_path', constants.FALSE_POSITIVE_CONFIG)
+    with open(path_to_config, "rb") as f:
         config = yaml.load(f.read())
     suites = list(config.keys())
     start_time = time()
@@ -65,6 +67,7 @@ def main():
     execution_config = config[test_name]
     generate_html = execution_config.get("html_report", False)
     generate_junit = execution_config.get("junit_report", False)
+    code_path = proxy_through_env(execution_config.get("code_path", constants.PATH_TO_CODE))
     if generate_html:
         print("We are going to generate HTML Report")
     if generate_junit:
@@ -138,7 +141,9 @@ def main():
                           min_priority=min_priority,
                           rp_config=rp_config,
                           html_report=html_report,
-                          ptai_report_name=ptai_report_name)
+                          ptai_report_name=ptai_report_name,
+                          code_path=code_path,
+                          path_to_false_positive=path_to_false_positive)
     for each in execution_config:
         if each in constants.NON_SCANNERS_CONFIG_KEYS:
             continue
