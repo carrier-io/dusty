@@ -23,7 +23,7 @@ def main():
         project_name="demo",
         environment="demo",
         min_priority="Trivial",
-        test_type="Authenticated Scan",
+        test_type="AuthenticatedScan",
         host="localhost",
         port="9090",
         html_report=dict(project_name="demo")
