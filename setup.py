@@ -31,7 +31,8 @@ setup(
     include_package_data=True,
     entry_points={
         'console_scripts': [
-            'run = dusty.run:main'
+            'run = dusty.run:main',
+            'zap_parse = dusty.bin.process_zap_report:main'
         ]
     },
 )
