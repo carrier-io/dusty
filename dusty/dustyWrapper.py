@@ -27,6 +27,7 @@ from dusty.data_model.sslyze.parser import SslyzeJSONParser
 from dusty.data_model.masscan.parser import MasscanJSONParser
 from dusty.data_model.w3af.parser import W3AFXMLParser
 from dusty.data_model.qualys.parser import QualysWebAppParser
+from dusty.data_model.aemhacker.parser import AemOutputParser
 from dusty.drivers.qualys import WAS
 
 
@@ -198,3 +199,10 @@ class DustyWrapper(object):
     @staticmethod
     def burp(config):
         print(config)
+
+    @staticmethod
+    def aemhacker(config):
+        aem_hacker_output = execute(f'aem-wrapper.sh -u "{config.get("protocol")}://{config.get("host")}:{config.get("port")}" --host 127.0.0.1 --port 4444')[0].decode('utf-8')
+        result = AemOutputParser(aem_hacker_output).items
+        filtered_result = common_post_processing(config, result, "AEM Hacker")
+        return filtered_result
