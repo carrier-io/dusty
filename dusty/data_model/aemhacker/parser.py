@@ -16,7 +16,7 @@ import os
 import re
 
 from markdownify import markdownify as md
-from dusty.data_model.canonical_model import DefaultModel as Finding
+from dusty.data_model.canonical_model import Endpoint, DefaultModel as Finding
 
 
 class AemOutputParser(object):
