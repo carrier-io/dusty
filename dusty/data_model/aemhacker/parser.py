@@ -62,13 +62,19 @@ class AemOutputParser(object):
                 port = parsed_url.group("port")
                 if (protocol == "http" and port != "80") or (protocol == "https" and port != "443"):
                     hostname = f'{hostname}:{port}'
+            query = parsed_url.group("query")
+            if query is not None:
+                query = query[1:]
+            fragment = parsed_url.group("fragment")[1:]
+            if fragment is not None:
+                fragment = fragment[1:]
             finding.unsaved_endpoints = [Endpoint(
                 protocol=parsed_url.group("protocol"),
                 host=hostname,
                 fqdn=parsed_url.group("hostname"),
                 port=parsed_url.group("port"),
                 path=parsed_url.group("path"),
-                query=parsed_url.group("query")[1:],
-                fragment=parsed_url.group("fragment")[1:]
+                query=query,
+                fragment=fragment
             )]
             self.items.append(finding)
