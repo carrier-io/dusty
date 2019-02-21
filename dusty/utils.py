@@ -143,6 +143,7 @@ def process_false_positives(results, config):
 
 def process_min_priority(config, results):
     to_remove = []
+    results = list(results)
     for item in results:
         if c.JIRA_SEVERITIES.get(c.SEVERITY_MAPPING.get(item.finding['severity'])) > \
                 c.JIRA_SEVERITIES.get(config.get('min_priority', c.MIN_PRIORITY)):
