@@ -52,4 +52,23 @@ class AemOutputParser(object):
                 dynamic_finding=True,
                 numerical_severity=Finding.get_numerical_severity(severity)
             )
+            parsed_url = re.search(
+                "^\s*((?P<protocol>.*?)\:\/\/)?((?P<username>.*?)(\:(?P<password>.*))?\@)?((?P<hostname>.*?)(\:((?P<port>[0-9]+)))?)(?P<path>/.*?)?(?P<query>\?.*?)?(?P<fragment>\#.*?)?\s*$",
+                item.group("url")
+            )
+            hostname = parsed_url.group("hostname")
+            if parsed_url.group("protocol") is not None and parsed_url.group("port") is not None:
+                protocol = parsed_url.group("protocol")
+                port = parsed_url.group("port")
+                if (protocol == "http" and port != "80") or (protocol == "https" and port != "443"):
+                    hostname = f'{hostname}:{port}'
+            finding.unsaved_endpoints = [Endpoint(
+                protocol=parsed_url.group("protocol"),
+                host=hostname,
+                fqdn=parsed_url.group("hostname"),
+                port=parsed_url.group("port"),
+                path=parsed_url.group("path"),
+                query=parsed_url.group("query")[1:],
+                fragment=parsed_url.group("fragment")[1:]
+            )]
             self.items.append(finding)
