@@ -65,7 +65,7 @@ class AemOutputParser(object):
             query = parsed_url.group("query")
             if query is not None:
                 query = query[1:]
-            fragment = parsed_url.group("fragment")[1:]
+            fragment = parsed_url.group("fragment")
             if fragment is not None:
                 fragment = fragment[1:]
             finding.unsaved_endpoints = [Endpoint(
