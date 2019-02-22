@@ -52,12 +52,12 @@ class SastyWrapper(object):
             exclude_checks = f'--skip-files {config.get("excluded_files")} '
         excluded_files = ''
         exec_cmd = f"brakeman {included_checks}{exclude_checks}--no-exit-on-warn --no-exit-on-error {excluded_files}" \
-                       f"-o /tmp/brakeman.json " + SastyWrapper.get_code_path(config)
+                   f"-o /tmp/brakeman.json " + SastyWrapper.get_code_path(config)
         execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
         filtered_result = common_post_processing(config, result, "brakeman")
         return filtered_result
-
+    
     @staticmethod
     def java(config):
         exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml {}".format(SastyWrapper.get_code_path(config))
