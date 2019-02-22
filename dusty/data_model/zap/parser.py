@@ -1,4 +1,5 @@
 
+import os
 import re
 import socket
 from urllib.parse import urlparse
@@ -197,16 +198,27 @@ class Item(object):
                 n2 = item_node.findall('instances/instance/param')[i]
 
             mregex = re.search(
-                "(http|https|ftp)\://([a-zA-Z0-9\.\-]+(\:[a-zA-Z0-9\.&amp;%\$\-]+)*@)*((25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9])\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[1-9]|0)\.(25[0-5]|2[0-4][0-9]|[0-1]{1}[0-9]{2}|[1-9]{1}[0-9]{1}|[0-9])|localhost|([a-zA-Z0-9\-]+\.)*[a-zA-Z0-9\-]+\.(com|edu|gov|int|mil|net|org|biz|arpa|info|name|pro|aero|coop|museum|[a-zA-Z]{2}))[\:]*([0-9]+)*([/]*($|[a-zA-Z0-9\.\,\?\'\\\+&amp;%\$#\=~_\-]+)).*?$",
+                "^\s*((?P<protocol>.*?)\:\/\/)?((?P<username>.*?)(\:(?P<password>.*))?\@)?((?P<hostname>.*?)(\:((?P<port>[0-9]+)))?)(?P<path>/.*?)?(?P<query>\?.*?)?(?P<fragment>\#.*?)?\s*$",
                 n.text)
+            if os.environ.get("debug", False):
+                print("Parsed URL: protocol='{}', username='{}', password='{}', hostname='{}', port='{}', path='{}', query='{}', fragment='{}'".format(
+                    mregex.group('protocol'),
+                    mregex.group('username'),
+                    mregex.group('password'),
+                    mregex.group('hostname'),
+                    mregex.group('port'),
+                    mregex.group('path'),
+                    mregex.group('query'),
+                    mregex.group('fragment')
+                ))
 
-            protocol = mregex.group(1)
-            host = mregex.group(4)
+            protocol = mregex.group('protocol')
+            host = mregex.group('hostname')
             port = 80
             if protocol == 'https':
                 port = 443
-            if mregex.group(11) is not None:
-                port = mregex.group(11)
+            if mregex.group('port') is not None:
+                port = mregex.group('port')
 
             item = {'uri': n.text, 'param': n2.text if n2 else "", 'host': host, 'protocol': protocol, 'port': port}
             self.items.append(item)

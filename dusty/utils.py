@@ -126,7 +126,7 @@ def process_false_positives(results, config):
     path_to_config = config.get('path_to_false_positive', c.FALSE_POSITIVE_CONFIG)
     false_positives = []
     if os.path.exists(path_to_config):
-        with open(c.FALSE_POSITIVE_CONFIG, 'r') as f:
+        with open(path_to_config, 'r') as f:
             for line in f.readlines():
                 if line.strip():
                     false_positives.append(line.strip())
@@ -144,6 +144,7 @@ def process_false_positives(results, config):
 
 def process_min_priority(config, results):
     to_remove = []
+    results = list(results)
     for item in results:
         if c.JIRA_SEVERITIES.get(c.SEVERITY_MAPPING.get(item.finding['severity'])) > \
                 c.JIRA_SEVERITIES.get(config.get('min_priority', c.MIN_PRIORITY)):
