@@ -14,7 +14,7 @@
 
 import json
 from dusty import constants
-from dusty.utils import execute, common_post_processing, ptai_post_processing
+from dusty.utils import execute, common_post_processing, ptai_post_processing, run_in_parallel
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
@@ -31,14 +31,51 @@ class SastyWrapper(object):
         return config.get("code_path", constants.PATH_TO_CODE)
 
     @staticmethod
-    def python(config):
+    def nodejs(config):
+        all_results = []
+        results = run_in_parallel(
+            # (SastyWrapper.nodejsscan, config),
+                                  (SastyWrapper.npm, config),
+                                  (SastyWrapper.retirejs, config))
+        for result in results:
+            all_results.extend(result)
+        return all_results
+
+    @staticmethod
+    def bandit(config, results):
         exec_cmd = "bandit -r {} --format json".format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
         filtered_result = common_post_processing(config, result, "pybandit")
-        return filtered_result
+        results.append(filtered_result)
+
+    @staticmethod
+    def npm(config, results):
+        devdeps = [] if config.get('devdep') \
+            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config)))) \
+            .get('devDependencies', {}).keys()
+        exec_cmd = "npm audit --json"
+        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
+        with open('/tmp/npm_audit.json', 'w') as npm_audit:
+            print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
+        result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
+        filtered_result = common_post_processing(config, result, "NpmScan")
+        results.append(filtered_result)
+
+    @staticmethod
+    def retirejs(config, results):
+        devdeps = [] if config.get('devdep') \
+            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
+            .get('devDependencies', {}).keys()
+        exec_cmd = "retire --jspath={} --outputformat=json  " \
+                   "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"\
+            .format(SastyWrapper.get_code_path(config))
+        res = execute(exec_cmd, cwd='/tmp')
+        result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
+        filtered_result = common_post_processing(config, result, "RetireScan")
+        results.append(filtered_result)
 
     @staticmethod
     def ruby(config):
@@ -67,38 +104,12 @@ class SastyWrapper(object):
         return filtered_result
 
     @staticmethod
-    def nodejs(config):
+    def nodejsscan(config, results):
         exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         filtered_result = common_post_processing(config, result, "NodeJsScan")
-        return filtered_result
-
-    @staticmethod
-    def npm(config):
-        devdeps = [] if config.get('devdep') \
-            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
-            .get('devDependencies', {}).keys()
-        exec_cmd = "npm audit --json"
-        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
-        with open('/tmp/npm_audit.json', 'w') as npm_audit:
-            print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
-        result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
-        filtered_result = common_post_processing(config, result, "NpmScan")
-        return filtered_result
-
-    @staticmethod
-    def retirejs(config):
-        devdeps = [] if config.get('devdep') \
-            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
-            .get('devDependencies', {}).keys()
-        exec_cmd = "retire --jspath={} --outputformat=json  " \
-                   "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"\
-            .format(SastyWrapper.get_code_path(config))
-        res = execute(exec_cmd, cwd='/tmp')
-        result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
-        filtered_result = common_post_processing(config, result, "RetireScan")
-        return filtered_result
+        results.append(filtered_result)
 
     @staticmethod
     def ptai(config):
