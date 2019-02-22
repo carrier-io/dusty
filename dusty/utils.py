@@ -169,7 +169,7 @@ def ptai_post_processing(config, result):
     return filtered_result
 
 
-def run_in_parallel(*fns):
+def run_in_parallel(fns):
     threads = []
     results = []
     for fn, args in fns:

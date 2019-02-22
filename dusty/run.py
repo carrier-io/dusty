@@ -143,7 +143,8 @@ def main():
                           html_report=html_report,
                           ptai_report_name=ptai_report_name,
                           code_path=code_path,
-                          path_to_false_positive=path_to_false_positive)
+                          path_to_false_positive=path_to_false_positive,
+                          composition_analysis=execution_config.get('composition_analysis', None))
     for each in execution_config:
         if each in constants.NON_SCANNERS_CONFIG_KEYS:
             continue
