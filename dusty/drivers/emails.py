@@ -35,8 +35,15 @@ class EmailWrapper(object):
         self.server.quit()
 
     def connect(self):
-        context = ssl.create_default_context()
         try:
+            context = ssl.create_default_context()
+            self.server = smtplib.SMTP(self.smtp_server, self.port)
+            self.server.ehlo()
+            self.server.starttls(context=context)
+            self.server.ehlo()
+            self.server.login(self.login, self.password)
+        except ssl.SSLError:
+            context = ssl._create_unverified_context()
             self.server = smtplib.SMTP(self.smtp_server, self.port)
             self.server.ehlo()
             self.server.starttls(context=context)
@@ -45,7 +52,8 @@ class EmailWrapper(object):
         except Exception as e:
             self.valid = False
             print(e)
-            self.server.quit()
+            if self.server:
+                self.server.quit()
 
     def send(self, receiver_emails=None, subject=None, text_body='', html_body=None, html_style='',
              attachments=None):
