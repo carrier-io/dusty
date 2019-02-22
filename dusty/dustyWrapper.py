@@ -202,7 +202,7 @@ class DustyWrapper(object):
 
     @staticmethod
     def aemhacker(config):
-        aem_hacker_output = execute(f'aem-wrapper.sh -u {config.get("protocol")}://{config.get("host")}:{config.get("port")} --host 127.0.0.1 --port 4444')[0].decode('utf-8')
+        aem_hacker_output = execute(f'aem-wrapper.sh -u {config.get("protocol")}://{config.get("host")}:{config.get("port")} --host {config.get("scanner_host", "127.0.0.1")} --port {config.get("scanner_port", "4444")}')[0].decode('utf-8')
         result = AemOutputParser(aem_hacker_output).items
         filtered_result = common_post_processing(config, result, "AEM Hacker")
         return filtered_result
