@@ -45,7 +45,7 @@ class RetireScanParser(object):
                             {'versions': set(), 'descriptions': {}, 'references': {},
                              'file_paths': {}, 'version_to_update': '0', 'severity': 'Info'}
                     components_data[component]['versions'].add(version_results.get('version'))
-                    for vulnerability in version_results.get('vulnerabilities'):
+                    for vulnerability in version_results.get('vulnerabilities', []):
                         summary = vulnerability.get('identifiers').get('summary')
                         if summary not in components_data[component]['file_paths']:
                             components_data[component]['file_paths'][summary] = set()

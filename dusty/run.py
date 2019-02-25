@@ -157,7 +157,8 @@ def config_from_yaml():
                           code_path=code_path,
                           path_to_false_positive=path_to_false_positive,
                           email_service=email_service,
-                          email_attachments=email_attachments)
+                          email_attachments=email_attachments,
+                         composition_analysis=execution_config.get('composition_analysis', None)))
     tests_config = []
     for each in execution_config:
         if each in constants.NON_SCANNERS_CONFIG_KEYS:

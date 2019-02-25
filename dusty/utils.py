@@ -16,6 +16,7 @@ import re
 import os
 import random
 import string
+import threading
 from subprocess import Popen, PIPE
 from datetime import datetime
 from dusty import constants as c
@@ -166,3 +167,15 @@ def ptai_post_processing(config, result):
     filtered_result = process_min_priority(config, filtered_result)
     report_to_jira(config, filtered_result)
     return filtered_result
+
+
+def run_in_parallel(fns):
+    threads = []
+    results = []
+    for fn, args in fns:
+        thread = threading.Thread(target=fn, args=(args, results))
+        threads.append(thread)
+        thread.start()
+    for thread in threads:
+        thread.join()
+    return results

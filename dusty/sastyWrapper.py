@@ -14,7 +14,7 @@
 
 import json
 from dusty import constants
-from dusty.utils import execute, common_post_processing, ptai_post_processing
+from dusty.utils import execute, common_post_processing, ptai_post_processing, run_in_parallel
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
@@ -32,13 +32,34 @@ class SastyWrapper(object):
 
     @staticmethod
     def python(config):
+        scan_fns = [SastyWrapper.bandit]
+        composition_analysis = config.get('composition_analysis', None)
+        if composition_analysis:
+            scan_fns.extend([SastyWrapper.safety])
+            composition_analysis = config.get('composition_analysis', None)
+            if isinstance(composition_analysis, dict):
+                config['files'] = composition_analysis.get('files', ['requirements1.txt'])
+        params = []
+        for fn in scan_fns:
+            params.append((fn, config))
+        all_results = []
+        results = run_in_parallel(params)
+        for result in results:
+            all_results.extend(result)
+        return all_results
+
+    @staticmethod
+    def bandit(config, results=None):
         exec_cmd = "bandit -r {} --format json".format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
         filtered_result = common_post_processing(config, result, "pybandit")
-        return filtered_result
+        if results:
+            results.append(filtered_result)
+        else:
+            return filtered_result
 
     @staticmethod
     def ruby(config):
@@ -57,7 +78,7 @@ class SastyWrapper(object):
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
         filtered_result = common_post_processing(config, result, "brakeman")
         return filtered_result
-    
+
     @staticmethod
     def java(config):
         exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml {}".format(SastyWrapper.get_code_path(config))
@@ -68,16 +89,27 @@ class SastyWrapper(object):
 
     @staticmethod
     def nodejs(config):
-        exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_path(config))
-        res = execute(exec_cmd, cwd='/tmp')
-        result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
-        filtered_result = common_post_processing(config, result, "NodeJsScan")
-        return filtered_result
+        scan_fns = [SastyWrapper.nodejsscan]
+        composition_analysis = config.get('composition_analysis',None)
+        if composition_analysis:
+            scan_fns.extend([SastyWrapper.npm, SastyWrapper.retirejs])
+            if isinstance(composition_analysis, bool):
+                config['devdep'] = composition_analysis
+            elif isinstance(composition_analysis, dict):
+                config['devdep'] = composition_analysis.get('devdep', True)
+        params = []
+        for fn in scan_fns:
+            params.append((fn, config))
+        all_results = []
+        results = run_in_parallel(params)
+        for result in results:
+            all_results.extend(result)
+        return all_results
 
     @staticmethod
-    def npm(config):
+    def npm(config, results=None):
         devdeps = [] if config.get('devdep') \
-            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
+            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config)))) \
             .get('devDependencies', {}).keys()
         exec_cmd = "npm audit --json"
         res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
@@ -85,10 +117,13 @@ class SastyWrapper(object):
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
         result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
         filtered_result = common_post_processing(config, result, "NpmScan")
-        return filtered_result
+        if results:
+            results.append(filtered_result)
+        else:
+            return filtered_result
 
     @staticmethod
-    def retirejs(config):
+    def retirejs(config, results=None):
         devdeps = [] if config.get('devdep') \
             else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
             .get('devDependencies', {}).keys()
@@ -98,7 +133,21 @@ class SastyWrapper(object):
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
         filtered_result = common_post_processing(config, result, "RetireScan")
-        return filtered_result
+        if results:
+            results.append(filtered_result)
+        else:
+            return filtered_result
+
+    @staticmethod
+    def nodejsscan(config, results=None):
+        exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_path(config))
+        res = execute(exec_cmd, cwd='/tmp')
+        result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
+        filtered_result = common_post_processing(config, result, "NodeJsScan")
+        if results:
+            results.append(filtered_result)
+        else:
+            return filtered_result
 
     @staticmethod
     def ptai(config):
@@ -108,7 +157,7 @@ class SastyWrapper(object):
         return filtered_result
 
     @staticmethod
-    def safety(config):
+    def safety(config, results=None):
         params_str = ''
         for file_path in config.get('files', []):
             params_str += '-r {} '.format(file_path)
@@ -118,4 +167,7 @@ class SastyWrapper(object):
             print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
         result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items
         filtered_result = common_post_processing(config, result, "SafetyScan")
-        return filtered_result
+        if results:
+            results.append(filtered_result)
+        else:
+            return filtered_result
