@@ -12,28 +12,24 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from dusty.utils import common_post_processing
-from dusty.drivers.html import HTMLReport
-from dusty.drivers.xunit import XUnitReport
+from time import time
+
+from dusty.run import config_from_yaml, process_results
+from dusty.utils import common_post_processing, execute
 from dusty.data_model.zap.parser import ZapXmlParser
 
 
 def main():
-    default_config = dict(
-        project_name="demo",
-        environment="demo",
-        min_priority="Trivial",
-        test_type="AuthenticatedScan",
-        host="localhost",
-        port="9090",
-        html_report=dict(project_name="demo")
-    )
-
+    start_time = time()
+    default_config, _ = config_from_yaml()
+    execute("zap-cli spider {default_config['protocol']}://{default_config['host']}:{default_config['port']}")
+    execute("zap-cli active-scan --scanners all --recursive "
+            "{default_config['protocol']}://{default_config['host']}:{default_config['port']} || "
+            "echo 'Seems we have couple of issues'")
+    execute("zap-cli report -o /tmp/zap.xml -f xml")
     result = ZapXmlParser("/tmp/zap.xml", "ZAP").items
     filtered_result = common_post_processing(default_config, result, "ZAP")
-    print(filtered_result)
-    print(HTMLReport(filtered_result, default_config).report_name)
-    print(XUnitReport(filtered_result, default_config).report_name)
+    process_results(default_config, start_time, filtered_result)
 
 
 if __name__ == "__main__":
