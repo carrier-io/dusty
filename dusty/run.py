@@ -159,7 +159,7 @@ def config_from_yaml():
                           email_service=email_service,
                           email_attachments=email_attachments,
                           composition_analysis=execution_config.get('composition_analysis', None))
-    tests_config = []
+    tests_config = {}
     for each in execution_config:
         if each in constants.NON_SCANNERS_CONFIG_KEYS:
             continue
@@ -168,7 +168,7 @@ def config_from_yaml():
             for item in execution_config[each]:
                 config[item] = execution_config[each][item]
 
-        tests_config.append(config)
+        tests_config[each] = config
     return default_config, tests_config
 
 
@@ -199,26 +199,26 @@ def main():
     start_time = time()
     global_results = []
     default_config, test_configs = config_from_yaml()
-    for config in test_configs:
+    for key in test_configs:
         results = []
-        for key in config:
-            if key in constants.SASTY_SCANNERS_CONFIG_KEYS:
-                attr_name = config[key] if 'language' in key else key
-                try:
-                    results = getattr(SastyWrapper, attr_name)(config)
-                except:
-                    print("Exception during %s Scanning" % attr_name)
-                    if os.environ.get("debug", False):
-                        print(format_exc())
-            else:
-                try:
-                    results = getattr(DustyWrapper, key)(config)
-                except:
-                    print("Exception during %s Scanning" % key)
-                    if os.environ.get("debug", False):
-                        print(format_exc())
-            if default_config.get('generate_html', None) or default_config.get('generate_junit', None):
-                global_results.extend(results)
+        config = test_configs[key]
+        if key in constants.SASTY_SCANNERS_CONFIG_KEYS:
+            attr_name = config[key] if 'language' in key else key
+            try:
+                results = getattr(SastyWrapper, attr_name)(config)
+            except:
+                print("Exception during %s Scanning" % attr_name)
+                if os.environ.get("debug", False):
+                    print(format_exc())
+        else:
+            try:
+                results = getattr(DustyWrapper, key)(config)
+            except:
+                print("Exception during %s Scanning" % key)
+                if os.environ.get("debug", False):
+                    print(format_exc())
+        if default_config.get('generate_html', None) or default_config.get('generate_junit', None):
+            global_results.extend(results)
     process_results(default_config, start_time, global_results)
 
 
