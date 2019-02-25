@@ -22,10 +22,10 @@ from dusty.data_model.zap.parser import ZapXmlParser
 def main():
     start_time = time()
     default_config, _ = config_from_yaml()
-    execute("zap-cli spider {default_config['protocol']}://{default_config['host']}:{default_config['port']}")
-    execute("zap-cli active-scan --scanners all --recursive "
-            "{default_config['protocol']}://{default_config['host']}:{default_config['port']} || "
-            "echo 'Seems we have couple of issues'")
+    execute(f"zap-cli spider {default_config['protocol']}://{default_config['host']}:{default_config['port']}")
+    execute(f"zap-cli active-scan --scanners all --recursive "
+            f"{default_config['protocol']}://{default_config['host']}:{default_config['port']} "
+            f"|| echo 'Seems we have couple of issues'")
     execute("zap-cli report -o /tmp/zap.xml -f xml")
     result = ZapXmlParser("/tmp/zap.xml", "ZAP").items
     filtered_result = common_post_processing(default_config, result, "ZAP")
