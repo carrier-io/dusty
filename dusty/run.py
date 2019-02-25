@@ -88,7 +88,7 @@ def parse_email_config(config):
     return emails_service, email_attachments
 
 
-def parse_rp_config(config, rp_service = None, launch_id = None, rp_config = None):
+def parse_rp_config(config, test_name, rp_service=None, launch_id=None, rp_config=None):
     rp_project = config['reportportal'].get("rp_project_name", "Dusty")
     rp_launch_name = config['reportportal'].get("rp_launch_name", test_name)
     rp_url = config['reportportal'].get("rp_host")
@@ -131,7 +131,7 @@ def config_from_yaml():
         if each in execution_config:
             execution_config[each] = proxy_through_env(execution_config[each])
     if execution_config.get("reportportal", None):
-        rp_service, launch_id, rp_config = parse_rp_config(execution_config)
+        rp_service, launch_id, rp_config = parse_rp_config(execution_config, test_name)
     min_priority = proxy_through_env(
         execution_config.get("min_priority", constants.MIN_PRIORITY))
     if execution_config.get("jira", None):
