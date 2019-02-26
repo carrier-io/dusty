@@ -34,19 +34,19 @@ class SpotbugsParser(object):
             severity = item.get('priority')
             filename = item.find('Class').find('SourceLine').get('sourcefile')
             file_path = item.find('Class').find('SourceLine').get('sourcepath')
-
             line = item.find('Class').find('SourceLine').find('Message').text
-
-            steps_to_reproduce = ''
+            steps_to_reproduce = f'{issue_type} issue \n\n'
             for element in item.findall('SourceLine'):
                 steps_to_reproduce += (element.find('Message').text + "\n\n")
             severity_level = SEVERITY_TYPE.get(int(severity), "")
-
-            dupe_key = title + ' ' + issue_type + ' ' + category + ' ' + file_path
+            dupe_key = f'{title} {issue_type} {category}'
+            if file_path:
+                dupe_key += f' {file_path}'
+            if filename:
+                title += f' in {filename}'
             if dupe_key not in dupes:
-                dupes[dupe_key] = Finding(title=title + ' in ' + filename,
-                                          tool="spotbugs", active=False,
-                                          verified=False, description=description,
+                dupes[dupe_key] = Finding(title=title, tool=category.lower().replace(" ", "_"),
+                                          active=False, verified=False, description=description,
                                           severity=severity_level, numerical_severity=severity,
                                           mitigation=False, impact=False, references=False,
                                           file_path=file_path, line=line,

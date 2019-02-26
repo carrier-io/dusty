@@ -167,7 +167,8 @@ def config_from_yaml():
         if isinstance(execution_config[each], dict):
             for item in execution_config[each]:
                 config[item] = execution_config[each][item]
-
+        else:
+            config[each] = execution_config[each]
         tests_config[each] = config
     return default_config, tests_config
 

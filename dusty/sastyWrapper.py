@@ -81,8 +81,9 @@ class SastyWrapper(object):
 
     @staticmethod
     def java(config):
-        exec_cmd = "spotbugs -xml:withMessages -output /tmp/spotbugs.xml {}".format(SastyWrapper.get_code_path(config))
-        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
+        exec_cmd = "spotbugs -xml:withMessages {} -output /tmp/spotbugs.xml {}" \
+                   "".format(config.get("scan_opts", ""), SastyWrapper.get_code_path(config))
+        execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
         filtered_result = common_post_processing(config, result, "spotbugs")
         return filtered_result
