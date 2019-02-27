@@ -167,13 +167,16 @@ def config_from_yaml():
         if isinstance(execution_config[each], dict):
             for item in execution_config[each]:
                 config[item] = execution_config[each][item]
-        else:
-            config[each] = execution_config[each]
+        if execution_config.get('language'):
+            config['language'] = execution_config['language']
+            config['scan_opts'] = execution_config.get('scan_opts', '')
         tests_config[each] = config
     return default_config, tests_config
 
 
 def process_results(default_config, start_time, global_results=None, html_report_file=None, xml_report_file=None):
+    created_jira_tickets = []
+    attachments = []
     if default_config.get('rp_data_writer', None):
         default_config['rp_data_writer'].finish_test()
     default_config['execution_time'] = int(time()-start_time)
@@ -185,15 +188,14 @@ def process_results(default_config, start_time, global_results=None, html_report
         RedisFile(os.environ.get("redis_connection"), html_report_file, xml_report_file)
     if default_config.get('jira_service', None):
         created_jira_tickets = default_config['jira_service'].get_created_tickets()
-        if default_config.get('email_service', None):
-            attachments = []
-            if html_report_file:
-                attachments.append(html_report_file)
-            for item in default_config.get('email_attachments', None):
-                attachments.append('/attachments/' + item.strip())
-            #TODO: Rework sending of emails to be not tiedly coupled with Jira
-            send_emails(default_config['email_service'], True, jira_tickets_info=created_jira_tickets,
-                        attachments=attachments)
+    if default_config.get('email_service', None):
+        if html_report_file:
+            attachments.append(html_report_file)
+        for item in default_config.get('email_attachments', None):
+            attachments.append('/attachments/' + item.strip())
+        #TODO: Rework sending of emails to be not tiedly coupled with Jira
+        send_emails(default_config['email_service'], True, jira_tickets_info=created_jira_tickets,
+                    attachments=attachments)
 
 
 def main():
