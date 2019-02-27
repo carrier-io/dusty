@@ -92,6 +92,7 @@ class DefaultModel(object):
             "error_string": None,
             "error_hash": None
         }
+        self.severity = c.SEVERITIES.get(severity, 100) #TODO: space for bugbar
         self.unsaved_endpoints = []
         self.images = [] if not images else images
         self.endpoints = []

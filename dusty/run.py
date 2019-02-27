@@ -181,7 +181,8 @@ def process_results(default_config, start_time, global_results=None, html_report
         default_config['rp_data_writer'].finish_test()
     default_config['execution_time'] = int(time()-start_time)
     if default_config.get('generate_html', None):
-        html_report_file = HTMLReport(global_results, default_config).report_name
+        html_report_file = HTMLReport(sorted(global_results, key=lambda item: item.severity),
+                                      default_config).report_name
     if default_config.get('generate_junit', None):
         xml_report_file = XUnitReport(global_results, default_config).report_name
     if os.environ.get("redis_connection"):
