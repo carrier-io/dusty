@@ -207,6 +207,8 @@ def main():
         results = []
         config = test_configs[key]
         if key in constants.SASTY_SCANNERS_CONFIG_KEYS:
+            if key == "scan_opts":
+                continue
             attr_name = config[key] if 'language' in key else key
             try:
                 results = getattr(SastyWrapper, attr_name)(config)
