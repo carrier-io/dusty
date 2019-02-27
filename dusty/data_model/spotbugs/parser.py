@@ -13,10 +13,15 @@ __author__ = 'akaminski, arozumenko'
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-
+import hashlib
 import xml.etree.ElementTree
 from dusty.data_model.canonical_model import DefaultModel as Finding
 from dusty.constants import SEVERITY_TYPE
+from xml.sax import saxutils
+
+
+def sanitize(input):
+    return saxutils.unescape(input).replace("<", "").replace(">", "")
 
 
 class SpotbugsParser(object):
@@ -25,21 +30,27 @@ class SpotbugsParser(object):
         find_date = None
 
         data = xml.etree.ElementTree.parse(filename).getroot()
-
         for item in data.findall('BugInstance'):
             title = item.find('ShortMessage').text
             description = item.find('LongMessage').text
             category = item.get('category')
             issue_type = item.get('type')
             severity = item.get('priority')
+            classname = item.find('Class').get('classname')
             filename = item.find('Class').find('SourceLine').get('sourcefile')
             file_path = item.find('Class').find('SourceLine').get('sourcepath')
             line = item.find('Class').find('SourceLine').find('Message').text
-            steps_to_reproduce = f'{issue_type} issue \n\n'
-            for element in item.findall('SourceLine'):
-                steps_to_reproduce += (element.find('Message').text + "\n\n")
+            steps_to_reproduce = '\n\n'
+            details = data.find(f'.//BugPattern[@type="{issue_type}"]')
+            for i, element in enumerate(item.findall('Method')):
+                steps_to_reproduce += f"Classname: {classname}\t" \
+                                      f"{element.find('Message').text}\t" \
+                                      f"{sanitize(item.findall('SourceLine')[i].find('Message').text)}\n\n"
+
+            if details:
+                description += f'\n\n Details: {details.find("Details").text}'
             severity_level = SEVERITY_TYPE.get(int(severity), "")
-            dupe_key = f'{title} {issue_type} {category}'
+            dupe_key = hashlib.md5(f'{title} {issue_type} {category}'.encode('utf-8')).hexdigest()
             if file_path:
                 dupe_key += f' {file_path}'
             if filename:
@@ -50,7 +61,8 @@ class SpotbugsParser(object):
                                           severity=severity_level, numerical_severity=severity,
                                           mitigation=False, impact=False, references=False,
                                           file_path=file_path, line=line,
-                                          url='N/A', date=find_date, steps_to_reproduce=steps_to_reproduce,
+                                          url='N/A', date=find_date,
+                                          steps_to_reproduce=f'{issue_type} issue {steps_to_reproduce}',
                                           static_finding=True)
             else:
                 dupes[dupe_key].finding['steps_to_reproduce'] += steps_to_reproduce
