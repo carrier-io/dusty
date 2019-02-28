@@ -118,7 +118,7 @@ def config_from_yaml():
         path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
         with open(path_to_config, "rb") as f:
             config = yaml.load(f.read())
-            print(f"Loaded configuration from ${path_to_config}")
+            print(f"Loaded configuration from {path_to_config}")
     path_to_false_positive = os.environ.get('false_positive_path', constants.FALSE_POSITIVE_CONFIG)
     suites = list(config.keys())
     args = arg_parse(suites)
