@@ -111,14 +111,12 @@ def config_from_yaml():
     html_report = None
     email_service=None
     email_attachments = []
-    if constants.CONFIG_ENV_KEY in os.environ.keys():
-        config = yaml.load(os.environ.get(constants.CONFIG_ENV_KEY))
-        print(f"Loaded configuration from ${constants.CONFIG_ENV_KEY}")
-    else:
-        path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
+    path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
+    config_data = os.environ.get(constants.CONFIG_ENV_KEY)
+    if not config_data:
         with open(path_to_config, "rb") as f:
-            config = yaml.load(f.read())
-            print(f"Loaded configuration from {path_to_config}")
+            config_data = f.read()
+    config = yaml.load(config_data)
     path_to_false_positive = os.environ.get('false_positive_path', constants.FALSE_POSITIVE_CONFIG)
     suites = list(config.keys())
     args = arg_parse(suites)
