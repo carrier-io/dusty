@@ -111,8 +111,8 @@ def config_from_yaml():
     html_report = None
     email_service=None
     email_attachments = []
-    path_to_false_positive = os.environ.get('false_positive_path', constants.FALSE_POSITIVE_CONFIG)
     path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
+    path_to_false_positive = os.environ.get('false_positive_path', constants.FALSE_POSITIVE_CONFIG)
     config_data = os.environ.get(constants.CONFIG_ENV_KEY)
     if not config_data:
         with open(path_to_config, "rb") as f:
