@@ -19,6 +19,7 @@ NON_SCANNERS_CONFIG_KEYS = ['target_host', 'target_port', 'protocol', "/",
                             'min_priority', 'code_path', 'composition_analysis']
 SASTY_SCANNERS_CONFIG_KEYS = ['language', 'npm', 'retirejs', 'ptai', 'safety', 'scan_opts']
 READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'environment']
+CONFIG_ENV_KEY = "SCAN_CONFIG"
 PATH_TO_CONFIG = "/tmp/scan-config.yaml"
 PATH_TO_CODE = "/code"
 SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,
