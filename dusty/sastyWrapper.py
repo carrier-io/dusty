@@ -32,21 +32,13 @@ class SastyWrapper(object):
 
     @staticmethod
     def python(config):
-        scan_fns = [SastyWrapper.bandit]
-        composition_analysis = config.get('composition_analysis', None)
-        if composition_analysis:
-            scan_fns.extend([SastyWrapper.safety])
-            composition_analysis = config.get('composition_analysis', None)
-            if isinstance(composition_analysis, dict):
-                config['files'] = composition_analysis.get('files', ['requirements1.txt'])
-        params = []
-        for fn in scan_fns:
-            params.append((fn, config))
-        all_results = []
-        results = run_in_parallel(params)
-        for result in results:
-            all_results.extend(result)
-        return all_results
+        exec_cmd = "bandit -r {} --format json".format(SastyWrapper.get_code_path(config))
+        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
+        with open("/tmp/bandit.json", "w") as f:
+            f.write(res[0].decode('utf-8', errors='ignore'))
+        result = BanditParser("/tmp/bandit.json", "pybandit").items
+        filtered_result = common_post_processing(config, result, "pybandit")
+        return filtered_result
 
     @staticmethod
     def bandit(config, results=None):
