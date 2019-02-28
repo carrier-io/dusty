@@ -111,7 +111,7 @@ def config_from_yaml():
     html_report = None
     email_service=None
     email_attachments = []
-    if os.environ.has_key(constants.CONFIG_ENV_KEY):
+    if constants.CONFIG_ENV_KEY in os.environ.keys():
         config = yaml.load(os.environ.get(constants.CONFIG_ENV_KEY))
     else:
         path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
