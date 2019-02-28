@@ -113,8 +113,11 @@ def config_from_yaml():
     email_attachments = []
     path_to_config = os.environ.get('config_path', constants.PATH_TO_CONFIG)
     path_to_false_positive = os.environ.get('false_positive_path', constants.FALSE_POSITIVE_CONFIG)
-    with open(path_to_config, "rb") as f:
-        config = yaml.load(f.read())
+    config_data = os.environ.get(constants.CONFIG_ENV_KEY)
+    if not config_data:
+        with open(path_to_config, "rb") as f:
+            config_data = f.read()
+    config = yaml.load(config_data)
     suites = list(config.keys())
     args = arg_parse(suites)
     test_name = args.suite
