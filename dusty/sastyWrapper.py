@@ -32,13 +32,22 @@ class SastyWrapper(object):
 
     @staticmethod
     def python(config):
-        exec_cmd = "bandit -r {} --format json".format(SastyWrapper.get_code_path(config))
-        res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
-        with open("/tmp/bandit.json", "w") as f:
-            f.write(res[0].decode('utf-8', errors='ignore'))
-        result = BanditParser("/tmp/bandit.json", "pybandit").items
-        filtered_result = common_post_processing(config, result, "pybandit")
-        return filtered_result
+        scan_fns = [SastyWrapper.bandit]
+        all_results = []
+        composition_analysis = config.get('composition_analysis', None)
+        if composition_analysis:
+            scan_fns.extend([SastyWrapper.safety])
+            composition_analysis = config.get('composition_analysis', None)
+            if isinstance(composition_analysis, dict):
+                config['files'] = composition_analysis.get('files', ['requirements1.txt'])
+        params = []
+        for fn in scan_fns:
+            params.append((fn, config))
+
+        results = run_in_parallel(params)
+        for result in results:
+            all_results.extend(result)
+        return all_results
 
     @staticmethod
     def bandit(config, results=None):
@@ -48,7 +57,7 @@ class SastyWrapper(object):
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
         filtered_result = common_post_processing(config, result, "pybandit")
-        if results:
+        if results or isinstance(results, list):
             results.append(filtered_result)
         else:
             return filtered_result
@@ -83,7 +92,7 @@ class SastyWrapper(object):
     @staticmethod
     def nodejs(config):
         scan_fns = [SastyWrapper.nodejsscan]
-        composition_analysis = config.get('composition_analysis',None)
+        composition_analysis = config.get('composition_analysis', None)
         if composition_analysis:
             scan_fns.extend([SastyWrapper.npm, SastyWrapper.retirejs])
             if isinstance(composition_analysis, bool):
@@ -110,7 +119,7 @@ class SastyWrapper(object):
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
         result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
         filtered_result = common_post_processing(config, result, "NpmScan")
-        if results:
+        if results or isinstance(results, list):
             results.append(filtered_result)
         else:
             return filtered_result
@@ -126,7 +135,7 @@ class SastyWrapper(object):
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
         filtered_result = common_post_processing(config, result, "RetireScan")
-        if results:
+        if results or isinstance(results, list):
             results.append(filtered_result)
         else:
             return filtered_result
@@ -137,7 +146,7 @@ class SastyWrapper(object):
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         filtered_result = common_post_processing(config, result, "NodeJsScan")
-        if results:
+        if results or isinstance(results, list):
             results.append(filtered_result)
         else:
             return filtered_result
@@ -160,7 +169,7 @@ class SastyWrapper(object):
             print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
         result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items
         filtered_result = common_post_processing(config, result, "SafetyScan")
-        if results:
+        if results or isinstance(results, list):
             results.append(filtered_result)
         else:
             return filtered_result
