@@ -14,6 +14,7 @@
 
 import argparse
 import os
+import re
 import yaml
 import requests
 from copy import deepcopy
@@ -44,6 +45,21 @@ def proxy_through_env(value):
     if isinstance(value, str) and value.startswith('$'):
         return os.environ.get(value.replace("$", ''))
     return value
+
+
+def variable_substitution(obj):
+    """ Allows to use environmental variables inside YAML/JSON config """
+    if isinstance(obj, dict):
+        for key in list(obj.keys()):
+            obj[variable_substitution(key)] = \
+                variable_substitution(obj.pop(key))
+    if isinstance(obj, list):
+        for index, item in enumerate(obj):
+            obj[index] = variable_substitution(item)
+    if isinstance(obj, str) and re.match(r"^\$[a-zA-Z_][a-zA-Z0-9_]*$", obj) \
+            and obj[1:] in os.environ:
+        return os.environ[obj[1:]]
+    return obj
 
 
 def parse_jira_config(config):
@@ -117,7 +133,7 @@ def config_from_yaml():
     if not config_data:
         with open(path_to_config, "rb") as f:
             config_data = f.read()
-    config = yaml.load(config_data)
+    config = variable_substitution(yaml.load(config_data))
     suites = list(config.keys())
     args = arg_parse(suites)
     test_name = args.suite
