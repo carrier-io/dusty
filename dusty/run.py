@@ -58,6 +58,7 @@ def parse_jira_config(config):
     jira_epic_key = proxy_through_env(config['jira'].get("epic_link", None))
     jira_fields = proxy_through_env(config['jira'].get("fields", None))
     if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
+        print(jira_url, jira_user, jira_pwd, jira_project, jira_assignee)
         print("Jira integration configuration is messed up , proceeding without Jira")
     else:
         return JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
