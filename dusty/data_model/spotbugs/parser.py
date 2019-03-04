@@ -48,6 +48,8 @@ class SpotbugsParser(object):
                 try:
                     steps_to_reproduce += \
                                       f"{sanitize(item.findall('SourceLine')[i].find('Message').text)}"
+                except:
+                    pass
                 finally:
                     steps_to_reproduce += "\n\n"
 
