@@ -44,8 +44,12 @@ class SpotbugsParser(object):
             details = data.find(f'.//BugPattern[@type="{issue_type}"]')
             for i, element in enumerate(item.findall('Method')):
                 steps_to_reproduce += f"Classname: {classname}\t" \
-                                      f"{element.find('Message').text}\t" \
-                                      f"{sanitize(item.findall('SourceLine')[i].find('Message').text)}\n\n"
+                                      f"{element.find('Message').text}\t"
+                try:
+                    steps_to_reproduce += \
+                                      f"{sanitize(item.findall('SourceLine')[i].find('Message').text)}"
+                finally:
+                    steps_to_reproduce += "\n\n"
 
             if details:
                 description += f'\n\n Details: {details.find("Details").text}'
