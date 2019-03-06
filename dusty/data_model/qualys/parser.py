@@ -13,6 +13,7 @@
 #   limitations under the License.
 
 import base64
+import html
 from lxml import etree
 from dusty import constants as c
 from dusty.data_model.canonical_model import DefaultModel as Finding
@@ -48,7 +49,7 @@ class QualysWebAppParser(object):
                 if 'Information Gathered' in qid_category:
                     records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[contains(text(),{_qid})]/..')
                     for record in records:
-                        references.append(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore"))
+                        references.append(html.escape(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore")))
                 else:
                     records = d.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[contains(text(),{_qid})]/..')
                     for record in records:
@@ -57,7 +58,7 @@ class QualysWebAppParser(object):
                         method = record.findtext('PAYLOADS/PAYLOAD/REQUEST/METHOD')
                         request = record.findtext('PAYLOADS/PAYLOAD/REQUEST/URL')
                         response = record.findtext('PAYLOADS/PAYLOAD/RESPONSE/CONTENTS')
-                        response = base64.b64decode(response).decode("utf-8", errors="ignore")
+                        response = html.escape(base64.b64decode(response).decode("utf-8", errors="ignore"))
                         entrypoints.append(url)
                         entrypoints.extend(access_pass)
                         references.append(f"{method.upper()}: {request}\n\nResponse: {response}\n\n")
