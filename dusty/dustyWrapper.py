@@ -34,14 +34,15 @@ from dusty.drivers.qualys import WAS
 class DustyWrapper(object):
     @staticmethod
     def sslyze(config):
+        tool_name = "SSlyze"
         exec_cmd = f'sslyze --regular --json_out=/tmp/sslyze.json --quiet {config["host"]}:{config["port"]}'
         execute(exec_cmd)
         result = SslyzeJSONParser("/tmp/sslyze.json", "SSlyze").items
-        filtered_result = common_post_processing(config, result, "SSlyze")
-        return filtered_result
+        return (tool_name, result)
 
     @staticmethod
     def masscan(config):
+        tool_name = "masscan"
         host = config["host"]
         if not (find_ip(host)):
             host = find_ip(str(execute(f'getent hosts {host}')[0]))
@@ -56,12 +57,12 @@ class DustyWrapper(object):
             exec_cmd = f'masscan {host} -p {ports} -pU:{ports} --rate 1000 -oJ /tmp/masscan.json {excluded_addon}'
             execute(exec_cmd.strip())
             result = MasscanJSONParser("/tmp/masscan.json", "masscan").items
-            filtered_result = common_post_processing(config, result, "masscan")
-            return filtered_result
-        return []
+            return (tool_name, result)
+        return (tool_name, [])
 
     @staticmethod
     def nikto(config):
+        tool_name = "nikto"
         if os.path.exists("/tmp/nikto.xml"):
             os.remove("/tmp/nikto.xml")
         exec_cmd = f'perl nikto.pl {config.get("param", "")} -h {config["host"]} -p {config["port"]} ' \
@@ -69,11 +70,11 @@ class DustyWrapper(object):
         cwd = '/opt/nikto/program'
         execute(exec_cmd, cwd)
         result = NiktoXMLParser("/tmp/nikto.xml", "Nikto").items
-        filtered_result = common_post_processing(config, result, "nikto")
-        return filtered_result
+        return (tool_name, result)
 
     @staticmethod
     def nmap(config):
+        tool_name = "NMAP"
         excluded_addon = f'--exclude-ports {config.get("exclusions", None)}' if config.get("exclusions", None) else ""
         ports = config.get("inclusions", "0-65535")
         nse_scripts = config.get("nse_scripts", "ssl-date,http-mobileversion-checker,http-robots.txt,http-title,"
@@ -93,19 +94,19 @@ class DustyWrapper(object):
         ports = f"-pT:{tcp_ports[:-1]}" if tcp_ports else ""
         ports += f" -pU:{udp_ports[:-1]}" if udp_ports else ""
         if not ports:
-            return
+            return (tool_name, [])
         params = config.get("params", "-v -sVA")
         exec_cmd = f'nmap {params} {ports} ' \
                    f'--min-rate 1000 --max-retries 0 ' \
                    f'--script={nse_scripts} {config["host"]} -oX /tmp/nmap.xml'
         execute(exec_cmd)
         result = NmapXMLParser('/tmp/nmap.xml', "NMAP").items
-        filtered_result = common_post_processing(config, result, "NMAP")
-        return filtered_result
+        return (tool_name, result)
 
 
     @staticmethod
     def zap(config):
+        tool_name = "ZAP"
         if 'supervisor.sock no such file' in execute('supervisorctl restart zap')[0].decode('utf-8'):
             execute('/usr/bin/supervisord', communicate=False)
         status = execute('zap-cli status')[0].decode('utf-8')
@@ -125,11 +126,11 @@ class DustyWrapper(object):
         execute('zap-cli report -o /tmp/zap.xml -f xml')
         result = ZapXmlParser('/tmp/zap.xml', "ZAP").items
         execute('supervisorctl stop zap')
-        filtered_result = common_post_processing(config, result, "ZAP")
-        return filtered_result
+        return (tool_name, result)
 
     @staticmethod
     def w3af(config):
+        tool_name = "w3af"
         config_file = config.get("config_file", "/tmp/w3af_full_audit.w3af")
         w3af_execution_command = f'w3af_console -y -n -s {config_file}'
         with open(config_file, 'r') as f:
@@ -142,11 +143,11 @@ class DustyWrapper(object):
             f.write(config_content)
         execute(w3af_execution_command)
         result = W3AFXMLParser("/tmp/w3af.xml", "w3af").items
-        filtered_result = common_post_processing(config, result, "w3af")
-        return filtered_result
+        return (tool_name, result)
 
     @staticmethod
     def qualys(config):
+        tool_name = "qualys_was"
         qualys_scanner_type = config.get("qualys_scanner_type", "EXTERNAL").upper()
         # TODO : think on optimization or unification of Qualys pools for Internal scanners
         qualys_scanner = config.get("qualys_scanner", '')
@@ -156,7 +157,7 @@ class DustyWrapper(object):
         qualys_profile_id = config.get("qualys_profile_id", None)
         qualys_template_id = config.get("qualys_template_id", None)
         if not (qualys_profile_id or qualys_template_id):
-            return []
+            return (tool_name, [])
         if config.get("random_name", None):
             project_name = f"{config.get('project_name')}_{id_generator(8)}"
         else:
@@ -174,18 +175,18 @@ class DustyWrapper(object):
             project_id = qualys.create_webapp_request(project_name, target, qualys_profile_id)
         if not project_id:
             print("Something went wrong and project wasn't found and created")
-            return []
+            return (tool_name, [])
         scan_id = qualys.start_scan(project_name, ts, project_id, qualys_profile_id, scanner_appliance)
         if not scan_id:
             print("Scan haven't been started")
-            return []
+            return (tool_name, [])
         while not qualys.scan_status(scan_id):
             sleep(30)
         # qualys.download_scan_report(scan_id)
         report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
         if not report_id:
             print("Request report failed")
-            return []
+            return (tool_name, [])
         while not qualys.get_report_status(report_id):
             sleep(30)
         qualys.download_report(report_id)
@@ -193,16 +194,17 @@ class DustyWrapper(object):
         qualys.delete_asset("wasscan", scan_id)
         qualys.delete_asset("webapp", project_id)
         result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
-        filtered_result = common_post_processing(config, result, "qualys_was")
-        return filtered_result
+        return (tool_name, result)
 
     @staticmethod
     def burp(config):
+        tool_name = "burp"
         print(config)
+        return (tool_name, [])
 
     @staticmethod
     def aemhacker(config):
+        tool_name = "AEM_Hacker"
         aem_hacker_output = execute(f'aem-wrapper.sh -u {config.get("protocol")}://{config.get("host")}:{config.get("port")} --host {config.get("scanner_host", "127.0.0.1")} --port {config.get("scanner_port", "4444")}')[0].decode('utf-8')
         result = AemOutputParser(aem_hacker_output).items
-        filtered_result = common_post_processing(config, result, "AEM Hacker")
-        return filtered_result
+        return (tool_name, result)

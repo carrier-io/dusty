@@ -155,6 +155,42 @@
 					</table>
 				</div>
 			</div>
+			{% if other_findings %}
+			<div class="row">
+				<div class="col">
+				    <h1>Other (information and findings below minimal severity level)</h1>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<table class="table table-striped">
+						<thead class="thead-dark">
+							<tr>
+								<th>Tool name</th>
+								<th>Description</th>
+								<th>Severity</th>
+							</tr>
+						</thead>
+						<tbody>
+                        {% for finding in other_findings %}
+							<tr class="header">
+								<td>{{ finding.finding['tool'] }}</td>
+								<td>{{ finding.finding['title'] }} <span>+</span></td>
+								<td>{{ finding.finding['severity'] }}</td>
+							</tr>
+							<tr class="description">
+								<td colspan="3">
+									<div>
+										{{ finding.html_item()|safe }}
+									</div>
+								</td>
+							</tr>
+                        {% endfor %}
+						</tbody>
+					</table>
+				</div>
+			</div>
+                        {% endif %}
 			<div class="row">
 				<div class="col footer"> (c) 2019 Carrier | Continuous Test Execution Platform </div>
 			</div>
