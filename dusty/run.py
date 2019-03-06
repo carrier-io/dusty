@@ -30,7 +30,7 @@ from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
-from dusty.utils import send_emails
+from dusty.utils import send_emails, common_post_processing
 
 requests.packages.urllib3.disable_warnings()
 
@@ -242,7 +242,8 @@ def main():
                     print(format_exc())
         else:
             try:
-                results, other_results = getattr(DustyWrapper, key)(config)
+                tool_name, result = getattr(DustyWrapper, key)(config)
+                results, other_results = common_post_processing(config, result, tool_name, need_other_results=True)
             except:
                 print("Exception during %s Scanning" % key)
                 if os.environ.get("debug", False):
