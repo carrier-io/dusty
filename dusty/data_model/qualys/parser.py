@@ -47,11 +47,11 @@ class QualysWebAppParser(object):
                 references = []
                 entrypoints = []
                 if 'Information Gathered' in qid_category:
-                    records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[contains(text(),{_qid})]/..')
+                    records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[text()="{_qid}"]/..')
                     for record in records:
                         references.append(html.escape(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore")))
                 else:
-                    records = d.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[contains(text(),{_qid})]/..')
+                    records = d.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[text()="{_qid}"]/..')
                     for record in records:
                         url = record.findtext('URL')
                         access_pass = [a.text for a in records[0].xpath('ACCESS_PATH/URL')]
