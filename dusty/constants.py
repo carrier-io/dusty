@@ -37,6 +37,13 @@ SEVERITY_MAPPING = {
     'Info': 'Trivial',
     'Pattern': 'Trivial'
 }
+QUALYS_SEVERITIES = {
+    1: 'Info',
+    2: 'Low',
+    3: 'Medium',
+    4: 'High',
+    5: 'Critical'
+}
 MAX_MESSAGE_LEN = 30000
 FALSE_POSITIVE_CONFIG = '/tmp/false_positive.config'
 W3AF_OUTPUT_SECTION = """#Configure reporting in order to generate an HTML report

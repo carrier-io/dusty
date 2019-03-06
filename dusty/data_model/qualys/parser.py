@@ -42,7 +42,7 @@ class QualysWebAppParser(object):
                 cwe = qid.findtext('CWE') if qid.findtext('CWE') else ''
                 cvss_base = qid.findtext('CVSS_BASE') if qid.findtext('CVSS_BASE') else ''
                 if qid.xpath('SEVERITY'):
-                    qid_severity = c.SEVERITIES_INVERSED[int(qid.findtext('SEVERITY'))]
+                    qid_severity = c.QUALYS_SEVERITIES[int(qid.findtext('SEVERITY'))]
                 description = f'{qid_description}\n\n**OWASP**:{owasp}\n\n**WASC**:{wasc}\n\n**CVSS_BASE**:{cvss_base}\n\n'
                 references = []
                 entrypoints = []
