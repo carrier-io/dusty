@@ -20,13 +20,13 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 class HTMLReport(object):
     report_name = None
 
-    def __init__(self, findings, config, report_path='/tmp/reports'):
+    def __init__(self, findings, config, report_path='/tmp/reports', other_findings=None):
         env = Environment(
             loader=PackageLoader('dusty', 'templates'),
             autoescape=select_autoescape(['html', 'xml'])
         )
         self.template = env.get_template('html_report_template.html')
-        res = self.template.render(config=config, findings=findings)
+        res = self.template.render(config=config, findings=findings, other_findings=other_findings)
 
         test_name = f'{config["project_name"]}-{config["environment"]}-{config["test_type"]}'
         report_name = environ.get("report_name", None)
