@@ -37,8 +37,8 @@ class DustyWrapper(object):
         exec_cmd = f'sslyze --regular --json_out=/tmp/sslyze.json --quiet {config["host"]}:{config["port"]}'
         execute(exec_cmd)
         result = SslyzeJSONParser("/tmp/sslyze.json", "SSlyze").items
-        filtered_result = common_post_processing(config, result, "SSlyze")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "SSlyze", need_other_results=True)
+        return filtered_result, other_results
 
     @staticmethod
     def masscan(config):
@@ -56,9 +56,9 @@ class DustyWrapper(object):
             exec_cmd = f'masscan {host} -p {ports} -pU:{ports} --rate 1000 -oJ /tmp/masscan.json {excluded_addon}'
             execute(exec_cmd.strip())
             result = MasscanJSONParser("/tmp/masscan.json", "masscan").items
-            filtered_result = common_post_processing(config, result, "masscan")
-            return filtered_result
-        return []
+            filtered_result, other_results = common_post_processing(config, result, "masscan", need_other_results=True)
+            return filtered_result, other_results
+        return [], []
 
     @staticmethod
     def nikto(config):
@@ -69,8 +69,8 @@ class DustyWrapper(object):
         cwd = '/opt/nikto/program'
         execute(exec_cmd, cwd)
         result = NiktoXMLParser("/tmp/nikto.xml", "Nikto").items
-        filtered_result = common_post_processing(config, result, "nikto")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "nikto", need_other_results=True)
+        return filtered_result, other_results
 
     @staticmethod
     def nmap(config):
@@ -93,15 +93,15 @@ class DustyWrapper(object):
         ports = f"-pT:{tcp_ports[:-1]}" if tcp_ports else ""
         ports += f" -pU:{udp_ports[:-1]}" if udp_ports else ""
         if not ports:
-            return
+            return [], []
         params = config.get("params", "-v -sVA")
         exec_cmd = f'nmap {params} {ports} ' \
                    f'--min-rate 1000 --max-retries 0 ' \
                    f'--script={nse_scripts} {config["host"]} -oX /tmp/nmap.xml'
         execute(exec_cmd)
         result = NmapXMLParser('/tmp/nmap.xml', "NMAP").items
-        filtered_result = common_post_processing(config, result, "NMAP")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "NMAP", need_other_results=True)
+        return filtered_result, other_results
 
 
     @staticmethod
@@ -125,8 +125,8 @@ class DustyWrapper(object):
         execute('zap-cli report -o /tmp/zap.xml -f xml')
         result = ZapXmlParser('/tmp/zap.xml', "ZAP").items
         execute('supervisorctl stop zap')
-        filtered_result = common_post_processing(config, result, "ZAP")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "ZAP", need_other_results=True)
+        return filtered_result, other_results
 
     @staticmethod
     def w3af(config):
@@ -142,8 +142,8 @@ class DustyWrapper(object):
             f.write(config_content)
         execute(w3af_execution_command)
         result = W3AFXMLParser("/tmp/w3af.xml", "w3af").items
-        filtered_result = common_post_processing(config, result, "w3af")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "w3af", need_other_results=True)
+        return filtered_result, other_results
 
     @staticmethod
     def qualys(config):
@@ -156,7 +156,7 @@ class DustyWrapper(object):
         qualys_profile_id = config.get("qualys_profile_id", None)
         qualys_template_id = config.get("qualys_template_id", None)
         if not (qualys_profile_id or qualys_template_id):
-            return []
+            return [], []
         if config.get("random_name", None):
             project_name = f"{config.get('project_name')}_{id_generator(8)}"
         else:
@@ -174,18 +174,18 @@ class DustyWrapper(object):
             project_id = qualys.create_webapp_request(project_name, target, qualys_profile_id)
         if not project_id:
             print("Something went wrong and project wasn't found and created")
-            return []
+            return [], []
         scan_id = qualys.start_scan(project_name, ts, project_id, qualys_profile_id, scanner_appliance)
         if not scan_id:
             print("Scan haven't been started")
-            return []
+            return [], []
         while not qualys.scan_status(scan_id):
             sleep(30)
         # qualys.download_scan_report(scan_id)
         report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
         if not report_id:
             print("Request report failed")
-            return []
+            return [], []
         while not qualys.get_report_status(report_id):
             sleep(30)
         qualys.download_report(report_id)
@@ -193,16 +193,17 @@ class DustyWrapper(object):
         qualys.delete_asset("wasscan", scan_id)
         qualys.delete_asset("webapp", project_id)
         result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
-        filtered_result = common_post_processing(config, result, "qualys_was")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "qualys_was", need_other_results=True)
+        return filtered_result, other_results
 
     @staticmethod
     def burp(config):
         print(config)
+        return [], []
 
     @staticmethod
     def aemhacker(config):
         aem_hacker_output = execute(f'aem-wrapper.sh -u {config.get("protocol")}://{config.get("host")}:{config.get("port")} --host {config.get("scanner_host", "127.0.0.1")} --port {config.get("scanner_port", "4444")}')[0].decode('utf-8')
         result = AemOutputParser(aem_hacker_output).items
-        filtered_result = common_post_processing(config, result, "AEM Hacker")
-        return filtered_result
+        filtered_result, other_results = common_post_processing(config, result, "AEM Hacker", need_other_results=True)
+        return filtered_result, other_results

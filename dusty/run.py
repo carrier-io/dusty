@@ -193,15 +193,18 @@ def config_from_yaml():
     return default_config, tests_config
 
 
-def process_results(default_config, start_time, global_results=None, html_report_file=None, xml_report_file=None):
+def process_results(default_config, start_time, global_results=None, html_report_file=None, xml_report_file=None, other_results=None):
     created_jira_tickets = []
     attachments = []
     if default_config.get('rp_data_writer', None):
         default_config['rp_data_writer'].finish_test()
     default_config['execution_time'] = int(time()-start_time)
+    if other_results is None:
+        other_results = []
     if default_config.get('generate_html', None):
         html_report_file = HTMLReport(sorted(global_results, key=lambda item: item.severity),
-                                      default_config).report_name
+                                      default_config,
+                                      other_findings=sorted(other_results, key=lambda item: item.severity)).report_name
     if default_config.get('generate_junit', None):
         xml_report_file = XUnitReport(global_results, default_config).report_name
     if os.environ.get("redis_connection"):
@@ -221,9 +224,11 @@ def process_results(default_config, start_time, global_results=None, html_report
 def main():
     start_time = time()
     global_results = []
+    global_other_results = []
     default_config, test_configs = config_from_yaml()
     for key in test_configs:
         results = []
+        other_results = []
         config = test_configs[key]
         if key in constants.SASTY_SCANNERS_CONFIG_KEYS:
             if key == "scan_opts":
@@ -237,14 +242,15 @@ def main():
                     print(format_exc())
         else:
             try:
-                results = getattr(DustyWrapper, key)(config)
+                results, other_results = getattr(DustyWrapper, key)(config)
             except:
                 print("Exception during %s Scanning" % key)
                 if os.environ.get("debug", False):
                     print(format_exc())
         if default_config.get('generate_html', None) or default_config.get('generate_junit', None):
             global_results.extend(results)
-    process_results(default_config, start_time, global_results)
+            global_other_results.extend(other_results)
+    process_results(default_config, start_time, global_results, other_results=global_other_results)
 
 
 if __name__ == "__main__":
