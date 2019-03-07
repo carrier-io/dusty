@@ -142,7 +142,7 @@ def process_false_positives(results, config):
     return results
 
 
-def process_min_priority(config, results):
+def process_min_priority(config, results, other_results=None):
     to_remove = []
     results = list(results)
     for item in results:
@@ -150,15 +150,20 @@ def process_min_priority(config, results):
                 c.JIRA_SEVERITIES.get(config.get('min_priority', c.MIN_PRIORITY)):
             to_remove.append(item)
     for _ in to_remove:
-        results.pop(results.index(_))
+        item = results.pop(results.index(_))
+        if isinstance(other_results, list):
+            other_results.append(item)
     return results
 
 
-def common_post_processing(config, result, tool_name):
+def common_post_processing(config, result, tool_name, need_other_results=False):
+    other_results = []
     filtered_result = process_false_positives(result, config)
-    filtered_result = process_min_priority(config, filtered_result)
+    filtered_result = process_min_priority(config, filtered_result, other_results=other_results)
     report_to_rp(config, filtered_result, tool_name)
     report_to_jira(config, filtered_result)
+    if need_other_results:
+        return filtered_result, other_results
     return filtered_result
 
 

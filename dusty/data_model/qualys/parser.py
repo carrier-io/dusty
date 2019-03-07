@@ -47,6 +47,7 @@ class QualysWebAppParser(object):
                 references = []
                 entrypoints = []
                 if 'Information Gathered' in qid_category:
+                    qid_severity = 'Info'
                     records = d.xpath(f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[text()="{_qid}"]/..')
                     for record in records:
                         references.append(html.escape(base64.b64decode(record.findtext('DATA')).decode("utf-8", errors="ignore")))
