@@ -1,5 +1,7 @@
+import os
 import logging
 from jira import JIRA
+from traceback import format_exc
 
 
 class JiraWrapper(object):
@@ -70,24 +72,29 @@ class JiraWrapper(object):
         else:
             issue = self.post_issue(issue_data)
             created = True
-        if attachments:
-            for attachment in attachments:
-                if 'binary_content' in attachment:
-                    self.add_attachment(issue.key,
-                                        attachment=attachment['binary_content'],
-                                        filename=attachment['message'])
-        for watcher in self.watchers:
-            self.client.add_watcher(issue.id, watcher)
-        if self.jira_epic_key:
-            self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
-        self.created_jira_tickets.append({'description': issue.fields.summary,
-                                          'priority': issue.fields.priority,
-                                          'key': issue.key,
-                                          'link': self.url + '/browse/' + issue.key,
-                                          'new': created,
-                                          'assignee': issue.fields.assignee,
-                                          'status': issue.fields.status.name,
-                                          'open_date': issue.fields.created})
+        try:
+            if attachments:
+                for attachment in attachments:
+                    if 'binary_content' in attachment:
+                        self.add_attachment(issue.key,
+                                            attachment=attachment['binary_content'],
+                                            filename=attachment['message'])
+            for watcher in self.watchers:
+                self.client.add_watcher(issue.id, watcher)
+            if self.jira_epic_key:
+                self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
+        except:
+            if os.environ.get("debug", False):
+                print(format_exc())
+        finally:
+            self.created_jira_tickets.append({'description': issue.fields.summary,
+                                              'priority': issue.fields.priority,
+                                              'key': issue.key,
+                                              'link': self.url + '/browse/' + issue.key,
+                                              'new': created,
+                                              'assignee': issue.fields.assignee,
+                                              'status': issue.fields.status.name,
+                                              'open_date': issue.fields.created})
         return issue, created
 
     def add_attachment(self, issue_key, attachment, filename=None):
