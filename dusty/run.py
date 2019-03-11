@@ -14,6 +14,7 @@
 
 import argparse
 import os
+import re
 import yaml
 import requests
 from copy import deepcopy
@@ -29,7 +30,7 @@ from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
-from dusty.utils import send_emails
+from dusty.utils import send_emails, common_post_processing
 
 requests.packages.urllib3.disable_warnings()
 
@@ -44,6 +45,21 @@ def proxy_through_env(value):
     if isinstance(value, str) and value.startswith('$'):
         return os.environ.get(value.replace("$", ''))
     return value
+
+
+def variable_substitution(obj):
+    """ Allows to use environmental variables inside YAML/JSON config """
+    if isinstance(obj, dict):
+        for key in list(obj.keys()):
+            obj[variable_substitution(key)] = \
+                variable_substitution(obj.pop(key))
+    if isinstance(obj, list):
+        for index, item in enumerate(obj):
+            obj[index] = variable_substitution(item)
+    if isinstance(obj, str) and re.match(r"^\$[a-zA-Z_][a-zA-Z0-9_]*$", obj) \
+            and obj[1:] in os.environ:
+        return os.environ[obj[1:]]
+    return obj
 
 
 def parse_jira_config(config):
@@ -118,7 +134,7 @@ def config_from_yaml():
     if not config_data:
         with open(path_to_config, "rb") as f:
             config_data = f.read()
-    config = yaml.load(config_data)
+    config = variable_substitution(yaml.load(config_data))
     suites = list(config.keys())
     args = arg_parse(suites)
     test_name = args.suite
@@ -178,15 +194,18 @@ def config_from_yaml():
     return default_config, tests_config
 
 
-def process_results(default_config, start_time, global_results=None, html_report_file=None, xml_report_file=None):
+def process_results(default_config, start_time, global_results=None, html_report_file=None, xml_report_file=None, other_results=None):
     created_jira_tickets = []
     attachments = []
     if default_config.get('rp_data_writer', None):
         default_config['rp_data_writer'].finish_test()
     default_config['execution_time'] = int(time()-start_time)
+    if other_results is None:
+        other_results = []
     if default_config.get('generate_html', None):
         html_report_file = HTMLReport(sorted(global_results, key=lambda item: item.severity),
-                                      default_config).report_name
+                                      default_config,
+                                      other_findings=sorted(other_results, key=lambda item: item.severity)).report_name
     if default_config.get('generate_junit', None):
         xml_report_file = XUnitReport(global_results, default_config).report_name
     if os.environ.get("redis_connection"):
@@ -206,9 +225,11 @@ def process_results(default_config, start_time, global_results=None, html_report
 def main():
     start_time = time()
     global_results = []
+    global_other_results = []
     default_config, test_configs = config_from_yaml()
     for key in test_configs:
         results = []
+        other_results = []
         config = test_configs[key]
         if key in constants.SASTY_SCANNERS_CONFIG_KEYS:
             if key == "scan_opts":
@@ -222,14 +243,16 @@ def main():
                     print(format_exc())
         else:
             try:
-                results = getattr(DustyWrapper, key)(config)
+                tool_name, result = getattr(DustyWrapper, key)(config)
+                results, other_results = common_post_processing(config, result, tool_name, need_other_results=True)
             except:
                 print("Exception during %s Scanning" % key)
                 if os.environ.get("debug", False):
                     print(format_exc())
         if default_config.get('generate_html', None) or default_config.get('generate_junit', None):
             global_results.extend(results)
-    process_results(default_config, start_time, global_results)
+            global_other_results.extend(other_results)
+    process_results(default_config, start_time, global_results, other_results=global_other_results)
 
 
 if __name__ == "__main__":

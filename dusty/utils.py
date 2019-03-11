@@ -20,6 +20,7 @@ import threading
 from subprocess import Popen, PIPE
 from datetime import datetime
 from dusty import constants as c
+from traceback import format_exc
 
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -142,7 +143,7 @@ def process_false_positives(results, config):
     return results
 
 
-def process_min_priority(config, results):
+def process_min_priority(config, results, other_results=None):
     to_remove = []
     results = list(results)
     for item in results:
@@ -150,15 +151,25 @@ def process_min_priority(config, results):
                 c.JIRA_SEVERITIES.get(config.get('min_priority', c.MIN_PRIORITY)):
             to_remove.append(item)
     for _ in to_remove:
-        results.pop(results.index(_))
+        item = results.pop(results.index(_))
+        if isinstance(other_results, list):
+            other_results.append(item)
     return results
 
 
-def common_post_processing(config, result, tool_name):
+def common_post_processing(config, result, tool_name, need_other_results=False):
+    other_results = []
     filtered_result = process_false_positives(result, config)
-    filtered_result = process_min_priority(config, filtered_result)
-    report_to_rp(config, filtered_result, tool_name)
-    report_to_jira(config, filtered_result)
+    filtered_result = process_min_priority(config, filtered_result, other_results=other_results)
+    try:
+        report_to_rp(config, filtered_result, tool_name)
+        report_to_jira(config, filtered_result)
+    except:
+        print("Failed to report issues in Jira/RP")
+        if os.environ.get("debug", False):
+            print(format_exc())
+    if need_other_results:
+        return filtered_result, other_results
     return filtered_result
 
 

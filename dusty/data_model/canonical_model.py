@@ -101,6 +101,10 @@ class DefaultModel(object):
     def get_numerical_severity(self) -> int:
         return 0
 
+    @staticmethod
+    def _stringify(value):
+        return value.replace("_", " ")
+
     def finding_error_string(self) -> str:
         endpoint_str = ""
         for e in self.endpoints:
@@ -126,7 +130,7 @@ class DefaultModel(object):
                 continue
             else:
                 if self.finding[each] and 'N/A' not in self.finding[each] and not isinstance(self.finding[each], dict):
-                    finding += f"**{each}**: {self.finding[each]}\n"
+                    finding += f"**{self._stringify(each)}**: {self._stringify(self.finding[each])}\n"
 
         if self.finding['static_finding_details']['file_name']:
             self.scan_type = 'SAST'
