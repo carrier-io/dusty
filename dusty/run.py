@@ -245,6 +245,10 @@ def main():
             try:
                 tool_name, result = getattr(DustyWrapper, key)(config)
                 results, other_results = common_post_processing(config, result, tool_name, need_other_results=True)
+                if default_config.get('jira_service', None) and config.get('jira_service', None):
+                    default_config['jira_service'].created_jira_tickets.extend(
+                        config.get('jira_service').get_created_tickets()
+                    )
             except:
                 print("Exception during %s Scanning" % key)
                 if os.environ.get("debug", False):
