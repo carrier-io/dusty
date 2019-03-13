@@ -24,7 +24,11 @@ __author__ = 'KarynaTaranova'
 
 
 class PTAIScanParser(object):
-    def __init__(self, filename):
+    def __init__(self, filename, filter_statuses='discarded'):
+        """
+        :param filename:
+        :param filter_statuses: str with statuses, separated ', '
+        """
         file_path_descriptions_list = ['Уязвимый файл']
 
         def trim_blank_lines(line):
@@ -60,7 +64,17 @@ class PTAIScanParser(object):
             id = vulnerability_info_soup.find('a', {'class': 'glossary-anchor'}).attrs.get('id')
             vulnerabilities_info[id] = vulnerability_info_soup.text.replace(id, '')
         vulnerabilities_soup = soup.find_all('div', {'class': 'vulnerability'})
+        filter_statuses_list = filter_statuses.split(', ')
         for vulnerability_soup in vulnerabilities_soup:
+            if filter_statuses_list:
+                skip_flag = False
+                for filter_status in filter_statuses_list:
+                    status = vulnerability_soup.find_all('i', {'class': '{}-icon'.format(filter_status)})
+                    if status:
+                        skip_flag = True
+                        break
+                if skip_flag:
+                    continue
             severity_level_soup = vulnerability_soup.select('div[class*="vulnerability-type-name-level-"]')
             title = ''
             file_path = ''
