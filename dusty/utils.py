@@ -42,7 +42,7 @@ def report_to_jira(config, result):
         config.get('jira_service').connect()
         print(config.get('jira_service').client)
         for item in result:
-            issue, created = item.jira(config['jira_service'])
+            issue, created = item.jira(config['jira_service'], config.get('jira_mapping', None))
             if created:
                 print(issue.key)
     elif config.get('jira_service') and not config.get('jira_service').valid:

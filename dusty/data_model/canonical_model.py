@@ -176,8 +176,11 @@ class DefaultModel(object):
         tc.add_error_info(message=message, error_type=self.finding['severity'])
         return tc
 
-    def jira(self, jira_client):
-        issue, created = jira_client.create_issue(self.finding["title"], c.SEVERITY_MAPPING[self.finding['severity']],
+    def jira(self, jira_client, priority_mapping=None):
+        priority = c.SEVERITY_MAPPING[self.finding['severity']]
+        if priority_mapping and priority in priority_mapping:
+            priority = priority_mapping[priority]
+        issue, created = jira_client.create_issue(self.finding["title"], priority,
                                  self.__str__(), self.get_hash_code(),
                                  additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
         return issue, created
