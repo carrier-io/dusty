@@ -25,6 +25,7 @@ __author__ = 'KarynaTaranova'
 
 class PTAIScanParser(object):
     def __init__(self, filename):
+        file_path_descriptions_list = ['Уязвимый файл']
 
         def trim_blank_lines(line):
             blank_lines_patterns = ['\n( *\n)', '\n+']
@@ -33,6 +34,20 @@ class PTAIScanParser(object):
                 for find in finds:
                     line = line.replace(find, '\n')
             return line
+
+        def get_value_by_description(table_soap, descriptions):
+            option_descriptions_soup = table_soap.select('td[class*="option-description"]')
+            option_descriptions = [item.text for item in option_descriptions_soup]
+            value_index = -1
+            value = ''
+            for description in descriptions:
+                value_index = option_descriptions.index(description)
+                if value_index >= 0:
+                    break
+            if value_index >= 0:
+                option_values_soup = table_soap.select('td[class*="option-value"]')
+                value = option_values_soup[value_index].text
+            return value
 
         dupes = dict()
         self.items = []
@@ -52,16 +67,9 @@ class PTAIScanParser(object):
             short_file_path = ''
             if severity_level_soup:
                 title = severity_level_soup[0].text
-                file_path_soup = vulnerability_soup.find_all('td', {'class': 'option-value'})
-                if file_path_soup:
-                    file_path = file_path_soup[0].text
-                    if '\\' in file_path:
-                        short_file_path = ' in ...\\' + file_path.split('\\')[-1]
-                    else:
-                        file_path_soup = vulnerability_soup.select('td[class*="option-value"]')
-                        if file_path_soup:
-                            file_path = file_path_soup[0].text
-                            short_file_path = ' in ...\\' + file_path.split('\\')[-1]
+                file_path = get_value_by_description(vulnerability_soup, file_path_descriptions_list)
+                if '\\' in file_path:
+                    short_file_path = ' in ...\\' + file_path.split('\\')[-1]
                 severity_classes_soup = severity_level_soup[0].attrs.get('class')
                 for severity_class_soup in severity_classes_soup:
                     if 'vulnerability-type-name-level-' in severity_class_soup:
