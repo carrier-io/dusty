@@ -26,8 +26,8 @@ class PTAIModel(DefaultModel):
     def __str__(self):
         return self.finding['description']
 
-    def jira(self, jira_client):
-        issue, created = super().jira(jira_client)
+    def jira(self, jira_client, priority_mapping=None):
+        issue, created = super().jira(jira_client, priority_mapping)
         print(issue.key)
         if self.finding['comments']:
             for data in self.finding['comments']:
