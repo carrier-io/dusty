@@ -66,3 +66,6 @@ NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
 JIRA_DESCRIPTION_MAX_SIZE = 61908
 JIRA_OPENED_STATUSES = ['Open', 'In Progress']
 MIN_PRIORITY = 'Major'
+
+JIRA_FIELD_USE_DEFAULT_VALUE = '!default'
+JIRA_FIELD_DO_NOT_USE_VALUE = '!remove'

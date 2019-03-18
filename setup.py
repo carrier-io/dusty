@@ -32,6 +32,7 @@ setup(
     entry_points={
         'console_scripts': [
             'run = dusty.run:main',
+            'jira_check = dusty.utilities.jira_check:main',
             'zap_parse = dusty.zap_authenticated:main'
         ]
     },

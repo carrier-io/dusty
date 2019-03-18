@@ -2,13 +2,13 @@ import os
 import logging
 from jira import JIRA
 from traceback import format_exc
+from dusty import constants as const
 
 
 class JiraWrapper(object):
     JIRA_REQUEST = 'project={} AND labels in ({})'
 
-    def __init__(self, url, user, password, project, assignee, issue_type='Bug', labels=None, watchers=None,
-                 jira_epic_key=None, fields=None):
+    def __init__(self, url, user, password, project, fields=None):
         self.valid = True
         self.url = url
         self.password = password
@@ -24,18 +24,47 @@ class JiraWrapper(object):
             self.client.close()
             self.valid = False
             return
-        self.assignee = assignee
-        self.issue_type = issue_type
-        self.labels = list()
-        if labels:
-            self.labels = [label.strip() for label in labels.split(",")]
-        self.watchers = list()
-        if watchers:
-            self.watchers = [watchers.strip() for watchers in watchers.split(",")]
-        self.jira_epic_key = jira_epic_key
         self.fields = {}
-        if fields and isinstance(fields, dict):
-            self.fields = fields
+        all_jira_fields = self.client.fields()
+        if isinstance(fields, dict):
+            for key, value in fields.items():
+                if isinstance(value, str) and const.JIRA_FIELD_DO_NOT_USE_VALUE in value:
+                    continue
+
+                jira_keys = [item for item in all_jira_fields if item["id"] == key]
+                if not jira_keys:
+                    jira_keys = [item for item in all_jira_fields
+                                 if item["name"].lower() == key.lower().replace('_', ' ')]
+                if len(jira_keys) == 1:
+                    jira_key = jira_keys[0]
+                    key_type = jira_key['schema']['type']
+                else:
+                    logging.warning(f'Cannot recognize field {key}. This field will not be used.')
+                    continue
+
+                if isinstance(value, dict):
+                    _value = value
+                elif key_type == 'array':
+                    if isinstance(value, str):
+                        _value = [item.strip() for item in value.split(",")]
+                    elif isinstance(value, int):
+                        _value = [value]
+                    else:
+                        _value = value
+                elif key_type in ['string', 'number', 'any']:
+                    _value = value
+                else:
+                    if value:
+                        _value = {'name': value}
+                    else:
+                        _value = None
+                if _value:
+                    self.fields[jira_key['id']] = _value
+        if not self.fields.get('issuetype', None):
+            self.fields['issuetype'] = {'name': '!default_issuetype'}
+        self.watchers = []
+        if 'watches' in self.fields.keys():
+            self.watchers = self.fields.pop('watches')
         self.client.close()
         self.created_jira_tickets = list()
 
@@ -51,21 +80,50 @@ class JiraWrapper(object):
         _labels = [issue_hash]
         if additional_labels and isinstance(additional_labels, list):
             _labels.extend(additional_labels)
-        _labels.extend(self.labels)
+        if not self.fields.get('labels'):
+            self.fields['labels'] = []
+        self.fields['labels'].extend(_labels)
         issue_data = {
             'project': {'key': self.project},
+            'issuetype': 'Bug',
             'summary': title,
             'description': description,
-            'issuetype': {'name': self.issue_type},
-            'assignee': {'name': self.assignee},
-            'priority': {'name': priority},
-            'labels': _labels
+            'priority': {'name': priority}
         }
+        default_fields = {
+            '!default_issuetype': 'Bug',
+            '!default_summary': title,
+            '!default_description': description,
+            '!default_priority': priority}
+
+        def replace_defaults(value):
+            if isinstance(value, str) and const.JIRA_FIELD_USE_DEFAULT_VALUE in value:
+                for default_key in default_fields.keys():
+                    if default_key in value:
+                        value = value.replace(default_key, default_fields[default_key])
+            return value
+
         for key, value in self.fields.items():
-            if not key in issue_data:
+            if isinstance(value, str):
+                if const.JIRA_FIELD_DO_NOT_USE_VALUE in value:
+                    issue_data.pop(key)
+                else:
+                    issue_data[key] = replace_defaults(value)
+            elif isinstance(value, list):
+                for item in value:
+                    value[value.index(item)] = replace_defaults(item)
+                if issue_data.get(key):
+                    issue_data[key].extend(value)
+                else:
+                    issue_data[key] = value
+            elif isinstance(value, dict):
+                for _key, _value in value.items():
+                    value[_key] = replace_defaults(_value)
+                issue_data[key] = value
+            elif not key in issue_data:
                 issue_data[key] = value
             else:
-                print('field {} is already set and has \'{}\' value'.format(key, issue_data[key]))
+                logging.warning('field {} is already set and has \'{}\' value'.format(key, issue_data[key]))
         jira_request = self.JIRA_REQUEST.format(issue_data["project"]["key"], issue_hash)
         if get_or_create:
             issue, created = self.get_or_create_issue(jira_request, issue_data)
@@ -80,12 +138,11 @@ class JiraWrapper(object):
                                             attachment=attachment['binary_content'],
                                             filename=attachment['message'])
             for watcher in self.watchers:
+
                 self.client.add_watcher(issue.id, watcher)
-            if self.jira_epic_key:
-                self.client.add_issues_to_epic(self.jira_epic_key, [issue.id])
         except:
             if os.environ.get("debug", False):
-                print(format_exc())
+                logging.error(format_exc())
         finally:
             self.created_jira_tickets.append({'description': issue.fields.summary,
                                               'priority': issue.fields.priority,
@@ -110,7 +167,7 @@ class JiraWrapper(object):
         return issue
 
     def get_or_create_issue(self, search_string, issue_data):
-        issuetype = issue_data['issuetype']['name']
+        issuetype = issue_data['issuetype']
         created = False
         jira_results = self.client.search_issues(search_string)
         issues = []
@@ -120,9 +177,9 @@ class JiraWrapper(object):
         if len(issues) == 1:
             issue = issues[0]
             if len(issues) > 1:
-                print('  more then 1 issue with the same summary')
+                logging.error('  more then 1 issue with the same summary')
             else:
-                print(f'  {issuetype} issue already exists: {issue.key}')
+                logging.info(f'  {issuetype} issue already exists: {issue.key}')
         else:
             issue = self.post_issue(issue_data)
             created = True

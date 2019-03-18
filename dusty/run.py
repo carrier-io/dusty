@@ -17,6 +17,7 @@ import os
 import re
 import yaml
 import requests
+import logging
 from copy import deepcopy
 from traceback import format_exc
 from time import time
@@ -67,18 +68,25 @@ def parse_jira_config(config):
     jira_user = proxy_through_env(config['jira'].get("username", None))
     jira_pwd = proxy_through_env(config['jira'].get("password", None))
     jira_project = proxy_through_env(config['jira'].get("project", None))
-    jira_assignee = proxy_through_env(config['jira'].get("assignee", None))
-    jira_issue_type = proxy_through_env(config['jira'].get("issue_type", 'Bug'))
-    jira_lables = proxy_through_env(config['jira'].get("labels", ''))
-    jira_watchers = proxy_through_env(config['jira'].get("watchers", ''))
-    jira_epic_key = proxy_through_env(config['jira'].get("epic_link", None))
-    jira_fields = proxy_through_env(config['jira'].get("fields", None))
-    if not (jira_url and jira_user and jira_pwd and jira_project and jira_assignee):
-        print("Jira integration configuration is messed up , proceeding without Jira")
+    jira_fields = {}
+    for field_name, field_value in proxy_through_env(config['jira'].get("fields", {})).items():
+        value = proxy_through_env(field_value)
+        if value:
+            jira_fields[field_name] = value
+    #tmp
+    deprecated_fields = ["assignee", "issue_type", "labels", "watchers", "epic_link"]
+    if any(deprecated_field in deprecated_fields for deprecated_field in config['jira']):
+        logging.warning('WARNING: using deprecated config, please update!')
+        jira_fields['assignee'] = proxy_through_env(config['jira'].get("assignee", None))
+        jira_fields['issuetype'] = proxy_through_env(config['jira'].get("issue_type", 'Bug'))
+        jira_fields['labels'] = proxy_through_env(config['jira'].get("labels", []))
+        jira_fields['watchers'] = proxy_through_env(config['jira'].get("watchers", None))
+        jira_fields['Epic Link'] = proxy_through_env(config['jira'].get("epic_link", None))
+    #tmp
+    if not (jira_url and jira_user and jira_pwd and jira_project):
+        logging.warning("Jira integration configuration is messed up , proceeding without Jira")
     else:
-        return JiraWrapper(jira_url, jira_user, jira_pwd, jira_project,
-                           jira_assignee, jira_issue_type, jira_lables,
-                           jira_watchers, jira_epic_key, jira_fields)
+        return JiraWrapper(jira_url, jira_user, jira_pwd, jira_project, jira_fields)
 
 
 def parse_email_config(config):
@@ -97,7 +105,7 @@ def parse_email_config(config):
     constants.JIRA_OPENED_STATUSES.extend(proxy_through_env(
         config['emails'].get('open_states', '')).split(', '))
     if not (emails_smtp_server and emails_login and emails_password and emails_receivers_email_list):
-        print("Emails integration configuration is messed up , proceeding without Emails")
+        logging.warning("Emails integration configuration is messed up , proceeding without Emails")
     else:
         emails_service = EmailWrapper(emails_smtp_server, emails_login, emails_password, emails_port,
                                       emails_receivers_email_list, emails_subject, emails_body)
@@ -110,7 +118,7 @@ def parse_rp_config(config, test_name, rp_service=None, launch_id=None, rp_confi
     rp_url = config['reportportal'].get("rp_host")
     rp_token = config['reportportal'].get("rp_token")
     if not (rp_launch_name and rp_project and rp_url and rp_token):
-        print("ReportPortal configuration values missing, proceeding "
+        logging.warning("ReportPortal configuration values missing, proceeding "
               "without report portal integration ")
     else:
         rp_service = ReportPortalDataWriter(rp_url, rp_token, rp_project, rp_launch_name)
@@ -121,6 +129,10 @@ def parse_rp_config(config, test_name, rp_service=None, launch_id=None, rp_confi
 
 
 def config_from_yaml():
+
+    def default_ctor(loader, tag_suffix, node):
+        return tag_suffix + node.value
+
     rp_service = None
     jira_service = None
     rp_config = None
@@ -133,6 +145,7 @@ def config_from_yaml():
     if not config_data:
         with open(path_to_config, "rb") as f:
             config_data = f.read()
+    yaml.add_multi_constructor('', default_ctor)
     config = variable_substitution(yaml.load(config_data))
     suites = list(config.keys())
     args = arg_parse(suites)
@@ -142,9 +155,9 @@ def config_from_yaml():
     generate_junit = execution_config.get("junit_report", False)
     code_path = proxy_through_env(execution_config.get("code_path", constants.PATH_TO_CODE))
     if generate_html:
-        print("We are going to generate HTML Report")
+        logging.info("We are going to generate HTML Report")
     if generate_junit:
-        print("We are going to generate jUnit Report")
+        logging.info("We are going to generate jUnit Report")
     execution_config['test_type'] = test_name
     for each in constants.READ_THROUGH_ENV:
         if each in execution_config:
@@ -237,17 +250,17 @@ def main():
             try:
                 results = getattr(SastyWrapper, attr_name)(config)
             except:
-                print("Exception during %s Scanning" % attr_name)
+                logging.error("Exception during %s Scanning" % attr_name)
                 if os.environ.get("debug", False):
-                    print(format_exc())
+                    logging.error(format_exc())
         else:
             try:
                 tool_name, result = getattr(DustyWrapper, key)(config)
                 results, other_results = common_post_processing(config, result, tool_name, need_other_results=True)
             except:
-                print("Exception during %s Scanning" % key)
+                logging.error("Exception during %s Scanning" % key)
                 if os.environ.get("debug", False):
-                    print(format_exc())
+                    logging.error(format_exc())
         if default_config.get('jira_service', None) and config.get('jira_service', None):
             default_config['jira_service'].created_jira_tickets.extend(
                 config.get('jira_service').get_created_tickets()
