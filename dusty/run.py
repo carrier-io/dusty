@@ -39,7 +39,8 @@ requests.packages.urllib3.disable_warnings()
 def arg_parse(suites):
     parser = argparse.ArgumentParser(description='Executor for DAST scanner')
     parser.add_argument('-s', '--suite', type=str, help="specify test suite from (%s)" % ','.join(suites))
-    return parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    return args
 
 
 def proxy_through_env(value):
