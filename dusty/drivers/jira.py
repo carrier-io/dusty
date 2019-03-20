@@ -25,7 +25,10 @@ class JiraWrapper(object):
             self.valid = False
             return
         self.fields = {}
+        self.watchers = []
         if isinstance(fields, dict):
+            if 'watchers' in fields.keys():
+                self.watchers = [item.strip() for item in fields.pop('watchers').split(",")]
             all_jira_fields = self.client.fields()
             for key, value in fields.items():
                 if value:
@@ -53,9 +56,6 @@ class JiraWrapper(object):
                     self.fields[jira_key['id']] = _value
         if not self.fields.get('issuetype', None):
             self.fields['issuetype'] = {'name': '!default_issuetype'}
-        self.watchers = []
-        if 'watches' in self.fields.keys():
-            self.watchers = self.fields.pop('watches')
         self.client.close()
         self.created_jira_tickets = list()
 
