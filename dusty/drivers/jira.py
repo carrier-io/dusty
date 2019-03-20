@@ -59,7 +59,6 @@ class JiraWrapper(object):
         self.client.close()
         self.created_jira_tickets = list()
 
-
     def connect(self):
         self.client = JIRA(self.url, basic_auth=(self.user, self.password))
 
@@ -130,7 +129,6 @@ class JiraWrapper(object):
                                             attachment=attachment['binary_content'],
                                             filename=attachment['message'])
             for watcher in self.watchers:
-                print(issue.id, watcher)
                 self.client.add_watcher(issue.id, watcher)
         except:
             if os.environ.get("debug", False):
