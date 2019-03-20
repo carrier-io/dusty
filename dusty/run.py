@@ -181,6 +181,7 @@ def config_from_yaml():
                           test_type=execution_config.get('test_type', None),
                           rp_data_writer=rp_service,
                           jira_service=jira_service,
+                          jira_mapping=execution_config.get('jira_mapping', None),
                           min_priority=min_priority,
                           rp_config=rp_config,
                           generate_html=generate_html,
@@ -274,4 +275,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
