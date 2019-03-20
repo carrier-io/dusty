@@ -15,7 +15,7 @@
 NON_SCANNERS_CONFIG_KEYS = ['target_host', 'target_port', 'protocol', "/",
                             'reportportal', 'html_report', 'xml_report',
                             'safe_pipeline_mode', 'project_name', 'environment',
-                            'test_type', 'junit_report', 'jira', 'emails',
+                            'test_type', 'junit_report', 'jira', 'jira_mapping', 'emails',
                             'min_priority', 'code_path', 'composition_analysis']
 SASTY_SCANNERS_CONFIG_KEYS = ['language', 'npm', 'retirejs', 'ptai', 'safety', 'scan_opts']
 READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'environment']
@@ -66,3 +66,6 @@ NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
 JIRA_DESCRIPTION_MAX_SIZE = 61908
 JIRA_OPENED_STATUSES = ['Open', 'In Progress']
 MIN_PRIORITY = 'Major'
+
+JIRA_FIELD_USE_DEFAULT_VALUE = '!default'
+JIRA_FIELD_DO_NOT_USE_VALUE = '!remove'
