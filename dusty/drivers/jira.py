@@ -25,40 +25,31 @@ class JiraWrapper(object):
             self.valid = False
             return
         self.fields = {}
-        all_jira_fields = self.client.fields()
         if isinstance(fields, dict):
+            all_jira_fields = self.client.fields()
             for key, value in fields.items():
-                if isinstance(value, str) and const.JIRA_FIELD_DO_NOT_USE_VALUE in value:
-                    continue
-
-                jira_keys = [item for item in all_jira_fields if item["id"] == key]
-                if not jira_keys:
-                    jira_keys = [item for item in all_jira_fields
-                                 if item["name"].lower() == key.lower().replace('_', ' ')]
-                if len(jira_keys) == 1:
-                    jira_key = jira_keys[0]
-                    key_type = jira_key['schema']['type']
-                else:
-                    logging.warning(f'Cannot recognize field {key}. This field will not be used.')
-                    continue
-
-                if isinstance(value, dict):
-                    _value = value
-                elif key_type == 'array':
-                    if isinstance(value, str):
-                        _value = [item.strip() for item in value.split(",")]
-                    elif isinstance(value, int):
-                        _value = [value]
+                if value:
+                    if isinstance(value, str) and const.JIRA_FIELD_DO_NOT_USE_VALUE in value:
+                        continue
+                    jira_keys = [item for item in all_jira_fields if item["id"] == key]
+                    if not jira_keys:
+                        jira_keys = [item for item in all_jira_fields
+                                     if item["name"].lower() == key.lower().replace('_', ' ')]
+                    if len(jira_keys) == 1:
+                        jira_key = jira_keys[0]
+                        key_type = jira_key['schema']['type']
                     else:
+                        logging.warning(f'Cannot recognize field {key}. This field will not be used.')
+                        continue
+                    if key_type in ['string', 'number', 'any'] or isinstance(value, dict):
                         _value = value
-                elif key_type in ['string', 'number', 'any']:
-                    _value = value
-                else:
-                    if value:
-                        _value = {'name': value}
+                    elif key_type == 'array':
+                        if isinstance(value, str):
+                            _value = [item.strip() for item in value.split(",")]
+                        elif isinstance(value, int):
+                            _value = [value]
                     else:
-                        _value = None
-                if _value:
+                        _value = {'name': value}
                     self.fields[jira_key['id']] = _value
         if not self.fields.get('issuetype', None):
             self.fields['issuetype'] = {'name': '!default_issuetype'}
@@ -76,6 +67,19 @@ class JiraWrapper(object):
 
     def create_issue(self, title, priority, description, issue_hash, attachments=None, get_or_create=True,
                      additional_labels=None):
+
+        def replace_defaults(value):
+            if isinstance(value, str) and const.JIRA_FIELD_USE_DEFAULT_VALUE in value:
+                for default_key in default_fields.keys():
+                    if default_key in value:
+                        value = value.replace(default_key, default_fields[default_key])
+            return value
+
+        default_fields = {
+            '!default_issuetype': 'Bug',
+            '!default_summary': title,
+            '!default_description': description,
+            '!default_priority': priority}
         description = self.markdown_to_jira_markdown(description)
         _labels = [issue_hash]
         if additional_labels and isinstance(additional_labels, list):
@@ -90,19 +94,6 @@ class JiraWrapper(object):
             'description': description,
             'priority': {'name': priority}
         }
-        default_fields = {
-            '!default_issuetype': 'Bug',
-            '!default_summary': title,
-            '!default_description': description,
-            '!default_priority': priority}
-
-        def replace_defaults(value):
-            if isinstance(value, str) and const.JIRA_FIELD_USE_DEFAULT_VALUE in value:
-                for default_key in default_fields.keys():
-                    if default_key in value:
-                        value = value.replace(default_key, default_fields[default_key])
-            return value
-
         for key, value in self.fields.items():
             if isinstance(value, str):
                 if const.JIRA_FIELD_DO_NOT_USE_VALUE in value:
@@ -138,7 +129,6 @@ class JiraWrapper(object):
                                             attachment=attachment['binary_content'],
                                             filename=attachment['message'])
             for watcher in self.watchers:
-
                 self.client.add_watcher(issue.id, watcher)
         except:
             if os.environ.get("debug", False):

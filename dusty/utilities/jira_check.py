@@ -37,8 +37,8 @@ def main():
                        verified=False, description=description,
                        severity=severity)
         report_to_jira(default_config, [item])
-        print('To delete created issue:\njira_check -s <test_name> -d <issue_key>\nOptional params:\n'
-              'To specify user with an ability to delete tickets:\n-u user_name -p password')
+        print('Issue was created.\nTo delete created issue:\njira_check -s <test_name> -d <issue_key>\n'
+              'Optional params:\nTo specify user with an ability to delete tickets:\n-u user_name -p password')
 
 
 if __name__ == "__main__":
