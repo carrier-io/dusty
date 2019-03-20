@@ -1,5 +1,6 @@
 import os
 import logging
+from copy import deepcopy
 from jira import JIRA
 from traceback import format_exc
 from dusty import constants as const
@@ -81,12 +82,6 @@ class JiraWrapper(object):
             '!default_description': description,
             '!default_priority': priority}
         description = self.markdown_to_jira_markdown(description)
-        _labels = [issue_hash]
-        if additional_labels and isinstance(additional_labels, list):
-            _labels.extend(additional_labels)
-        if not self.fields.get('labels'):
-            self.fields['labels'] = []
-        self.fields['labels'].extend(_labels)
         issue_data = {
             'project': {'key': self.project},
             'issuetype': 'Bug',
@@ -94,7 +89,8 @@ class JiraWrapper(object):
             'description': description,
             'priority': {'name': priority}
         }
-        for key, value in self.fields.items():
+        fields = deepcopy(self.fields)
+        for key, value in fields.items():
             if isinstance(value, str):
                 if const.JIRA_FIELD_DO_NOT_USE_VALUE in value:
                     issue_data.pop(key)
@@ -115,6 +111,13 @@ class JiraWrapper(object):
                 issue_data[key] = value
             else:
                 logging.warning('field {} is already set and has \'{}\' value'.format(key, issue_data[key]))
+        _labels = [issue_hash]
+        if additional_labels and isinstance(additional_labels, list):
+            _labels.extend(additional_labels)
+        if issue_data.get('labels', None):
+            issue_data['labels'].extend(_labels)
+        else:
+            issue_data['labels'] = _labels
         jira_request = self.JIRA_REQUEST.format(issue_data["project"]["key"], issue_hash)
         if get_or_create:
             issue, created = self.get_or_create_issue(jira_request, issue_data)
