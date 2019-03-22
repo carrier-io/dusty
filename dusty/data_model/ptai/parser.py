@@ -24,10 +24,10 @@ __author__ = 'KarynaTaranova'
 
 
 class PTAIScanParser(object):
-    def __init__(self, filename, filter_statuses='discarded'):
+    def __init__(self, filename, filtered_statuses=constants.PTAI_DEFAULT_FILTERED_STATUSES):
         """
         :param filename:
-        :param filter_statuses: str with statuses, separated ', '
+        :param filtered_statuses: str with statuses, separated ', '
         """
         file_path_descriptions_list = ['Уязвимый файл']
 
@@ -64,11 +64,10 @@ class PTAIScanParser(object):
             id = vulnerability_info_soup.find('a', {'class': 'glossary-anchor'}).attrs.get('id')
             vulnerabilities_info[id] = vulnerability_info_soup.text.replace(id, '')
         vulnerabilities_soup = soup.find_all('div', {'class': 'vulnerability'})
-        filter_statuses_list = filter_statuses.split(', ')
         for vulnerability_soup in vulnerabilities_soup:
-            if filter_statuses_list:
+            if filtered_statuses:
                 skip_flag = False
-                for filter_status in filter_statuses_list:
+                for filter_status in filtered_statuses:
                     status = vulnerability_soup.find_all('i', {'class': '{}-icon'.format(filter_status)})
                     if status:
                         skip_flag = True
