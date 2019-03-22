@@ -8,12 +8,11 @@ __author__ = 'KarynaTaranova'
 
 def main():
     parser = argparse.ArgumentParser(description='jira check')
-    parser.add_argument('-d', '--delete', type=str, help="")
+    parser.add_argument('-d', '--delete', type=str, help="EPMPRJ-1 or 'EPMPRJ-1, EPMPRJ-2' or 1:2")
     parser.add_argument('-u', '--user', type=str, help="")
     parser.add_argument('-p', '--password', type=str, help="")
     args, unknown = parser.parse_known_args()
     if args.delete:
-        ids = [item.strip() for item in args.delete.split(",")]
         default_config, test_configs = config_from_yaml()
         project = default_config.get('jira_service').project
         url = default_config.get('jira_service').url
@@ -21,10 +20,17 @@ def main():
         password = args.password if args.password else default_config.get('jira_service').password
         j = JiraWrapper(url, user, password, project)
         j.connect()
+        ids = []
+        if ':' in args.delete:
+            start, end = args.delete.split(':')
+            ids = [f'{project}-{str(i)}' for i in range(int(start), int(end) + 1)]
+        else:
+            ids = [item.strip() for item in args.delete.split(",")]
+
         try:
             for id in ids:
                 j.client.issue(id).delete()
-                print(f'Issue {args.delete} was deleted.')
+                print(f'Issue {id} was deleted.')
         finally:
             j.client.close()
     else:

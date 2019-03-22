@@ -69,3 +69,5 @@ MIN_PRIORITY = 'Major'
 
 JIRA_FIELD_USE_DEFAULT_VALUE = '!default'
 JIRA_FIELD_DO_NOT_USE_VALUE = '!remove'
+
+PTAI_DEFAULT_FILTERED_STATUSES = ['discarded', 'suspected']
