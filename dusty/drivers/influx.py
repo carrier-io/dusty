@@ -59,7 +59,7 @@ class InfluxReport(object):
             },
             "fields": self.results_by_severity
         }
-        self.client.write(stats)
+        self.client.write_points([stats])
         jira_issues = []
         for issue in self.created_jira_tickets:
             issue = {
@@ -81,7 +81,7 @@ class InfluxReport(object):
                 }
             }
             jira_issues.append(issue)
-        self.client.write(stats)
+        self.client.write_points(stats)
 
 
 
