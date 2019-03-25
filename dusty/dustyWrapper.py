@@ -38,12 +38,13 @@ class DustyWrapper(object):
         exec_cmd = f'sslyze --regular --json_out=/tmp/sslyze.json --quiet {config["host"]}:{config["port"]}'
         execute(exec_cmd)
         result = SslyzeJSONParser("/tmp/sslyze.json", "SSlyze").items
-        return (tool_name, result)
+        return tool_name, result
 
     @staticmethod
     def masscan(config):
         tool_name = "masscan"
         host = config["host"]
+        result = list()
         if not (find_ip(host)):
             host = find_ip(str(execute(f'getent hosts {host}')[0]))
             if len(host) > 0:
@@ -57,8 +58,7 @@ class DustyWrapper(object):
             exec_cmd = f'masscan {host} -p {ports} -pU:{ports} --rate 1000 -oJ /tmp/masscan.json {excluded_addon}'
             execute(exec_cmd.strip())
             result = MasscanJSONParser("/tmp/masscan.json", "masscan").items
-            return (tool_name, result)
-        return (tool_name, [])
+        return tool_name, result
 
     @staticmethod
     def nikto(config):
@@ -70,7 +70,7 @@ class DustyWrapper(object):
         cwd = '/opt/nikto/program'
         execute(exec_cmd, cwd)
         result = NiktoXMLParser("/tmp/nikto.xml", "Nikto").items
-        return (tool_name, result)
+        return tool_name, result
 
     @staticmethod
     def nmap(config):
@@ -101,7 +101,7 @@ class DustyWrapper(object):
                    f'--script={nse_scripts} {config["host"]} -oX /tmp/nmap.xml'
         execute(exec_cmd)
         result = NmapXMLParser('/tmp/nmap.xml', "NMAP").items
-        return (tool_name, result)
+        return tool_name, result
 
 
     @staticmethod
@@ -126,7 +126,7 @@ class DustyWrapper(object):
         execute('zap-cli report -o /tmp/zap.xml -f xml')
         result = ZapXmlParser('/tmp/zap.xml', "ZAP").items
         execute('supervisorctl stop zap')
-        return (tool_name, result)
+        return tool_name, result
 
     @staticmethod
     def w3af(config):
@@ -143,7 +143,7 @@ class DustyWrapper(object):
             f.write(config_content)
         execute(w3af_execution_command)
         result = W3AFXMLParser("/tmp/w3af.xml", "w3af").items
-        return (tool_name, result)
+        return tool_name, result
 
     @staticmethod
     def qualys(config):
@@ -194,17 +194,17 @@ class DustyWrapper(object):
         qualys.delete_asset("wasscan", scan_id)
         qualys.delete_asset("webapp", project_id)
         result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
-        return (tool_name, result)
+        return tool_name, result
 
     @staticmethod
     def burp(config):
         tool_name = "burp"
         print(config)
-        return (tool_name, [])
+        return tool_name, []
 
     @staticmethod
     def aemhacker(config):
         tool_name = "AEM_Hacker"
         aem_hacker_output = execute(f'aem-wrapper.sh -u {config.get("protocol")}://{config.get("host")}:{config.get("port")} --host {config.get("scanner_host", "127.0.0.1")} --port {config.get("scanner_port", "4444")}')[0].decode('utf-8')
         result = AemOutputParser(aem_hacker_output).items
-        return (tool_name, result)
+        return tool_name, result

@@ -17,6 +17,7 @@ import re
 import markdown2
 from junit_xml import TestCase
 from dusty import constants as c
+from dusty.utils import define_jira_priority
 
 
 class Endpoint(object):
@@ -177,16 +178,11 @@ class DefaultModel(object):
         return tc
 
     def jira(self, jira_client, priority_mapping=None):
-        priority = c.SEVERITY_MAPPING[self.finding['severity']]
-        if priority_mapping and priority in priority_mapping:
-            priority = priority_mapping[priority]
+        priority = define_jira_priority(self.finding['severity'], priority_mapping)
         issue, created = jira_client.create_issue(self.finding["title"], priority,
                                  self.__str__(), self.get_hash_code(),
                                  additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
         return issue, created
-
-    def influx_item(self):
-        pass
 
     def dd_item(self):
         pass
