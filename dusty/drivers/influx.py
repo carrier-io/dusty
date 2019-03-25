@@ -28,7 +28,10 @@ class InfluxReport(object):
     def sort_results_by_severity(self):
         results = dict()
         for each in self.results:
-            results[define_jira_priority(each.finding['severity'])] += 1
+            priority = define_jira_priority(each.finding['severity'])
+            if priority not in results:
+                results[priority] = 0
+            results[priority] += 1
         return results
 
     def get_new_jira_issues(self):

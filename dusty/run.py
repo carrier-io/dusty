@@ -268,7 +268,8 @@ def main():
                 logging.error("Exception during %s Scanning" % key)
                 if os.environ.get("debug", False):
                     logging.error(format_exc())
-        if default_config.get('jira_service', None) and config.get('jira_service', None):
+        if default_config.get('jira_service', None) and config.get('jira_service', None) \
+                and config.get('jira_service').valid:
             default_config['jira_service'].created_jira_tickets.extend(
                 config.get('jira_service').get_created_tickets()
             )
