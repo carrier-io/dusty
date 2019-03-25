@@ -14,6 +14,7 @@
 
 import re
 import os
+import json
 import random
 import string
 import threading
@@ -197,3 +198,11 @@ def define_jira_priority(severity, priority_mapping=None):
     if priority_mapping and priority in priority_mapping:
         priority = priority_mapping[priority]
     return priority
+
+
+def get_dependencies(file_path, add_devdep=False):
+    package_json = json.load(open(f'{file_path}/package.json'))
+    deps = list(package_json.get('dependencies', {}).keys())
+    if add_devdep:
+        deps.extend(list(package_json.get('devDependencies', {}).keys()))
+    return deps

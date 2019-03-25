@@ -12,9 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import json
 from dusty import constants
-from dusty.utils import execute, common_post_processing, ptai_post_processing, run_in_parallel
+from dusty.utils import execute, common_post_processing, ptai_post_processing, \
+    run_in_parallel, get_dependencies
 from dusty.data_model.bandit.parser import BanditParser
 from dusty.data_model.brakeman.parser import BrakemanParser
 from dusty.data_model.spotbugs.parser import SpotbugsParser
@@ -94,10 +94,8 @@ class SastyWrapper(object):
         composition_analysis = config.get('composition_analysis', None)
         if composition_analysis:
             scan_fns.extend([SastyWrapper.npm, SastyWrapper.retirejs])
-            if isinstance(composition_analysis, bool):
-                config['devdep'] = composition_analysis
-            elif isinstance(composition_analysis, dict):
-                config['devdep'] = composition_analysis.get('devdep', True)
+            config['add_devdep'] = composition_analysis.get('devdep', False) \
+                if isinstance(composition_analysis, dict) else False
         params = []
         for fn in scan_fns:
             params.append((fn, config))
@@ -109,14 +107,12 @@ class SastyWrapper(object):
 
     @staticmethod
     def npm(config, results=None):
-        devdeps = [] if config.get('devdep') \
-            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config)))) \
-            .get('devDependencies', {}).keys()
+        deps = get_dependencies(SastyWrapper.get_code_path(config), config.get('add_devdep'))
         exec_cmd = "npm audit --json"
         res = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         with open('/tmp/npm_audit.json', 'w') as npm_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
-        result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", devdeps).items
+        result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", deps).items
         filtered_result = common_post_processing(config, result, "NpmScan")
         if results or isinstance(results, list):
             results.append(filtered_result)
@@ -125,14 +121,12 @@ class SastyWrapper(object):
 
     @staticmethod
     def retirejs(config, results=None):
-        devdeps = [] if config.get('devdep') \
-            else json.load(open('{}/package.json'.format(SastyWrapper.get_code_path(config))))\
-            .get('devDependencies', {}).keys()
+        deps = get_dependencies(SastyWrapper.get_code_path(config), config.get('add_devdep'))
         exec_cmd = "retire --jspath={} --outputformat=json  " \
                    "--outputpath=/tmp/retirejs.json --includemeta --exitwith=0"\
             .format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd='/tmp')
-        result = RetireScanParser("/tmp/retirejs.json", "RetireScan", devdeps).items
+        result = RetireScanParser("/tmp/retirejs.json", "RetireScan", deps).items
         filtered_result = common_post_processing(config, result, "RetireScan")
         if results or isinstance(results, list):
             results.append(filtered_result)
