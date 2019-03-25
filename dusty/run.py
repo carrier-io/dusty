@@ -31,6 +31,7 @@ from dusty.sastyWrapper import SastyWrapper
 from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
+from dusty.drivers.influx import InfluxReport
 from dusty.utils import send_emails, common_post_processing
 
 requests.packages.urllib3.disable_warnings()
@@ -128,7 +129,6 @@ def parse_rp_config(config, test_name, rp_service=None, launch_id=None, rp_confi
                          rp_launch_name=rp_launch_name, launch_id=launch_id)
     return rp_service, launch_id, rp_config
 
-
 def config_from_yaml():
 
     def default_ctor(loader, tag_suffix, node):
@@ -184,6 +184,7 @@ def config_from_yaml():
                           jira_mapping=execution_config.get('jira_mapping', None),
                           min_priority=min_priority,
                           rp_config=rp_config,
+                          influx=execution_config.get("influx", None),
                           generate_html=generate_html,
                           generate_junit=generate_junit,
                           html_report=html_report,
@@ -208,7 +209,9 @@ def config_from_yaml():
     return default_config, tests_config
 
 
-def process_results(default_config, start_time, global_results=None, html_report_file=None, xml_report_file=None, other_results=None):
+def process_results(default_config, start_time, global_results=None,
+                    html_report_file=None, xml_report_file=None,
+                    other_results=None):
     created_jira_tickets = []
     attachments = []
     if default_config.get('rp_data_writer', None):
@@ -226,6 +229,8 @@ def process_results(default_config, start_time, global_results=None, html_report
         RedisFile(os.environ.get("redis_connection"), html_report_file, xml_report_file)
     if default_config.get('jira_service', None):
         created_jira_tickets = default_config['jira_service'].get_created_tickets()
+    if default_config.get('influx', None):
+        InfluxReport(global_results, other_results, created_jira_tickets, default_config)
     if default_config.get('email_service', None):
         if html_report_file:
             attachments.append(html_report_file)

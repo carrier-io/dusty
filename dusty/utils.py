@@ -190,3 +190,10 @@ def run_in_parallel(fns):
     for thread in threads:
         thread.join()
     return results
+
+
+def define_jira_priority(severity, priority_mapping=None):
+    priority = c.SEVERITY_MAPPING[severity]
+    if priority_mapping and priority in priority_mapping:
+        priority = priority_mapping[priority]
+    return priority

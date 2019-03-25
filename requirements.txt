@@ -9,3 +9,4 @@ junit-xml==1.8
 redis==3.0.1
 jira==2.0.0
 packaging==19.0
+influxdb==5.2.0
