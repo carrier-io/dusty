@@ -159,7 +159,6 @@ def config_from_yaml():
         logging.info("We are going to generate HTML Report")
     if generate_junit:
         logging.info("We are going to generate jUnit Report")
-    execution_config['test_type'] = test_name
     for each in constants.READ_THROUGH_ENV:
         if each in execution_config:
             execution_config[each] = proxy_through_env(execution_config[each])
