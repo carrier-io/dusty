@@ -14,8 +14,8 @@ class InfluxReport(object):
         self.policy = default_config['influx'].get('policy', {'Blocker': 1, 'Critical': 5, 'Major': 15})
         self.password = default_config['influx'].get('password', '')
         self.project_name = default_config['project_name']
-        self.environment = default_config['project_name']
-        self.test_type = default_config['project_name']
+        self.environment = default_config['environment']
+        self.test_type = default_config['test_type']
         self.created_jira_tickets = created_jira_tickets
         self.open_issues = len(self.created_jira_tickets)
         self.execution_time = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
