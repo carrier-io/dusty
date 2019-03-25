@@ -38,7 +38,7 @@ class SastyWrapper(object):
         if composition_analysis:
             scan_fns.append(SastyWrapper.safety)
             if isinstance(composition_analysis, dict):
-                config['files'] = composition_analysis.get('files', ['requirements1.txt'])
+                config['files'] = composition_analysis.get('files', ['requirements.txt'])
         params = []
         for fn in scan_fns:
             params.append((fn, config))
