@@ -23,7 +23,7 @@ __author__ = 'KarynaTaranova'
 
 
 class NpmScanParser(object):
-    def __init__(self, filename, test, devdeps):
+    def __init__(self, filename, test, deps):
         dupes = dict()
         find_date = None
         self.items = []
@@ -33,10 +33,7 @@ class NpmScanParser(object):
         advisories = data.get('advisories')
         for action in data['actions']:
             module = action.get('module')
-            if module not in devdeps:
-                title = ' '.join([action.get('action', ''),
-                                  action.get('module', ''),
-                                  action.get('target', '')])
+            if module in deps:
                 EXTENDED_SEVERITIES = constants.SEVERITIES.copy()
                 EXTENDED_SEVERITIES['Moderate'] = 2
                 unique_ids = {}

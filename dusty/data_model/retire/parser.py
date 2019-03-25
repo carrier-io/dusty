@@ -27,7 +27,7 @@ __author__ = 'KarynaTaranova'
 
 
 class RetireScanParser(object):
-    def __init__(self, filename, test, devdeps):
+    def __init__(self, filename, test, deps):
         dupes = dict()
         find_date = None
         self.items = []
@@ -39,7 +39,7 @@ class RetireScanParser(object):
             file_path = file_results.get('file')
             for version_results in file_results.get('results'):
                 component = version_results.get('component')
-                if component not in devdeps:
+                if component in deps:
                     if component not in components_data:
                         components_data[component] = \
                             {'versions': set(), 'descriptions': {}, 'references': {},
