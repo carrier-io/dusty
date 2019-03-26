@@ -155,6 +155,7 @@ def config_from_yaml():
     generate_html = execution_config.get("html_report", False)
     generate_junit = execution_config.get("junit_report", False)
     code_path = proxy_through_env(execution_config.get("code_path", constants.PATH_TO_CODE))
+    code_source = proxy_through_env(execution_config.get("code_source", constants.PATH_TO_CODE))
     if generate_html:
         logging.info("We are going to generate HTML Report")
     if generate_junit:
@@ -189,6 +190,7 @@ def config_from_yaml():
                           html_report=html_report,
                           ptai_report_name=ptai_report_name,
                           code_path=code_path,
+                          code_source=code_source,
                           path_to_false_positive=path_to_false_positive,
                           email_service=email_service,
                           email_attachments=email_attachments,
