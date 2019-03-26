@@ -28,7 +28,7 @@ class PTAIModel(DefaultModel):
 
     def jira(self, jira_client, priority_mapping=None):
         issue, created = super().jira(jira_client, priority_mapping)
-        if self.finding['comments']:
+        if created and self.finding['comments']:
             for data in self.finding['comments']:
                 jira_client.add_comment_to_issue(issue, data)
         return issue, created
