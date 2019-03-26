@@ -41,7 +41,6 @@ def report_to_rp(config, result, issue_name):
 def report_to_jira(config, result):
     if config.get('jira_service') and config.get('jira_service').valid:
         config.get('jira_service').connect()
-        print(config.get('jira_service').client)
         for item in result:
             issue, created = item.jira(config['jira_service'], config.get('jira_mapping', None))
             if created:

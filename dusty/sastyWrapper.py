@@ -31,6 +31,10 @@ class SastyWrapper(object):
         return config.get("code_path", constants.PATH_TO_CODE)
 
     @staticmethod
+    def get_code_source(config):
+        return config.get("code_source", SastyWrapper.get_code_path(config))
+
+    @staticmethod
     def python(config):
         scan_fns = [SastyWrapper.bandit]
         all_results = []
@@ -135,7 +139,7 @@ class SastyWrapper(object):
 
     @staticmethod
     def nodejsscan(config, results=None):
-        exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_path(config))
+        exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_source(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
         filtered_result = common_post_processing(config, result, "NodeJsScan")

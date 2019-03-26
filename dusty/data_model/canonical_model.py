@@ -179,9 +179,9 @@ class DefaultModel(object):
 
     def jira(self, jira_client, priority_mapping=None):
         priority = define_jira_priority(self.finding['severity'], priority_mapping)
-        issue, created = jira_client.create_issue(self.finding["title"], priority,
-                                 self.__str__(), self.get_hash_code(),
-                                 additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
+        issue, created = jira_client.create_issue(
+            self.finding["title"], priority, self.__str__(), self.get_hash_code(),
+            additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
         return issue, created
 
     def dd_item(self):
