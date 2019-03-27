@@ -82,7 +82,7 @@ class PTAIScanParser(object):
                 title = severity_level_soup[0].text
                 file_path = get_value_by_description(vulnerability_soup, file_path_descriptions_list)
                 if '\\' in file_path:
-                    short_file_path = ' in ...\\' + file_path.split('\\')[-1]
+                    short_file_path = ' in ...\\' + file_path.split('\\')[-1].rsplit(' : ', 1)[0]
                 severity_classes_soup = severity_level_soup[0].attrs.get('class')
                 for severity_class_soup in severity_classes_soup:
                     if 'vulnerability-type-name-level-' in severity_class_soup:
