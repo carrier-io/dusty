@@ -189,8 +189,10 @@ class DefaultModel(object):
             comments = self.finding['steps_to_reproduce']
             self.finding['steps_to_reproduce'] = ["See in comments"]
         else:
-            self.finding['steps_to_reproduce'] = self.finding['steps_to_reproduce'].\
-                replace("<pre>", "{code:collapse=true}\n\n").replace("</pre>", "\n\n{code}")
+            steps = []
+            for step in self.finding['steps_to_reproduce']:
+                steps.append(step.replace("<pre>", "{code:collapse=true}\n\n").replace("</pre>", "\n\n{code}"))
+            self.finding['steps_to_reproduce'] = steps
         issue, created = jira_client.create_issue(
             self.finding["title"], priority, self.__str__(), self.get_hash_code(),
             additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
