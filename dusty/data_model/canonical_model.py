@@ -129,7 +129,7 @@ class DefaultModel(object):
                   f'**Severity**: {self.finding["severity"]}\n\n'
         if self.finding['steps_to_reproduce']:
             steps = self._stringify('\n\n'.join(self.finding['steps_to_reproduce']))
-            finding += "**Steps To Reproduce**: {code:collapse=true}\n\n%s\n\n{code}\n\n" % steps
+            finding += f"**Steps To Reproduce**: {steps}"
         for each in self.finding:
             if each in ["error_string", "error_hash", "images", "title", "description", "tool", "severity",
                         "dynamic_finding", "static_finding", "static_finding_details", "steps_to_reproduce"]:
@@ -188,6 +188,9 @@ class DefaultModel(object):
         if len(self.__str__()) > 60000:
             comments = self.finding['steps_to_reproduce']
             self.finding['steps_to_reproduce'] = ["See in comments"]
+        else:
+            self.finding['steps_to_reproduce'] = self.finding['steps_to_reproduce'].\
+                replace("<pre>", "{code:collapse=true}\n\n").replace("</pre>", "\n\n{code}")
         issue, created = jira_client.create_issue(
             self.finding["title"], priority, self.__str__(), self.get_hash_code(),
             additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
