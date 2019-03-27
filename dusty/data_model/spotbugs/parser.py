@@ -50,8 +50,6 @@ class SpotbugsParser(object):
                                       f"{sanitize(item.findall('SourceLine')[i].find('Message').text)}"
                 except:
                     pass
-                finally:
-                    steps_to_reproduce += "\n\n"
 
             if details:
                 description += f'\n\n Details: {details.find("Details").text}'
@@ -71,6 +69,6 @@ class SpotbugsParser(object):
                                           steps_to_reproduce=f'{issue_type} issue {steps_to_reproduce}',
                                           static_finding=True)
             else:
-                dupes[dupe_key].finding['steps_to_reproduce'] += steps_to_reproduce
+                dupes[dupe_key].finding['steps_to_reproduce'].append(steps_to_reproduce)
 
         self.items = dupes.values()

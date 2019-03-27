@@ -73,7 +73,7 @@ class DefaultModel(object):
             "tool": tool,
             "static_finding": static_finding,
             "dynamic_finding": dynamic_finding,
-            "steps_to_reproduce": steps_to_reproduce,
+            "steps_to_reproduce": [],
             "references": references,
             "impact": impact,
             "mitigation": mitigation,
@@ -93,6 +93,8 @@ class DefaultModel(object):
             "error_string": None,
             "error_hash": None
         }
+        if steps_to_reproduce:
+            self.finding['steps_to_reproduce'].append(steps_to_reproduce)
         self.severity = c.SEVERITIES.get(severity, 100) #TODO: space for bugbar
         self.unsaved_endpoints = []
         self.images = [] if not images else images
@@ -125,9 +127,12 @@ class DefaultModel(object):
                   f'### Description:\n {self.finding["description"]}\n\n' \
                   f'**Tool**: {self.finding["tool"]}\n\n' \
                   f'**Severity**: {self.finding["severity"]}\n\n'
+        if self.finding['steps_to_reproduce']:
+            steps = self._stringify('\n\n'.join(self.finding['steps_to_reproduce']))
+            finding += "**Steps To Reproduce**: {code:collapse=true}\n\n%s\n\n{code}\n\n" % steps
         for each in self.finding:
             if each in ["error_string", "error_hash", "images", "title", "description", "tool", "severity",
-                        "dynamic_finding", "static_finding", "static_finding_details"]:
+                        "dynamic_finding", "static_finding", "static_finding_details", "steps_to_reproduce"]:
                 continue
             else:
                 if self.finding[each] and 'N/A' not in self.finding[each] and not isinstance(self.finding[each], dict):
@@ -179,9 +184,17 @@ class DefaultModel(object):
 
     def jira(self, jira_client, priority_mapping=None):
         priority = define_jira_priority(self.finding['severity'], priority_mapping)
+        comments = []
+        if len(self.__str__()) > 60000:
+            comments = self.finding['steps_to_reproduce']
+            self.finding['steps_to_reproduce'] = ["See in comments"]
         issue, created = jira_client.create_issue(
             self.finding["title"], priority, self.__str__(), self.get_hash_code(),
             additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
+        if created and comments:
+            for comment in comments:
+                jira_client.add_comment_to_issue(issue,
+                                                 "{code:collapse=true}\n\n%s\n\n{code}" % comment[:60000])
         return issue, created
 
     def dd_item(self):

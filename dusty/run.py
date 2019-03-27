@@ -129,6 +129,7 @@ def parse_rp_config(config, test_name, rp_service=None, launch_id=None, rp_confi
                          rp_launch_name=rp_launch_name, launch_id=launch_id)
     return rp_service, launch_id, rp_config
 
+
 def config_from_yaml():
 
     def default_ctor(loader, tag_suffix, node):

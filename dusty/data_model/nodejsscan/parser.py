@@ -53,6 +53,6 @@ class NodeJsScanParser(object):
                                                   steps_to_reproduce=re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce),
                                                   static_finding=True)
                     else:
-                        dupes[dupe_key].finding['steps_to_reproduce'] += "\n\n"
-                        dupes[dupe_key].finding['steps_to_reproduce'] += re.sub(r'[^\x00-\x7f]', r'', steps_to_reproduce)
+                        dupes[dupe_key].finding['steps_to_reproduce'].append(re.sub(r'[^\x00-\x7f]', r'',
+                                                                                    steps_to_reproduce))
         self.items = dupes.values()
