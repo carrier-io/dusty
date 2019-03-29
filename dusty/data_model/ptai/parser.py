@@ -176,7 +176,7 @@ class PTAIScanParser(object):
                         str_line = '  \n  \n|| *{}* | *{}* |'.format(param, value)
                         function_info_values_str = str_line
                 for param, value in function_info_values.items():
-                    value = value.replace('*', '\*').replace('|', '&#124; ').replace('{', '\}')\
+                    value = value.replace('*', '\*').replace('|', '&#124; ').replace('{', '\{')\
                         .replace('}', '\}')
                     str_line = '|| *{}* | {} |'.format(param, value)
                     str_line = str_line.replace('  ', '')
