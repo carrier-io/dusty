@@ -203,8 +203,8 @@ class PTAIScanParser(object):
         # Process items
         for item in dupes.values():
             comments = list()
-            description = item.description
-            for chunk in function_blocks_strs:
+            description = item["description"]
+            for chunk in item["function_blocks_strs"]:
                 if (len(description) + len(chunk)) < constants.JIRA_DESCRIPTION_MAX_SIZE:
                     description += '  \n  \n' + chunk
                 elif not comments or (len(comments[-1]) + len(chunk)) > constants.JIRA_COMMENT_MAX_SIZE:
@@ -212,13 +212,13 @@ class PTAIScanParser(object):
                 else:  # Last comment can handle one more chunk
                     comments[-1] += '  \n  \n' + chunk
             self.items.append(Finding(
-                title=item.title,
+                title=item["title"],
                 tool='PTAI',
                 active=False,
                 verified=False,
                 description=description,
-                severity=item.severity,
-                file_path=item.file_path,
+                severity=item["severity"],
+                file_path=item["file_path"],
                 comments=comments,
                 static_finding=True
             ))
