@@ -80,7 +80,8 @@ class PTAIScanParser(object):
             short_file_path = ''
             if severity_level_soup:
                 title = severity_level_soup[0].text
-                file_path = get_value_by_description(vulnerability_soup, file_path_descriptions_list)
+                # Get file path (strip line number if present)
+                file_path = get_value_by_description(vulnerability_soup, file_path_descriptions_list).rsplit(' : ', 1)[0]
                 if '\\' in file_path:
                     short_file_path = ' in ...\\' + file_path.split('\\')[-1]
                 severity_classes_soup = severity_level_soup[0].attrs.get('class')
@@ -175,7 +176,7 @@ class PTAIScanParser(object):
                         str_line = '  \n  \n|| *{}* | *{}* |'.format(param, value)
                         function_info_values_str = str_line
                 for param, value in function_info_values.items():
-                    value = value.replace('*', '\*').replace('|', '&#124; ').replace('{', '\}')\
+                    value = value.replace('*', '\*').replace('|', '&#124; ').replace('{', '\{')\
                         .replace('}', '\}')
                     str_line = '|| *{}* | {} |'.format(param, value)
                     str_line = str_line.replace('  ', '')
@@ -187,20 +188,37 @@ class PTAIScanParser(object):
                                              + '  \n  \n {panel}  \n  \n'
                 function_blocks_strs.append(function_full_info_str)
             description = 'h3. {}:  \n  \n{}  \n  \n'.format(title, vulnerability_info.strip())
-            comments = []
-            for item in function_blocks_strs:
-                if (len(description) + len(item)) < constants.JIRA_DESCRIPTION_MAX_SIZE:
-                    description += '  \n  \n' + item
-                else:
-                    comments.append(item)
             dup_key = title + ' in file: ' + file_path
-            dupes[dup_key] = Finding(title=title + short_file_path,
-                                      tool='PTAI',
-                                      active=False,
-                                      verified=False,
-                                      description=description,
-                                      severity=severity.title(),
-                                      file_path=file_path,
-                                      comments=comments,
-                                      static_finding=True)
-        self.items = dupes.values()
+            # Add finding data to de-duplication store
+            if dup_key not in dupes:
+                dupes[dup_key] = dict(
+                    title=title + short_file_path,
+                    description=description,
+                    severity=severity.title(),
+                    file_path=file_path,
+                    function_blocks_strs=list()
+                )
+            # Add function blocks
+            dupes[dup_key]["function_blocks_strs"].extend(function_blocks_strs)
+        # Process items
+        for item in dupes.values():
+            comments = list()
+            description = item["description"]
+            for chunk in item["function_blocks_strs"]:
+                if (len(description) + len(chunk)) < constants.JIRA_DESCRIPTION_MAX_SIZE:
+                    description += '  \n  \n' + chunk
+                elif not comments or (len(comments[-1]) + len(chunk)) > constants.JIRA_COMMENT_MAX_SIZE:
+                    comments.append(chunk)
+                else:  # Last comment can handle one more chunk
+                    comments[-1] += '  \n  \n' + chunk
+            self.items.append(Finding(
+                title=item["title"],
+                tool='PTAI',
+                active=False,
+                verified=False,
+                description=description,
+                severity=item["severity"],
+                file_path=item["file_path"],
+                comments=comments,
+                static_finding=True
+            ))

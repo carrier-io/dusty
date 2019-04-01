@@ -65,6 +65,8 @@ SEVERITY_TYPE = {
 }
 NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
 JIRA_DESCRIPTION_MAX_SIZE = 61908
+# This is jira.text.field.character.limit default value
+JIRA_COMMENT_MAX_SIZE = 32767
 JIRA_OPENED_STATUSES = ['Open', 'In Progress']
 MIN_PRIORITY = 'Major'
 
