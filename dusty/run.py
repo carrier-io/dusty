@@ -213,7 +213,7 @@ def config_from_yaml():
 
 def process_results(default_config, start_time, global_results=None,
                     html_report_file=None, xml_report_file=None,
-                    other_results=None):
+                    other_results=None, global_errors=None):
     created_jira_tickets = []
     attachments = []
     if default_config.get('rp_data_writer', None):
@@ -240,13 +240,14 @@ def process_results(default_config, start_time, global_results=None,
             attachments.append('/attachments/' + item.strip())
         #TODO: Rework sending of emails to be not tiedly coupled with Jira
         send_emails(default_config['email_service'], True, jira_tickets_info=created_jira_tickets,
-                    attachments=attachments)
+                    attachments=attachments, errors=global_errors)
 
 
 def main():
     start_time = time()
     global_results = []
     global_other_results = []
+    global_errors = []
     default_config, test_configs = config_from_yaml()
     for key in test_configs:
         results = []
@@ -260,6 +261,7 @@ def main():
                 results = getattr(SastyWrapper, attr_name)(config)
             except:
                 logging.error("Exception during %s Scanning" % attr_name)
+                global_errors.append(attr_name)
                 if os.environ.get("debug", False):
                     logging.error(format_exc())
         else:
@@ -268,6 +270,7 @@ def main():
                 results, other_results = common_post_processing(config, result, tool_name, need_other_results=True)
             except:
                 logging.error("Exception during %s Scanning" % key)
+                global_errors.append(key)
                 if os.environ.get("debug", False):
                     logging.error(format_exc())
         if default_config.get('jira_service', None) and config.get('jira_service', None) \
@@ -278,7 +281,7 @@ def main():
         if default_config.get('generate_html', None) or default_config.get('generate_junit', None):
             global_results.extend(results)
             global_other_results.extend(other_results)
-    process_results(default_config, start_time, global_results, other_results=global_other_results)
+    process_results(default_config, start_time, global_results, other_results=global_other_results, global_errors=global_errors)
 
 
 if __name__ == "__main__":

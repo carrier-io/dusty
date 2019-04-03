@@ -181,14 +181,14 @@ class DustyWrapper(object):
             print("Scan haven't been started")
             return (tool_name, [])
         while not qualys.scan_status(scan_id):
-            sleep(30)
+            sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
         # qualys.download_scan_report(scan_id)
         report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
         if not report_id:
             print("Request report failed")
             return (tool_name, [])
         while not qualys.get_report_status(report_id):
-            sleep(30)
+            sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
         qualys.download_report(report_id)
         qualys.delete_asset("report", report_id)
         qualys.delete_asset("wasscan", scan_id)

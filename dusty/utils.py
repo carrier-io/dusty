@@ -49,7 +49,7 @@ def report_to_jira(config, result):
         print("Jira Configuration incorrect, please fix ... ")
 
 
-def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments):
+def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments, errors=None):
     if emails_service and emails_service.valid:
         if jira_is_used:
             if jira_tickets_info:
@@ -91,6 +91,11 @@ def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments):
                 html_body = '<p>No new security issues bugs found.</p>'
         else:
             html_body = '<p>Please see the results attached.</p>'
+        if errors:
+            html_body += '\n' + "<br><br><p>{}: {}</p>".format(
+                "Warning: errors occurred, scan results may be incomplete. Following tests failed",
+                ", ".join(errors)
+            )
         html_style = """
                     table, th, td {
                       border: 1px solid black;

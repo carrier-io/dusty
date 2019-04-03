@@ -12,16 +12,21 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
+import logging
 from os import environ
+from traceback import format_exc
 
 import qualysapi.connector as qcconn
 from lxml import objectify
+from dusty import constants as c
 
 
 class WAS(object):
     def __init__(self):
         self.client = qcconn.QGConnector((environ.get('QUALYS_LOGIN'), environ.get('QUALYS_PASSWORD')),
                                          environ.get('QUALYS_API_SERVER'), None, 5)
+        self.status_check_errors = 0
 
     def search_for_project(self, project_name):
         call = '/search/was/webapp'
@@ -75,14 +80,26 @@ class WAS(object):
         return None if root.responseCode.text != 'SUCCESS' else root.data.WasScan.id.text
 
     def scan_status(self, scan_id):
-        call = f'/get/was/wasscan/{scan_id}'
-        response = self.client.request(call, api_version="webapp")
-        if environ.get("debug", False):
-            print(response)
-        root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
-        if root.responseCode.text == 'SUCCESS':
-            return False if root.data.WasScan.status != "FINISHED" else True
-        return False
+        try:
+            call = f'/get/was/wasscan/{scan_id}'
+            response = self.client.request(call, api_version="webapp")
+            if environ.get("debug", False):
+                print(response)
+            root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
+            if root.responseCode.text == 'SUCCESS':
+                if root.data.WasScan.status == "FINISHED" and \
+                        root.data.WasScan.summary.resultsStatus == "NO_WEB_SERVICE":
+                    raise RuntimeError("QualysWAS failed to access web application")
+                return False if root.data.WasScan.status != "FINISHED" else True
+            return False
+        except:
+            logging.error("Failed to get scan status. Total status errors: %d", self.status_check_errors)
+            if os.environ.get("debug", False):
+                logging.error(format_exc())
+            if self.status_check_errors > c.QUALYS_MAX_STATUS_CHECK_ERRORS:
+                raise
+            self.status_check_errors += 1
+            return False
 
     def download_scan_report(self, scan_id, report_path='/tmp/qualys_scan.xml'):
         call = f'/download/was/wasscan/{scan_id}'
@@ -110,14 +127,23 @@ class WAS(object):
         return None if root.responseCode.text != 'SUCCESS' else root.data.Report.id
 
     def get_report_status(self, report_id):
-        call = f'/get/was/report/{report_id}'
-        response = self.client.request(call, api_version="webapp")
-        if environ.get("debug", False):
-            print(response)
-        root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
-        if root.responseCode.text == 'SUCCESS':
-            return False if root.data.Report.status != "COMPLETE" else True
-        return False
+        try:
+            call = f'/get/was/report/{report_id}'
+            response = self.client.request(call, api_version="webapp")
+            if environ.get("debug", False):
+                print(response)
+            root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
+            if root.responseCode.text == 'SUCCESS':
+                return False if root.data.Report.status != "COMPLETE" else True
+            return False
+        except:
+            logging.error("Failed to get report status. Total status errors: %d", self.status_check_errors)
+            if os.environ.get("debug", False):
+                logging.error(format_exc())
+            if self.status_check_errors > c.QUALYS_MAX_STATUS_CHECK_ERRORS:
+                raise
+            self.status_check_errors += 1
+            return False
 
     def download_report(self, report_id, report_path='/tmp/qualys.xml'):
         call = f'/download/was/report/{report_id}'
