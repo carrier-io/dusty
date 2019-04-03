@@ -85,6 +85,9 @@ class WAS(object):
                 print(response)
             root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
             if root.responseCode.text == 'SUCCESS':
+                if root.data.WasScan.status == "FINISHED" and \
+                        root.data.WasScan.summary.resultsStatus == "NO_WEB_SERVICE":
+                    raise RuntimeError("QualysWAS failed to access web application")
                 return False if root.data.WasScan.status != "FINISHED" else True
             return False
         except:
