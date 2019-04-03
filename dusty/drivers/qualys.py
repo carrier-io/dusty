@@ -12,8 +12,10 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
 import logging
 from os import environ
+from traceback import format_exc
 
 import qualysapi.connector as qcconn
 from lxml import objectify
@@ -92,6 +94,8 @@ class WAS(object):
             return False
         except:
             logging.error("Failed to get scan status. Total status errors: %d", self.status_check_errors)
+            if os.environ.get("debug", False):
+                logging.error(format_exc())
             if self.status_check_errors > c.QUALYS_MAX_STATUS_CHECK_ERRORS:
                 raise
             self.status_check_errors += 1
@@ -134,6 +138,8 @@ class WAS(object):
             return False
         except:
             logging.error("Failed to get report status. Total status errors: %d", self.status_check_errors)
+            if os.environ.get("debug", False):
+                logging.error(format_exc())
             if self.status_check_errors > c.QUALYS_MAX_STATUS_CHECK_ERRORS:
                 raise
             self.status_check_errors += 1
