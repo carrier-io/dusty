@@ -14,20 +14,27 @@
 
 import os
 import re
+import json
+import base64
+import urllib
+import logging
+import subprocess
+import pkg_resources
 from time import sleep, time
 from datetime import datetime
 from random import randrange
+from zapv2 import ZAPv2
 
 from dusty import constants as c
 from dusty.utils import execute, find_ip, common_post_processing, id_generator
 from dusty.data_model.nikto.parser import NiktoXMLParser
 from dusty.data_model.nmap.parser import NmapXMLParser
-from dusty.data_model.zap.parser import ZapXmlParser
 from dusty.data_model.sslyze.parser import SslyzeJSONParser
 from dusty.data_model.masscan.parser import MasscanJSONParser
 from dusty.data_model.w3af.parser import W3AFXMLParser
 from dusty.data_model.qualys.parser import QualysWebAppParser
 from dusty.data_model.aemhacker.parser import AemOutputParser
+from dusty.data_model.zap.parser import ZapJsonParser
 from dusty.drivers.qualys import WAS
 
 
@@ -101,31 +108,6 @@ class DustyWrapper(object):
                    f'--script={nse_scripts} {config["host"]} -oX /tmp/nmap.xml'
         execute(exec_cmd)
         result = NmapXMLParser('/tmp/nmap.xml', "NMAP").items
-        return tool_name, result
-
-
-    @staticmethod
-    def zap(config):
-        tool_name = "ZAP"
-        if 'supervisor.sock no such file' in execute('supervisorctl restart zap')[0].decode('utf-8'):
-            execute('/usr/bin/supervisord', communicate=False)
-        status = execute('zap-cli status')[0].decode('utf-8')
-        while 'ZAP is running' not in status:
-            sleep(10)
-            status = execute('zap-cli status')[0].decode('utf-8')
-        if config.get('zap_context_file_path', None):
-            context = os.path.join('/tmp', config.get('zap_context_file_path'))
-            if os.path.exists(context):
-                execute(f'zap-cli context import /tmp/{config.get("zap_context_file_path")}')
-                execute(f'zap-cli quick-scan -s {config.get("scan_types", "xss,sqli")} {config.get("params", "")}'
-                        f' -c "{context}" -l Informational'
-                        f' {config.get("protocol")}://{config.get("host")}:{config.get("port")}')
-        else:
-            execute(f'zap-cli quick-scan -s {config.get("scan_types", "xss,sqli")} {config.get("params", "")}'
-                    f'-l Informational {config.get("protocol")}://{config.get("host")}:{config.get("port")}')
-        execute('zap-cli report -o /tmp/zap.xml -f xml')
-        result = ZapXmlParser('/tmp/zap.xml', "ZAP").items
-        execute('supervisorctl stop zap')
         return tool_name, result
 
     @staticmethod
@@ -208,3 +190,225 @@ class DustyWrapper(object):
         aem_hacker_output = execute(f'aem-wrapper.sh -u {config.get("protocol")}://{config.get("host")}:{config.get("port")} --host {config.get("scanner_host", "127.0.0.1")} --port {config.get("scanner_port", "4444")}')[0].decode('utf-8')
         result = AemOutputParser(aem_hacker_output).items
         return tool_name, result
+
+    @staticmethod
+    def zap(config):
+        # Nested functions
+        def _wait_for_completion(condition, status, message, interval=10):
+            """ Watch progress """
+            current_status = status()
+            logging.info(message, current_status)
+            while condition():
+                sleep(interval)
+                next_status = status()
+                if next_status != current_status:
+                    logging.info(message, next_status)
+                current_status = next_status
+        # ZAP wrapper
+        tool_name = "ZAP"
+        results = list()
+        # Disable requests/urllib3 logging
+        logging.getLogger("requests").setLevel(logging.WARNING)
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        # Start ZAP daemon in background (no need for supervisord)
+        logging.info("Starting ZAP daemon")
+        zap_daemon = subprocess.Popen([
+            "/usr/bin/java", "-Xmx499m",
+            "-jar", "/opt/zap/zap.jar",
+            "-daemon", "-port", "8091", "-host", "0.0.0.0",
+            "-config", "api.key=dusty",
+            "-config", "api.addrs.addr.regex=true",
+            "-config", "api.addrs.addr.name=.*",
+            "-config", "ajaxSpider.browserId=htmlunit"
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        zap_api = ZAPv2(
+            apikey="dusty",
+            proxies={
+                "http": "http://127.0.0.1:8091",
+                "https": "http://127.0.0.1:8091"
+            }
+        )
+        # Wait for zap to start
+        zap_started = False
+        for _ in range(600):
+            try:
+                logging.info("Started ZAP %s", zap_api.core.version)
+                zap_started = True
+                break
+            except IOError:
+                sleep(1)
+        if not zap_started:
+            logging.error("ZAP failed to start")
+            zap_daemon.kill()
+            zap_daemon.wait()
+            return tool_name, results
+        # Format target URL
+        proto = config.get("protocol")
+        host = config.get("host")
+        port = config.get("port")
+        target = f"{proto}://{host}"
+        if (proto == "http" and int(port) != 80) or \
+                (proto == "https" and int(port) != 443):
+            target = f"{target}:{port}"
+        logging.info("Scanning target %s", target)
+        # Setup context
+        logging.info("Preparing context")
+        zap_context_name = "dusty"
+        zap_context = zap_api.context.new_context(zap_context_name)
+        # Setup context inclusions and exclusions
+        zap_api.context.include_in_context(zap_context_name, f".*{re.escape(host)}.*")
+        for include_regex in config.get("include", list()):
+            zap_api.context.include_in_context(zap_context_name, include_regex)
+        for exclude_regex in config.get("exclude", list()):
+            zap_api.context.exclude_from_context(zap_context_name, exclude_regex)
+        if config.get("auth_script", None):
+            # Load our authentication script
+            zap_api.script.load(
+                scriptname="zap-selenium-login.js",
+                scripttype="authentication",
+                scriptengine="Oracle Nashorn",
+                filename=pkg_resources.resource_filename(
+                    "dusty", "templates/zap-selenium-login.js"
+                ),
+                scriptdescription="Login via selenium script"
+            )
+            # Enable use of laoded script with supplied selenium-like script
+            zap_api.authentication.set_authentication_method(
+                zap_context,
+                "scriptBasedAuthentication",
+                urllib.parse.urlencode({
+                    "scriptName": "zap-selenium-login.js",
+                    "Script": base64.b64encode(
+                        json.dumps(
+                            config.get("auth_script")
+                        ).encode("utf-8")
+                    ).decode("utf-8")
+                })
+            )
+            # Add user to context
+            zap_user = zap_api.users.new_user(zap_context, "dusty_user")
+            zap_api.users.set_authentication_credentials(
+                zap_context,
+                zap_user,
+                urllib.parse.urlencode({
+                    "Username": config.get("auth_login", ""),
+                    "Password": config.get("auth_password", ""),
+                    "type": "UsernamePasswordAuthenticationCredentials"
+                })
+            )
+            # Enable added user
+            zap_api.users.set_user_enabled(zap_context, zap_user, True)
+            # Setup auth indicators
+            if config.get("logged_in_indicator", None):
+                zap_api.authentication.set_logged_in_indicator(
+                    zap_context, config.get("logged_in_indicator")
+                )
+            if config.get("logged_out_indicator", None):
+                zap_api.authentication.set_logged_out_indicator(
+                    zap_context, config.get("logged_out_indicator")
+                )
+        # Setup scan policy
+        scan_policy_name = "Default Policy"
+        scan_policies = [
+            item.strip() for item in config.get("scan_types", "all").split(",")
+        ]
+        # Disable globally blacklisted rules
+        for item in c.ZAP_BLACKLISTED_RULES:
+            zap_api.ascan.set_scanner_alert_threshold(
+                id=item,
+                alertthreshold="OFF",
+                scanpolicyname=scan_policy_name
+            )
+            zap_api.pscan.set_scanner_alert_threshold(
+                id=item,
+                alertthreshold="OFF"
+            )
+        if "all" not in scan_policies:
+            # Disable all scanners first
+            for item in zap_api.ascan.scanners(scan_policy_name):
+                zap_api.ascan.set_scanner_alert_threshold(
+                    id=item["id"],
+                    alertthreshold="OFF",
+                    scanpolicyname=scan_policy_name
+                )
+            # Enable scanners from suite
+            for policy in scan_policies:
+                for item in c.ZAP_SCAN_POCILICES.get(policy, []):
+                    zap_api.ascan.set_scanner_alert_threshold(
+                        id=item,
+                        alertthreshold="DEFAULT",
+                        scanpolicyname=scan_policy_name)
+        # Spider
+        logging.info("Spidering target: %s", target)
+        if config.get("auth_script", None):
+            scan_id = zap_api.spider.scan_as_user(
+                zap_context, zap_user, target, recurse=True, subtreeonly=True
+            )
+        else:
+            scan_id = zap_api.spider.scan(target)
+        _wait_for_completion(
+            lambda: int(zap_api.spider.status(scan_id)) < 100,
+            lambda: int(zap_api.spider.status(scan_id)),
+            "Spidering progress: %d%%"
+        )
+        # Wait for passive scan
+        _wait_for_completion(
+            lambda: int(zap_api.pscan.records_to_scan) > 0,
+            lambda: int(zap_api.pscan.records_to_scan),
+            "Passive scan queue: %d items"
+        )
+        # Ajax Spider
+        logging.info("Ajax spidering target: %s", target)
+        if config.get("auth_script", None):
+            scan_id = zap_api.ajaxSpider.scan_as_user(
+                zap_context_name, "dusty_user", target, subtreeonly=True
+            )
+        else:
+            scan_id = zap_api.ajaxSpider.scan(target)
+        _wait_for_completion(
+            lambda: zap_api.ajaxSpider.status == 'running',
+            lambda: int(zap_api.ajaxSpider.number_of_results),
+            "Ajax spider found: %d URLs"
+        )
+        # Wait for passive scan
+        _wait_for_completion(
+            lambda: int(zap_api.pscan.records_to_scan) > 0,
+            lambda: int(zap_api.pscan.records_to_scan),
+            "Passive scan queue: %d items"
+        )
+        # Active scan
+        logging.info("Active scan against target %s", target)
+        if config.get("auth_script", None):
+            scan_id = zap_api.ascan.scan_as_user(
+                target, zap_context, zap_user, recurse=True,
+                scanpolicyname=scan_policy_name
+            )
+        else:
+            scan_id = zap_api.ascan.scan(
+                target,
+                scanpolicyname=scan_policy_name
+            )
+        _wait_for_completion(
+            lambda: int(zap_api.ascan.status(scan_id)) < 100,
+            lambda: int(zap_api.ascan.status(scan_id)),
+            "Active scan progress: %d%%"
+        )
+        # Wait for passive scan
+        _wait_for_completion(
+            lambda: int(zap_api.pscan.records_to_scan) > 0,
+            lambda: int(zap_api.pscan.records_to_scan),
+            "Passive scan queue: %d items"
+        )
+        # Get report
+        logging.info("Scan finished. Processing results")
+        zap_report = zap_api.core.jsonreport()
+        if os.environ.get("debug", False):
+            with open("/tmp/zap.json", "wb") as report_file:
+                report_file.write(zap_report.encode("utf-8"))
+        # Stop zap
+        zap_daemon.kill()
+        zap_daemon.wait()
+        # Parse JSON
+        results.extend(ZapJsonParser(zap_report, tool_name).items)
+        pkg_resources.cleanup_resources()
+        return tool_name, results

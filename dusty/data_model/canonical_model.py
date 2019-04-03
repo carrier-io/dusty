@@ -174,7 +174,7 @@ class DefaultModel(object):
         rp_data_writer.finish_test_item()
 
     def html_item(self):
-        return markdown2.markdown(self.__str__())
+        return markdown2.markdown(self.__str__(), extras=["tables"])
 
     def junit_item(self):
         tc = TestCase(self.finding['title'], classname=self.finding["tool"])

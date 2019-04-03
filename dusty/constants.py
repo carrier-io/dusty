@@ -45,6 +45,26 @@ QUALYS_SEVERITIES = {
     4: 'High',
     5: 'Critical'
 }
+ZAP_SEVERITIES = {
+    "0": "Info",
+    "1": "Low",
+    "2": "Medium",
+    "3": "High"
+}
+ZAP_CONFIDENCES = {
+    "0": "False Positive",
+    "1": "Low",
+    "2": "Medium",
+    "3": "High",
+    "4": "User Confirmed"
+}
+ZAP_BLACKLISTED_RULES = [
+    10095  # Backup File Disclosure
+]
+ZAP_SCAN_POCILICES = {
+    "xss": [40012, 40014, 40016, 40017],
+    "sqli": [40018, 40019, 40020, 40021, 40022]
+}
 MAX_MESSAGE_LEN = 30000
 FALSE_POSITIVE_CONFIG = '/tmp/false_positive.config'
 W3AF_OUTPUT_SECTION = """#Configure reporting in order to generate an HTML report

@@ -244,6 +244,14 @@ def process_results(default_config, start_time, global_results=None,
 
 
 def main():
+    logging_level = logging.INFO
+    if os.environ.get("debug", False):
+        logging_level = logging.DEBUG
+    logging.basicConfig(
+        level=logging_level,
+        datefmt='%Y.%m.%d %H:%M:%S',
+        format='%(asctime)s - %(levelname)8s - %(message)s',
+    )
     start_time = time()
     global_results = []
     global_other_results = []
