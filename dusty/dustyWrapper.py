@@ -139,7 +139,7 @@ class DustyWrapper(object):
         qualys_profile_id = config.get("qualys_profile_id", None)
         qualys_template_id = config.get("qualys_template_id", None)
         if not (qualys_profile_id or qualys_template_id):
-            return (tool_name, [])
+            raise RuntimeError("Qualys configuration invalid")
         if config.get("random_name", None):
             project_name = f"{config.get('project_name')}_{id_generator(8)}"
         else:
@@ -156,19 +156,16 @@ class DustyWrapper(object):
         if not project_id:
             project_id = qualys.create_webapp_request(project_name, target, qualys_profile_id)
         if not project_id:
-            print("Something went wrong and project wasn't found and created")
-            return (tool_name, [])
+            raise RuntimeError("Something went wrong and project wasn't found and created")
         scan_id = qualys.start_scan(project_name, ts, project_id, qualys_profile_id, scanner_appliance)
         if not scan_id:
-            print("Scan haven't been started")
-            return (tool_name, [])
+            raise RuntimeError("Scan haven't been started")
         while not qualys.scan_status(scan_id):
             sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
         # qualys.download_scan_report(scan_id)
         report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
         if not report_id:
-            print("Request report failed")
-            return (tool_name, [])
+            raise RuntimeError("Request report failed")
         while not qualys.get_report_status(report_id):
             sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
         qualys.download_report(report_id)
