@@ -17,7 +17,7 @@ import os
 import re
 from bs4 import BeautifulSoup
 from dusty import constants
-from dusty.data_model.ptai_model import PTAIModel as Finding
+from dusty.data_model.canonical_model import DefaultModel as Finding
 
 
 __author__ = 'KarynaTaranova'
@@ -187,38 +187,21 @@ class PTAIScanParser(object):
                                              '=#ccc|titleBGColor=#F7D6C1|bgColor=#FFFFCE}  \n  \n' + data_flow_panel_str \
                                              + '  \n  \n {panel}  \n  \n'
                 function_blocks_strs.append(function_full_info_str)
-            description = 'h3. {}:  \n  \n{}  \n  \n'.format(title, vulnerability_info.strip())
+            description = ' \n \n{}:  \n  \n{}  \n  \n'.format(title, vulnerability_info.strip())
             dup_key = title + ' in file: ' + file_path
             # Add finding data to de-duplication store
             if dup_key not in dupes:
-                dupes[dup_key] = dict(
+                dupes[dup_key] = Finding(
                     title=title + short_file_path,
                     description=description,
+                    tool='PTAI',
+                    active=False,
+                    verified=False,
                     severity=severity.title(),
                     file_path=file_path,
-                    function_blocks_strs=list()
+                    steps_to_reproduce=function_blocks_strs,
+                    static_finding=True
                 )
-            # Add function blocks
-            dupes[dup_key]["function_blocks_strs"].extend(function_blocks_strs)
-        # Process items
-        for item in dupes.values():
-            comments = list()
-            description = item["description"]
-            for chunk in item["function_blocks_strs"]:
-                if (len(description) + len(chunk)) < constants.JIRA_DESCRIPTION_MAX_SIZE:
-                    description += '  \n  \n' + chunk
-                elif not comments or (len(comments[-1]) + len(chunk)) > constants.JIRA_COMMENT_MAX_SIZE:
-                    comments.append(chunk)
-                else:  # Last comment can handle one more chunk
-                    comments[-1] += '  \n  \n' + chunk
-            self.items.append(Finding(
-                title=item["title"],
-                tool='PTAI',
-                active=False,
-                verified=False,
-                description=description,
-                severity=item["severity"],
-                file_path=item["file_path"],
-                comments=comments,
-                static_finding=True
-            ))
+            else:
+                dupes[dup_key].finding["steps_to_reproduce"].extend(function_blocks_strs)
+        self.items = dupes.values()

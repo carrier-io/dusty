@@ -7,7 +7,7 @@ from dusty import constants as const
 
 
 class JiraWrapper(object):
-    JIRA_REQUEST = 'project={} AND labels in ({})'
+    JIRA_REQUEST = 'project={} AND (description ~ "{}" OR labels in ({}))'
 
     def __init__(self, url, user, password, project, fields=None):
         self.valid = True
@@ -111,14 +111,14 @@ class JiraWrapper(object):
                 issue_data[key] = value
             else:
                 logging.warning('field {} is already set and has \'{}\' value'.format(key, issue_data[key]))
-        _labels = [issue_hash]
+        _labels = []
         if additional_labels and isinstance(additional_labels, list):
             _labels.extend(additional_labels)
         if issue_data.get('labels', None):
             issue_data['labels'].extend(_labels)
         else:
             issue_data['labels'] = _labels
-        jira_request = self.JIRA_REQUEST.format(issue_data["project"]["key"], issue_hash)
+        jira_request = self.JIRA_REQUEST.format(issue_data["project"]["key"], issue_hash, issue_hash)
         if get_or_create:
             issue, created = self.get_or_create_issue(jira_request, issue_data)
         else:

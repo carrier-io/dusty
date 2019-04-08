@@ -65,7 +65,7 @@ class DefaultModel(object):
             if sourcefile:
                 file_path += '.' + sourcefile
         self.finding = {
-            "title": re.sub('[^A-Za-z0-9//\.\- _]+', '', title),
+            "title": re.sub('[^A-Za-zА-Яа-я0-9//\\\.\- _]+', '', title),
             "date": date,
             "description": description.replace("\n", "\n\n"),
             "severity": severity,
@@ -93,7 +93,9 @@ class DefaultModel(object):
             "error_string": None,
             "error_hash": None
         }
-        if steps_to_reproduce:
+        if isinstance(steps_to_reproduce, list):
+            self.finding['steps_to_reproduce'] = steps_to_reproduce
+        else:
             self.finding['steps_to_reproduce'].append(steps_to_reproduce)
         self.severity = c.SEVERITIES.get(severity, 100) #TODO: space for bugbar
         self.unsaved_endpoints = []
@@ -122,12 +124,15 @@ class DefaultModel(object):
         hash_string = self.finding_error_string().strip()
         return hashlib.sha256(hash_string.encode('utf-8')).hexdigest()
 
-    def __str__(self):
+    def __str__(self, overwrite_steps_to_reproduce=None):
         finding = f'\n### Title: {self.finding["title"]}\n\n' \
                   f'### Description:\n {self.finding["description"]}\n\n' \
                   f'**Tool**: {self.finding["tool"]}\n\n' \
-                  f'**Severity**: {self.finding["severity"]}\n\n'
-        if self.finding['steps_to_reproduce']:
+                  f'**Severity**: {self.finding["severity"]}\n\n' \
+                  f"**Issue Hash**: {self.get_hash_code()}\n\n"
+        if overwrite_steps_to_reproduce:
+            finding += f"**Steps To Reproduce**: {overwrite_steps_to_reproduce}"
+        elif self.finding['steps_to_reproduce']:
             steps = self._stringify('\n\n'.join(self.finding['steps_to_reproduce']))
             finding += f"**Steps To Reproduce**: {steps}"
         for each in self.finding:
@@ -149,13 +154,12 @@ class DefaultModel(object):
         endpoints = set(self.finding['dynamic_finding_details']['endpoints'] + self.unsaved_endpoints + self.endpoints)
         if endpoints:
             self.scan_type = "DAST"
-            finding += "### Endpoints:\n"
+            finding += "***Endpoints***:\n"
             for endpoint in endpoints:
                 finding += f'{str(endpoint)}\n\n'
         if self.finding['dynamic_finding_details']["payload"] is not None:
             self.scan_type = "DAST"
             finding += f"**Payload:** {self.finding['dynamic_finding_details']['payload']}\n\n"
-        finding += f"**Issue Hash**: {self.get_hash_code()}\n\n"
         return finding
 
     def rp_item(self, rp_data_writer):
@@ -182,24 +186,46 @@ class DefaultModel(object):
         tc.add_error_info(message=message, error_type=self.finding['severity'])
         return tc
 
+    def jira_steps_to_reproduce(self):
+        steps = []
+        for step in self.finding['steps_to_reproduce']:
+            steps.append(step.replace("<pre>", "{code:collapse=true}\n\n").replace("</pre>", "\n\n{code}"))
+        return steps
+
+    def cut_jira_comment(self, comment):
+        code_block_ending = "\n\n{code}"
+        if len(comment) > c.JIRA_COMMENT_MAX_SIZE:
+            _comment = comment[:c.JIRA_COMMENT_MAX_SIZE - 1]
+            last_code_block = _comment.rfind("{code:collapse=true}")
+            if last_code_block > -1 and _comment.find("{code}", last_code_block+1) == -1:
+                _comment = _comment[:(c.JIRA_COMMENT_MAX_SIZE - len(code_block_ending) - 1)] + code_block_ending
+        else:
+            _comment = comment
+        return _comment
+
+
     def jira(self, jira_client, priority_mapping=None):
         priority = define_jira_priority(self.finding['severity'], priority_mapping)
         comments = []
-        if len(self.__str__()) > 60000:
-            comments = self.finding['steps_to_reproduce']
-            self.finding['steps_to_reproduce'] = ["See in comments"]
+        if len(self.__str__()) > c.JIRA_DESCRIPTION_MAX_SIZE:
+            comments = self.jira_steps_to_reproduce()
+            _overwrite_steps = "See in comments\n\n"
         else:
-            steps = []
-            for step in self.finding['steps_to_reproduce']:
-                steps.append(step.replace("<pre>", "{code:collapse=true}\n\n").replace("</pre>", "\n\n{code}"))
-            self.finding['steps_to_reproduce'] = steps
+            _overwrite_steps = None
         issue, created = jira_client.create_issue(
-            self.finding["title"], priority, self.__str__(), self.get_hash_code(),
-            additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
+            self.finding["title"], priority, self.__str__(overwrite_steps_to_reproduce=_overwrite_steps),
+            self.get_hash_code(), additional_labels=[self.finding["tool"], self.scan_type, self.finding["severity"]])
         if created and comments:
+            chunks = comments
+            comments = list()
+            new_line_str = '  \n  \n'
+            for chunk in chunks:
+                if not comments or (len(comments[-1]) + len(new_line_str) + len(chunk)) >= c.JIRA_COMMENT_MAX_SIZE:
+                    comments.append(self.cut_jira_comment(chunk))
+                else:  # Last comment can handle one more chunk
+                    comments[-1] += new_line_str + self.cut_jira_comment(chunk)
             for comment in comments:
-                jira_client.add_comment_to_issue(issue,
-                                                 "{code:collapse=true}\n\n%s\n\n{code}" % comment[:60000])
+                jira_client.add_comment_to_issue(issue, comment)
         return issue, created
 
     def dd_item(self):
