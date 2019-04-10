@@ -32,7 +32,7 @@ from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
 from dusty.drivers.influx import InfluxReport
-from dusty.utils import send_emails, common_post_processing
+from dusty.utils import send_emails, common_post_processing, prepare_jira_mapping
 
 requests.packages.urllib3.disable_warnings()
 
@@ -182,7 +182,7 @@ def config_from_yaml():
                           test_type=execution_config.get('test_type', 'None'),
                           rp_data_writer=rp_service,
                           jira_service=jira_service,
-                          jira_mapping=execution_config.get('jira_mapping', None),
+                          jira_mapping=execution_config.get('jira_mapping', prepare_jira_mapping(jira_service)),
                           min_priority=min_priority,
                           rp_config=rp_config,
                           influx=execution_config.get("influx", None),
@@ -252,6 +252,9 @@ def main():
         datefmt='%Y.%m.%d %H:%M:%S',
         format='%(asctime)s - %(levelname)8s - %(message)s',
     )
+    # Disable requests/urllib3 logging
+    logging.getLogger("requests").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
     start_time = time()
     global_results = []
     global_other_results = []

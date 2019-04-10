@@ -15,6 +15,7 @@
 import hashlib
 import re
 import markdown2
+import logging
 from junit_xml import TestCase
 from dusty import constants as c
 from dusty.utils import define_jira_priority
@@ -95,7 +96,7 @@ class DefaultModel(object):
         }
         if isinstance(steps_to_reproduce, list):
             self.finding['steps_to_reproduce'] = steps_to_reproduce
-        else:
+        elif steps_to_reproduce:
             self.finding['steps_to_reproduce'].append(steps_to_reproduce)
         self.severity = c.SEVERITIES.get(severity, 100) #TODO: space for bugbar
         self.unsaved_endpoints = []

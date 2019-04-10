@@ -23,16 +23,35 @@ READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'e
 CONFIG_ENV_KEY = "CARRIER_SCAN_CONFIG"
 PATH_TO_CONFIG = "/tmp/scan-config.yaml"
 PATH_TO_CODE = "/code"
-SEVERITIES = {'Info': 4, 'Low': 3, 'Medium': 2,
-              'High': 1, 'Critical': 0}
-JIRA_SEVERITIES = {'Trivial': 4, 'Minor': 3, 'Major': 2,
-                   'Critical': 1, 'Blocker': 0}
+SEVERITIES = {
+    'Info': 4,
+    'Low': 3,
+    'Medium': 2,
+    'High': 1,
+    'Critical': 0
+}
+JIRA_SEVERITIES = {
+    'Trivial': 4,
+    'Minor': 3,
+    'Medium': 2,
+    'Major': 1,
+    'Critical': 0,
+    'Blocker': 0
+}
+JIRA_ALTERNATIVES = {
+    'Trivial': ['Low', 'Minor'],
+    'Minor': ['Low', 'Medium'],
+    'Medium': ['Major'],
+    'Major': ['High', 'Critical'],
+    'Critical': ['Very High', 'Blocker'],
+    'Blocker': ['Very High', 'Critical']
+}
 SEVERITIES_INVERSED = {v: k for k, v in SEVERITIES.items()}
 SEVERITY_MAPPING = {
-    'Critical': 'Blocker',
-    'High': 'Critical',
-    'Medium': 'Major',
-    'Moderate': 'Minor',
+    'Critical': 'Critical',
+    'High': 'Major',
+    'Medium': 'Medium',
+    'Moderate': 'Medium',
     'Low': 'Minor',
     'Information': 'Trivial',
     'Info': 'Trivial',

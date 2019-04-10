@@ -204,9 +204,6 @@ class DustyWrapper(object):
         # ZAP wrapper
         tool_name = "ZAP"
         results = list()
-        # Disable requests/urllib3 logging
-        logging.getLogger("requests").setLevel(logging.WARNING)
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
         # Start ZAP daemon in background (no need for supervisord)
         logging.info("Starting ZAP daemon")
         zap_daemon = subprocess.Popen([

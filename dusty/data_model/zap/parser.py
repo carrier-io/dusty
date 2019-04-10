@@ -54,16 +54,16 @@ class ZapJsonParser(object):
                 instances = list()
                 if alert["instances"]:
                     instances.append("\n")
-                    instances.append("URI | Method | Parameter | Attack | Evidence")
-                    instances.append("--- | --- | --- | --- | ---")
+                    instances.append("| URI | Method | Parameter | Attack | Evidence |")
+                    instances.append("| --- | ------ | --------- | ------ | -------- |")
                 for item in alert["instances"]:
-                    instances.append(" | ".join([
+                    instances.append("| {} |".format(" | ".join([
                         html.escape(md_table_escape(item.get("uri", "-"))),
                         html.escape(md_table_escape(item.get("method", "-"))),
                         html.escape(md_table_escape(item.get("param", "-"))),
                         html.escape(md_table_escape(item.get("attack", "-"))),
                         html.escape(md_table_escape(item.get("evidence", "-")))
-                    ]))
+                    ])))
                 finding = Finding(
                     title=alert["name"],
                     url=site["@name"],
@@ -96,7 +96,15 @@ class ZapJsonParser(object):
 
 
 def md_table_escape(string):
-    return string.replace("\n", " ").replace("_", "\\_")
+    """ Escape markdown special symbols """
+    to_escape = [
+        "\\", "`", "*", "_",
+        "{", "}", "[", "]", "(", ")",
+        "#", "|", "+", "-", ".", "!"
+    ]
+    for item in to_escape:
+        string = string.replace(item, f"\\{item}")
+    return string.replace("\n", " ")
 
 
 def make_endpoint_from_url(url, include_query=True, include_fragment=True):
