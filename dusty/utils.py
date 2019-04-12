@@ -93,10 +93,12 @@ def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments, er
         else:
             html_body = '<p>Please see the results attached.</p>'
         if errors:
-            html_body += '\n' + "<br><br><p>{}: {}</p>".format(
-                "Warning: errors occurred, scan results may be incomplete. Following tests failed",
-                ", ".join(errors)
-            )
+            html_body += '\n' + "<p>Warning: errors occurred, scan results may be incomplete.</p>"
+            html_body += "<table>"
+            html_body += "<tr><th>TOOL</th><th>ERROR</th></tr>"
+            for tool in errors:
+                html_body += "<tr><td>{}</td><td>{}</td></tr>".format(tool, errors[tool])
+            html_body += "</table>"
         html_style = """
                     table, th, td {
                       border: 1px solid black;
@@ -163,17 +165,26 @@ def process_min_priority(config, results, other_results=None):
     return results
 
 
-def common_post_processing(config, result, tool_name, need_other_results=False):
+def common_post_processing(config, result, tool_name, need_other_results=False, global_errors=None):
     other_results = []
     filtered_result = process_false_positives(result, config)
     filtered_result = process_min_priority(config, filtered_result, other_results=other_results)
     try:
         report_to_rp(config, filtered_result, tool_name)
-        report_to_jira(config, filtered_result)
-    except:
-        print("Failed to report issues in Jira/RP")
+    except BaseException as e:
+        print("Failed to report issues in RP")
         if os.environ.get("debug", False):
             print(format_exc())
+        if isinstance(global_errors, dict):
+            global_errors["ReportPortal"] = str(e)
+    try:
+        report_to_jira(config, filtered_result)
+    except BaseException as e:
+        print("Failed to report issues in Jira")
+        if os.environ.get("debug", False):
+            print(format_exc())
+        if isinstance(global_errors, dict):
+            global_errors["Jira"] = str(e)
     if need_other_results:
         return filtered_result, other_results
     return filtered_result

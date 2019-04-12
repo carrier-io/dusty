@@ -34,10 +34,23 @@ class WAS(object):
                f'<Criteria field="name" operator="EQUALS">{project_name}</Criteria>' \
                f'</filters></ServiceRequest>'
         response = self.client.request(call, data=body, api_version='webapp')
-        if environ.get("debug", False):
-            print(response)
+        logging.debug("Qualys: API response: %s", str(response))
         root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
         return None if int(root.count.text) == 0 else root.data.WebApp.id.text
+
+    def count_scans_in_project(self, project_id):
+        try:
+            call = '/search/was/wasscan'
+            body = f'<ServiceRequest><filters>' \
+                   f'<Criteria field="webApp.id" operator="EQUALS">{project_id}</Criteria>' \
+                   f'<Criteria field="status" operator="IN">SUBMITTED,RUNNING</Criteria>' \
+                   f'</filters></ServiceRequest>'
+            response = self.client.request(call, data=body, api_version='webapp')
+            logging.debug("Qualys: API response: %s", str(response))
+            root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
+            return int(root.count.text)
+        except:
+            return 0  # On error - allow to try to delete stale project
 
     def create_webapp_request(self, project_name, application_url, scan_profile):
         call = '/create/was/webapp'
@@ -47,8 +60,7 @@ class WAS(object):
                f'<defaultProfile><id>{scan_profile}</id></defaultProfile>' \
                f'</WebApp></data></ServiceRequest>'
         response = self.client.request(call, data=body, api_version="webapp")
-        if environ.get("debug", False):
-            print(response)
+        logging.debug("Qualys: API response: %s", str(response))
         root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
         return None if root.responseCode.text != 'SUCCESS' else root.data.WebApp.id.text
 
@@ -74,24 +86,19 @@ class WAS(object):
                f'</WasScan>' \
                f'</data></ServiceRequest>'
         response = self.client.request(call, data=body, api_version="webapp")
-        if environ.get("debug", False):
-            print(response)
+        logging.debug("Qualys: API response: %s", str(response))
         root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
         return None if root.responseCode.text != 'SUCCESS' else root.data.WasScan.id.text
 
     def scan_status(self, scan_id):
+        logging.info("Qualys: checking scan status")
         try:
             call = f'/get/was/wasscan/{scan_id}'
             response = self.client.request(call, api_version="webapp")
-            if environ.get("debug", False):
-                print(response)
+            logging.debug("Qualys: API response: %s", str(response))
             root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
-            if root.responseCode.text == 'SUCCESS':
-                if root.data.WasScan.status == "FINISHED" and \
-                        root.data.WasScan.summary.resultsStatus == "NO_WEB_SERVICE":
-                    raise RuntimeError("QualysWAS failed to access web application")
-                return False if root.data.WasScan.status != "FINISHED" else True
-            return False
+            if root.responseCode.text != 'SUCCESS':
+                raise RuntimeError(f"Qualys API error")
         except:
             logging.error("Failed to get scan status. Total status errors: %d", self.status_check_errors)
             if os.environ.get("debug", False):
@@ -100,6 +107,12 @@ class WAS(object):
                 raise
             self.status_check_errors += 1
             return False
+        if root.data.WasScan.status in ["CANCELED", "ERROR"]:
+            raise RuntimeError("QualysWAS scan failed or was canceled")
+        if root.data.WasScan.status == "FINISHED" and \
+                root.data.WasScan.summary.resultsStatus in ["NO_WEB_SERVICE", "NO_HOST_ALIVE"]:
+            raise RuntimeError("QualysWAS failed to access web application")
+        return root.data.WasScan.status == "FINISHED"
 
     def download_scan_report(self, scan_id, report_path='/tmp/qualys_scan.xml'):
         call = f'/download/was/wasscan/{scan_id}'
@@ -121,21 +134,19 @@ class WAS(object):
                f'</target></webAppReport></config>' \
                f'<template><id>{qualys_template_id}</id></template></Report></data></ServiceRequest>'
         response = self.client.request(call, data=body, api_version="webapp")
-        if environ.get("debug", False):
-            print(response)
+        logging.debug("Qualys: API response: %s", str(response))
         root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
         return None if root.responseCode.text != 'SUCCESS' else root.data.Report.id
 
     def get_report_status(self, report_id):
+        logging.info("Qualys: checking report status")
         try:
             call = f'/get/was/report/{report_id}'
             response = self.client.request(call, api_version="webapp")
-            if environ.get("debug", False):
-                print(response)
+            logging.debug("Qualys: API response: %s", str(response))
             root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
-            if root.responseCode.text == 'SUCCESS':
-                return False if root.data.Report.status != "COMPLETE" else True
-            return False
+            if root.responseCode.text != 'SUCCESS':
+                raise RuntimeError(f"Qualys API error")
         except:
             logging.error("Failed to get report status. Total status errors: %d", self.status_check_errors)
             if os.environ.get("debug", False):
@@ -144,6 +155,7 @@ class WAS(object):
                 raise
             self.status_check_errors += 1
             return False
+        return root.data.Report.status == "COMPLETE"
 
     def download_report(self, report_id, report_path='/tmp/qualys.xml'):
         call = f'/download/was/report/{report_id}'
@@ -155,7 +167,6 @@ class WAS(object):
     def delete_asset(self, asset_type, asset_id):
         call = f'/delete/was/{asset_type}/{asset_id}'
         response = self.client.request(call, api_version="webapp")
-        if environ.get("debug", False):
-            print(response)
+        logging.debug("Qualys: API response: %s", str(response))
         root = objectify.fromstring(response.encode("utf-8", errors="ignore"))
-        return True if root.responseCode.text != 'SUCCESS' else False
+        return root.responseCode.text != 'SUCCESS'

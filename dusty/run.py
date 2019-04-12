@@ -255,10 +255,14 @@ def main():
     # Disable requests/urllib3 logging
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
+    # Disable qualysapi requests logging
+    logging.getLogger("qualysapi.connector").setLevel(logging.WARNING)
+    logging.getLogger("qualysapi.config").setLevel(logging.WARNING)
+    logging.getLogger("qualysapi.util").setLevel(logging.WARNING)
     start_time = time()
     global_results = []
     global_other_results = []
-    global_errors = []
+    global_errors = dict()
     default_config, test_configs = config_from_yaml()
     for key in test_configs:
         results = []
@@ -270,18 +274,18 @@ def main():
             attr_name = config[key] if 'language' in key else key
             try:
                 results = getattr(SastyWrapper, attr_name)(config)
-            except:
+            except BaseException as e:
                 logging.error("Exception during %s Scanning" % attr_name)
-                global_errors.append(attr_name)
+                global_errors[attr_name] = str(e)
                 if os.environ.get("debug", False):
                     logging.error(format_exc())
         else:
             try:
                 tool_name, result = getattr(DustyWrapper, key)(config)
-                results, other_results = common_post_processing(config, result, tool_name, need_other_results=True)
-            except:
+                results, other_results = common_post_processing(config, result, tool_name, need_other_results=True, global_errors=global_errors)
+            except BaseException as e:
                 logging.error("Exception during %s Scanning" % key)
-                global_errors.append(key)
+                global_errors[key] = str(e)
                 if os.environ.get("debug", False):
                     logging.error(format_exc())
         if default_config.get('jira_service', None) and config.get('jira_service', None) \

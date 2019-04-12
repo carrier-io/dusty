@@ -145,33 +145,59 @@ class DustyWrapper(object):
         else:
             project_name = config.get('project_name')
         target = f'{config.get("protocol")}://{config.get("host")}:{config.get("port")}'
-        qualys = WAS()
-        ts = datetime.utcfromtimestamp(int(time())).strftime('%Y-%m-%d %H:%M:%S')
-        project_id = qualys.search_for_project(project_name)
-        if qualys_scanner_type == 'INTERNAL':
-            scanner_appliance = f"<type>{qualys_scanner_type}</type>" \
-                                f"<friendlyName>{qualys_scanner}{qualys_scanners_pool}</friendlyName>"
-        else:
-            scanner_appliance = f"<type>{qualys_scanner_type}</type>"
-        if not project_id:
-            project_id = qualys.create_webapp_request(project_name, target, qualys_profile_id)
-        if not project_id:
-            raise RuntimeError("Something went wrong and project wasn't found and created")
-        scan_id = qualys.start_scan(project_name, ts, project_id, qualys_profile_id, scanner_appliance)
-        if not scan_id:
-            raise RuntimeError("Scan haven't been started")
-        while not qualys.scan_status(scan_id):
-            sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
-        # qualys.download_scan_report(scan_id)
-        report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
-        if not report_id:
-            raise RuntimeError("Request report failed")
-        while not qualys.get_report_status(report_id):
-            sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
-        qualys.download_report(report_id)
-        qualys.delete_asset("report", report_id)
-        qualys.delete_asset("wasscan", scan_id)
-        qualys.delete_asset("webapp", project_id)
+        project_id = None
+        auth_id = None
+        scan_id = None
+        report_id = None
+        try:
+            qualys = WAS()
+            ts = datetime.utcfromtimestamp(int(time())).strftime('%Y-%m-%d %H:%M:%S')
+            logging.info("Qualys: searching for existing project")
+            project_id = qualys.search_for_project(project_name)
+            if qualys_scanner_type == 'INTERNAL':
+                scanner_appliance = f"<type>{qualys_scanner_type}</type>" \
+                                    f"<friendlyName>{qualys_scanner}{qualys_scanners_pool}</friendlyName>"
+            else:
+                scanner_appliance = f"<type>{qualys_scanner_type}</type>"
+            if not project_id:
+                logging.info("Qualys: creating webapp")
+                project_id = qualys.create_webapp_request(project_name, target, qualys_profile_id)
+            if not project_id:
+                raise RuntimeError("Something went wrong and project wasn't found and created")
+            logging.info("Qualys: starting scan")
+            scan_id = qualys.start_scan(project_name, ts, project_id, qualys_profile_id, scanner_appliance)
+            if not scan_id:
+                raise RuntimeError("Scan haven't been started")
+            logging.info("Qualys: waiting for scan to finish")
+            while not qualys.scan_status(scan_id):
+                sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
+            # qualys.download_scan_report(scan_id)
+            logging.info("Qualys: requesting report")
+            report_id = qualys.request_report(project_name, ts, scan_id, project_id, qualys_template_id)
+            if not report_id:
+                raise RuntimeError("Request report failed")
+            logging.info("Qualys: waiting for report to be created")
+            while not qualys.get_report_status(report_id):
+                sleep(c.QUALYS_STATUS_CHECK_INTERVAL)
+            logging.info("Qualys: downloading report")
+            qualys.download_report(report_id)
+        finally:
+            if report_id:
+                logging.info("Qualys: deleting report")
+                qualys.delete_asset("report", report_id)
+            if scan_id:
+                logging.info("Qualys: deleting scan")
+                qualys.delete_asset("wasscan", scan_id)
+            if auth_id:
+                logging.info("Qualys: deleting authentication record")
+                qualys.delete_asset("webappauthrecord", auth_id)
+            if project_id:
+                project_scans = qualys.count_scans_in_project(project_id)
+                logging.debug("Qualys: found %d active scans in webapp", project_scans)
+                if not project_scans:
+                    logging.info("Qualys: deleting webapp")
+                    qualys.delete_asset("webapp", project_id)
+        logging.info("Qualys: processing results")
         result = QualysWebAppParser("/tmp/qualys.xml", "qualys_was").items
         return tool_name, result
 
