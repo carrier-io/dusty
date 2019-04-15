@@ -29,7 +29,7 @@ class PTAIScanParser(object):
         :param filename:
         :param filtered_statuses: str with statuses, separated ', '
         """
-        file_path_descriptions_list = ['Уязвимый файл']
+        file_path_descriptions_list = ['Уязвимый файл', 'Vulnerable File']
 
         def trim_blank_lines(line):
             blank_lines_patterns = ['\n( *\n)', '\n+']
@@ -45,8 +45,8 @@ class PTAIScanParser(object):
             value_index = -1
             value = ''
             for description in descriptions:
-                value_index = option_descriptions.index(description)
-                if value_index >= 0:
+                if description in option_descriptions:
+                    value_index = option_descriptions.index(description)
                     break
             if value_index >= 0:
                 option_values_soup = table_soap.select('td[class*="option-value"]')
