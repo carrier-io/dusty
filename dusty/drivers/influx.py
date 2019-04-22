@@ -68,7 +68,8 @@ class InfluxReport(object):
         jira_issues = []
         for issue in self.created_jira_tickets:
             ts = int(datetime.datetime.strptime(issue['open_date'], '%Y-%m-%dT%H:%M:%S.%f%z').timestamp())
-            break_policy = 'Y' if ts + (self.policy[str(issue['priority'])]*24*3600) < int(time()) else 'N'
+            break_policy = 'Y' if str(issue['priority']) in self.policy and \
+                                  ts + (self.policy[str(issue['priority'])]*24*3600) < int(time()) else 'N'
             issue = {
                 "measurement": "errors",
                 "time": self.execution_time,
