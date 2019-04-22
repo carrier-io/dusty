@@ -32,8 +32,6 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
 def report_to_rp(config, result, issue_name):
     if config.get("rp_config"):
         rp_data_writer = config['rp_data_writer']
-        rp_data_writer.start_test_item(issue=issue_name, tags=[], description=f"Results of {issue_name} scan",
-                                       item_type="SUITE")
         for item in result:
             item.rp_item(rp_data_writer)
         rp_data_writer.finish_test_item()

@@ -46,11 +46,11 @@ class SastyWrapper(object):
         params = []
         for fn in scan_fns:
             params.append((fn, config))
-
         results = run_in_parallel(params)
         for result in results:
             all_results.extend(result)
-        return all_results
+        filtered_result = common_post_processing(config, all_results, "python")
+        return filtered_result
 
     @staticmethod
     def bandit(config, results=None):
@@ -59,11 +59,10 @@ class SastyWrapper(object):
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
-        filtered_result = common_post_processing(config, result, "pybandit")
         if results or isinstance(results, list):
-            results.append(filtered_result)
+            results.append(result)
         else:
-            return filtered_result
+            return result
 
     @staticmethod
     def ruby(config):
@@ -107,7 +106,8 @@ class SastyWrapper(object):
         results = run_in_parallel(params)
         for result in results:
             all_results.extend(result)
-        return all_results
+        filtered_result = common_post_processing(config, all_results, "nodejs")
+        return filtered_result
 
     @staticmethod
     def npm(config, results=None):
@@ -117,11 +117,10 @@ class SastyWrapper(object):
         with open('/tmp/npm_audit.json', 'w') as npm_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
         result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", deps).items
-        filtered_result = common_post_processing(config, result, "NpmScan")
         if results or isinstance(results, list):
-            results.append(filtered_result)
+            results.append(result)
         else:
-            return filtered_result
+            return result
 
     @staticmethod
     def retirejs(config, results=None):
@@ -131,22 +130,20 @@ class SastyWrapper(object):
             .format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", deps).items
-        filtered_result = common_post_processing(config, result, "RetireScan")
         if results or isinstance(results, list):
-            results.append(filtered_result)
+            results.append(result)
         else:
-            return filtered_result
+            return result
 
     @staticmethod
     def nodejsscan(config, results=None):
         exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_source(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
-        filtered_result = common_post_processing(config, result, "NodeJsScan")
         if results or isinstance(results, list):
-            results.append(filtered_result)
+            results.append(result)
         else:
-            return filtered_result
+            return result
 
     @staticmethod
     def ptai(config):
@@ -168,8 +165,7 @@ class SastyWrapper(object):
         with open('/tmp/safety_report.json', 'w') as safety_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
         result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items
-        filtered_result = common_post_processing(config, result, "SafetyScan")
         if results or isinstance(results, list):
-            results.append(filtered_result)
+            results.append(result)
         else:
-            return filtered_result
+            return result
