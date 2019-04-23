@@ -23,6 +23,7 @@ from dusty.data_model.npm.parser import NpmScanParser
 from dusty.data_model.retire.parser import RetireScanParser
 from dusty.data_model.ptai.parser import PTAIScanParser
 from dusty.data_model.safety.parser import SafetyScanParser
+from dusty.data_model.dependency_check.parser import DependencyCheckParser
 
 
 class SastyWrapper(object):
@@ -35,6 +36,25 @@ class SastyWrapper(object):
         return config.get("code_source", SastyWrapper.get_code_path(config))
 
     @staticmethod
+    def execute_parallel(scan_fns, config, language):
+        all_results = []
+        params = []
+        for fn in scan_fns:
+            params.append((fn, config))
+        results = run_in_parallel(params)
+        for result in results:
+            all_results.extend(result)
+        filtered_result = common_post_processing(config, all_results, language)
+        return filtered_result
+
+    @staticmethod
+    def extend_result(results, result):
+        if results or isinstance(results, list):
+            results.append(result)
+        else:
+            return result
+
+    @staticmethod
     def python(config):
         scan_fns = [SastyWrapper.bandit]
         all_results = []
@@ -43,14 +63,7 @@ class SastyWrapper(object):
             scan_fns.append(SastyWrapper.safety)
             if isinstance(composition_analysis, dict):
                 config['files'] = composition_analysis.get('files', ['requirements.txt'])
-        params = []
-        for fn in scan_fns:
-            params.append((fn, config))
-        results = run_in_parallel(params)
-        for result in results:
-            all_results.extend(result)
-        filtered_result = common_post_processing(config, all_results, "python")
-        return filtered_result
+        return SastyWrapper.execute_parallel(scan_fns, config, 'python')
 
     @staticmethod
     def bandit(config, results=None):
@@ -59,10 +72,7 @@ class SastyWrapper(object):
         with open("/tmp/bandit.json", "w") as f:
             f.write(res[0].decode('utf-8', errors='ignore'))
         result = BanditParser("/tmp/bandit.json", "pybandit").items
-        if results or isinstance(results, list):
-            results.append(result)
-        else:
-            return result
+        return SastyWrapper.extend_result(results, result)
 
     @staticmethod
     def ruby(config):
@@ -84,12 +94,21 @@ class SastyWrapper(object):
 
     @staticmethod
     def java(config):
+        scan_fns = [SastyWrapper.spotbugs]
+        composition_analysis = config.get('composition_analysis', None)
+        if composition_analysis:
+            scan_fns.append(SastyWrapper.safety)
+            config['comp_opts'] = composition_analysis.get('scan_opts', '')
+            config['comp_path'] = composition_analysis.get('scan_path', SastyWrapper.get_code_path(config))
+        return SastyWrapper.execute_parallel(scan_fns, config, 'java')
+
+    @staticmethod
+    def spotbugs(config, results=None):
         exec_cmd = "spotbugs -xml:withMessages {} -output /tmp/spotbugs.xml {}" \
                    "".format(config.get("scan_opts", ""), SastyWrapper.get_code_path(config))
         execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = SpotbugsParser("/tmp/spotbugs.xml", "spotbugs").items
-        filtered_result = common_post_processing(config, result, "spotbugs")
-        return filtered_result
+        return SastyWrapper.extend_result(results, result)
 
     @staticmethod
     def nodejs(config):
@@ -99,15 +118,7 @@ class SastyWrapper(object):
             scan_fns.extend([SastyWrapper.npm, SastyWrapper.retirejs])
             config['add_devdep'] = composition_analysis.get('devdep', False) \
                 if isinstance(composition_analysis, dict) else False
-        params = []
-        for fn in scan_fns:
-            params.append((fn, config))
-        all_results = []
-        results = run_in_parallel(params)
-        for result in results:
-            all_results.extend(result)
-        filtered_result = common_post_processing(config, all_results, "nodejs")
-        return filtered_result
+        return SastyWrapper.execute_parallel(scan_fns, config, 'nodejs')
 
     @staticmethod
     def npm(config, results=None):
@@ -117,10 +128,7 @@ class SastyWrapper(object):
         with open('/tmp/npm_audit.json', 'w') as npm_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=npm_audit)
         result = NpmScanParser("/tmp/npm_audit.json", "NpmScan", deps).items
-        if results or isinstance(results, list):
-            results.append(result)
-        else:
-            return result
+        return SastyWrapper.extend_result(results, result)
 
     @staticmethod
     def retirejs(config, results=None):
@@ -130,20 +138,14 @@ class SastyWrapper(object):
             .format(SastyWrapper.get_code_path(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = RetireScanParser("/tmp/retirejs.json", "RetireScan", deps).items
-        if results or isinstance(results, list):
-            results.append(result)
-        else:
-            return result
+        return SastyWrapper.extend_result(results, result)
 
     @staticmethod
     def nodejsscan(config, results=None):
         exec_cmd = "nodejsscan -o nodejsscan -d {}".format(SastyWrapper.get_code_source(config))
         res = execute(exec_cmd, cwd='/tmp')
         result = NodeJsScanParser("/tmp/nodejsscan.json", "NodeJsScan").items
-        if results or isinstance(results, list):
-            results.append(result)
-        else:
-            return result
+        return SastyWrapper.extend_result(results, result)
 
     @staticmethod
     def ptai(config):
@@ -165,7 +167,11 @@ class SastyWrapper(object):
         with open('/tmp/safety_report.json', 'w') as safety_audit:
             print(res[0].decode(encoding='ascii', errors='ignore'), file=safety_audit)
         result = SafetyScanParser("/tmp/safety_report.json", "SafetyScan").items
-        if results or isinstance(results, list):
-            results.append(result)
-        else:
-            return result
+        return SastyWrapper.extend_result(results, result)
+
+    @staticmethod
+    def dependency_check(config, results=None):
+        exec_cmd = 'dependency-check.sh -n -f JSON -o /tmp -s {} {}'.format(config('comp_path'), config['comp_opts'])
+        execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
+        result = DependencyCheckParser("/tmp/dependency-check-report.json", "dependency_check").items
+        return SastyWrapper.extend_result(results, result)

@@ -102,6 +102,7 @@ SEVERITY_TYPE = {
     2: 'Medium',
     3: 'Low'
 }
+
 NVD_URL = 'https://nvd.nist.gov/vuln/detail/'
 JIRA_DESCRIPTION_MAX_SIZE = 61908
 # This is jira.text.field.character.limit default value

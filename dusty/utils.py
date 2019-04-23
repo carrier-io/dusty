@@ -29,6 +29,18 @@ def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
+def cwe_to_severity(cwe_score):
+    if cwe_score <= 3.9:
+        priority = "Low"
+    elif cwe_score <= 6.9:
+        priority = "Medium"
+    elif cwe_score <= 8.9:
+        priority = "High"
+    else:
+        priority = "Critical"
+    return priority
+
+
 def report_to_rp(config, result, issue_name):
     if config.get("rp_config"):
         rp_data_writer = config['rp_data_writer']
