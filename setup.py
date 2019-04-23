@@ -27,6 +27,11 @@ setup(
     author='arozumenko',
     author_email='artem_rozumenko@epam.com',
     packages=find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache License 2.0",
+        "Operating System :: OS Independent",
+    ],
     install_requires=required,
     include_package_data=True,
     entry_points={

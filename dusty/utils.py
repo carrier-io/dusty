@@ -34,7 +34,6 @@ def report_to_rp(config, result, issue_name):
         rp_data_writer = config['rp_data_writer']
         for item in result:
             item.rp_item(rp_data_writer)
-        rp_data_writer.finish_test_item()
 
 
 def report_to_jira(config, result):
@@ -111,7 +110,8 @@ def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments, er
 
 def execute(exec_cmd, cwd='/tmp', communicate=True):
     print(f'Running: {exec_cmd}')
-    proc = Popen(exec_cmd.split(" "), cwd=cwd, stdout=PIPE, stderr=PIPE)
+    proc = Popen(exec_cmd.split(), cwd=cwd, stdout=PIPE, stderr=PIPE)
+
     if communicate:
         res = proc.communicate()
         print("Done")

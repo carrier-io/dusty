@@ -19,6 +19,7 @@ from reportportal_client import ReportPortalService
 
 from dusty import constants
 
+
 def timestamp():
     return str(int(time() * 1000))
 
@@ -33,13 +34,14 @@ def my_error_handler(exc_info):
     traceback.print_exception(*exc_info)
 
 
-class ReportPortalDataWriter(object):
-    def __init__(self, endpoint, token, project, launch_name=None,
+class ReportPortalDataWriter:
+    def __init__(self, endpoint, token, project, launch_name=None, tags=None,
                  launch_doc=None, launch_id=None, verify_ssl=False):
         self.endpoint = endpoint
         self.token = token
         self.project = project
         self.launch_name = launch_name
+        self.tags = tags
         self.launch_doc = launch_doc
         self.service = None
         self.test = None
@@ -59,7 +61,8 @@ class ReportPortalDataWriter(object):
             self.start_service()
         return self.service.start_launch(name=self.launch_name,
                                          start_time=timestamp(),
-                                         description=self.launch_doc)
+                                         description=self.launch_doc,
+                                         tags=self.tags)
 
     def finish_test(self):
         self.service.finish_launch(end_time=timestamp())
@@ -90,8 +93,6 @@ class ReportPortalDataWriter(object):
             self.service.log(time=timestamp(), message=message,
                              level=level, attachment=attachment)
 
-    def finish_test_item(self):
+    def finish_test_item(self, status="FAILED"):
         self.service.finish_test_item(end_time=timestamp(),
-                                      status="FAILED")
-
-
+                                      status=status)
