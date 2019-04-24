@@ -57,7 +57,6 @@ class SastyWrapper(object):
     @staticmethod
     def python(config):
         scan_fns = [SastyWrapper.bandit]
-        all_results = []
         composition_analysis = config.get('composition_analysis', None)
         if composition_analysis:
             scan_fns.append(SastyWrapper.safety)
@@ -97,9 +96,12 @@ class SastyWrapper(object):
         scan_fns = [SastyWrapper.spotbugs]
         composition_analysis = config.get('composition_analysis', None)
         if composition_analysis:
-            scan_fns.append(SastyWrapper.safety)
-            config['comp_opts'] = composition_analysis.get('scan_opts', '')
-            config['comp_path'] = composition_analysis.get('scan_path', SastyWrapper.get_code_path(config))
+            scan_fns.append(SastyWrapper.dependency_check)
+            config['comp_opts'] = ''
+            config['comp_path'] = SastyWrapper.get_code_path(config)
+            if isinstance(composition_analysis, dict):
+                config['comp_opts'] = composition_analysis.get('scan_opts', '')
+                config['comp_path'] = composition_analysis.get('scan_path', SastyWrapper.get_code_path(config))
         return SastyWrapper.execute_parallel(scan_fns, config, 'java')
 
     @staticmethod
