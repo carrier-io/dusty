@@ -204,7 +204,6 @@ class DefaultModel(object):
             _comment = comment
         return _comment
 
-
     def jira(self, jira_client, priority_mapping=None):
         priority = define_jira_priority(self.finding['severity'], priority_mapping)
         comments = []
@@ -212,6 +211,7 @@ class DefaultModel(object):
             comments = self.jira_steps_to_reproduce()
             _overwrite_steps = "See in comments\n\n"
         else:
+            self.finding['steps_to_reproduce'] = self.jira_steps_to_reproduce()
             _overwrite_steps = None
         issue, created = jira_client.create_issue(
             self.finding["title"], priority, self.__str__(overwrite_steps_to_reproduce=_overwrite_steps),
