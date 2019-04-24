@@ -156,7 +156,7 @@ class JiraWrapper(object):
 
     def post_issue(self, issue_data):
         issue = self.client.create_issue(fields=issue_data)
-        logging.info(f'  \u2713 {issue_data["issuetype"]["name"]} issue was created: {issue.key}')
+        logging.info(f'  \u2713 {issue_data["issuetype"]["name"]} was created: {issue.key}')
         return issue
 
     def get_or_create_issue(self, search_string, issue_data):
@@ -172,7 +172,7 @@ class JiraWrapper(object):
             if len(issues) > 1:
                 logging.error('  more then 1 issue with the same summary')
             else:
-                logging.info(f'  {issuetype} issue already exists: {issue.key}')
+                logging.info(f'  {issuetype["name"]} already exists: {issue.key}')
         else:
             issue = self.post_issue(issue_data)
             created = True

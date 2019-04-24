@@ -173,7 +173,7 @@ class SastyWrapper(object):
 
     @staticmethod
     def dependency_check(config, results=None):
-        exec_cmd = 'dependency-check.sh -n -f JSON -o /tmp -s {} {}'.format(config('comp_path'), config['comp_opts'])
+        exec_cmd = 'dependency-check.sh -n -f JSON -o /tmp -s {} {}'.format(config['comp_path'], config['comp_opts'])
         execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = DependencyCheckParser("/tmp/dependency-check-report.json", "dependency_check").items
         return SastyWrapper.extend_result(results, result)
