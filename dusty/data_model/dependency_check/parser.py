@@ -61,7 +61,7 @@ class DependencyCheckParser(object):
             _max = max([each.get("cvssv2", {"score": 0})["score"], each.get("cvssv3", {'baseScore': 0})['baseScore']])
             if max_priority < _max:
                 max_priority = _max
-            step = f"{each['name']} -- {each['description']}\n\n"
+            step = f"<pre>{each['name']} \n\n Description: {each['description']}\n\n"
             if 'cvssv2' in each:
                 cvss2_vector = self._calculate_vector(each['cvssv2'])
                 step += f"cvssv2: " \
@@ -77,9 +77,9 @@ class DependencyCheckParser(object):
                 step += '\n\nReferences:\n'
                 for ref in each['references']:
                     step += f"Name: {ref.get('name', '')}\n " \
-                        f"Link: {ref.get('link', '')}\n " \
+                        f"Link: {ref.get('url', '')}\n " \
                         f"Source: {ref.get('source', '')}\n\n"
-            steps.append(step)
+            steps.append(f"{step}</pre>")
         return max_priority, steps
 
     def _calculate_vector(self, item):
