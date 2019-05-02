@@ -18,6 +18,7 @@ import xml.etree.ElementTree
 from dusty.data_model.canonical_model import DefaultModel as Finding
 from dusty.constants import SEVERITY_TYPE
 from xml.sax import saxutils
+from markdownify import markdownify as md
 
 
 def sanitize(input):
@@ -51,8 +52,8 @@ class SpotbugsParser(object):
                 except:
                     pass
 
-            if details:
-                description += f'\n\n Details: {details.find("Details").text}'
+            if details is not None:
+                description += f'\n\n Details: {md(details.find("Details").text)}'
             severity_level = SEVERITY_TYPE.get(int(severity), "")
             dupe_key = hashlib.md5(f'{title} {issue_type} {category}'.encode('utf-8')).hexdigest()
             if file_path:
