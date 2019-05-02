@@ -179,6 +179,7 @@ class DefaultModel(object):
         rp_data_writer.finish_test_item()
 
     def html_item(self):
+        self.finding['steps_to_reproduce'] = self.html_steps_to_reproduce()
         return markdown2.markdown(self.__str__(), extras=["tables"])
 
     def junit_item(self):
@@ -186,6 +187,14 @@ class DefaultModel(object):
         message = self.__str__()
         tc.add_error_info(message=message, error_type=self.finding['severity'])
         return tc
+
+    def html_steps_to_reproduce(self):
+        steps = []
+        for step in self.finding['steps_to_reproduce']:
+            step = step.replace("{code:collapse=true}\n\n", "<pre>")
+            step = step.replace("\n\n{code}", "</pre>")
+            steps.append(step)
+        return steps
 
     def jira_steps_to_reproduce(self):
         steps = []

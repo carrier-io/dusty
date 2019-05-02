@@ -24,6 +24,7 @@ from dusty.data_model.retire.parser import RetireScanParser
 from dusty.data_model.ptai.parser import PTAIScanParser
 from dusty.data_model.safety.parser import SafetyScanParser
 from dusty.data_model.dependency_check.parser import DependencyCheckParser
+from dusty.data_model.gosec.parser import GosecOutputParser
 
 
 class SastyWrapper(object):
@@ -176,4 +177,18 @@ class SastyWrapper(object):
         exec_cmd = 'dependency-check.sh -n -f JSON -o /tmp -s {} {}'.format(config['comp_path'], config['comp_opts'])
         execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = DependencyCheckParser("/tmp/dependency-check-report.json", "dependency_check").items
+        return SastyWrapper.extend_result(results, result)
+
+    @staticmethod
+    def golang(config):
+        """ Golang SAST """
+        scan_fns = [SastyWrapper.gosec]
+        return SastyWrapper.execute_parallel(scan_fns, config, 'golang')
+
+    @staticmethod
+    def gosec(config, results=None):
+        """ Golang Security Checker """
+        exec_cmd = f"gosec -fmt=json ./..."
+        cmd_output = execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
+        result = GosecOutputParser(cmd_output, "gosec").items
         return SastyWrapper.extend_result(results, result)
