@@ -67,9 +67,9 @@ class SpotbugsParser(object):
                                           mitigation=False, impact=False, references=False,
                                           file_path=file_path, line=line,
                                           url='N/A', date=find_date,
-                                          steps_to_reproduce=f'{issue_type} issue {steps_to_reproduce}',
+                                          steps_to_reproduce=f'<pre>{issue_type} issue {steps_to_reproduce}</pre>',
                                           static_finding=True)
             else:
-                dupes[dupe_key].finding['steps_to_reproduce'].append(steps_to_reproduce)
+                dupes[dupe_key].finding['steps_to_reproduce'].append(f"<pre>{steps_to_reproduce}</pre>")
 
         self.items = dupes.values()
