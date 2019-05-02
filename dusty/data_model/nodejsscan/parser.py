@@ -40,7 +40,7 @@ class NodeJsScanParser(object):
                     steps_to_reproduce = f'<pre>{sub_value.get("lines", "")}</pre>\n\n'
                     dupe_key = key + ': ' + sub_value['title'] + ' with file ' + sub_value.get('filename', '')
                     if dupe_key not in dupes:
-                        dupes[dupe_key] = Finding(title=title,
+                        dupes[dupe_key] = Finding(title=dupe_key,
                                                   tool=test,
                                                   active=False,
                                                   verified=False,
