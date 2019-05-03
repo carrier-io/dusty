@@ -23,6 +23,7 @@ from subprocess import Popen, PIPE
 from datetime import datetime
 from dusty import constants as c
 from traceback import format_exc
+from dusty.drivers.rp.report_portal_writer import launch_reportportal_service
 
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
@@ -42,8 +43,8 @@ def cwe_to_severity(cwe_score):
 
 
 def report_to_rp(config, result, issue_name):
-    if config.get("rp_config"):
-        rp_data_writer = config['rp_data_writer']
+    rp_data_writer = launch_reportportal_service(config.get("rp_config"))
+    if rp_data_writer:
         for item in result:
             item.rp_item(rp_data_writer)
 
@@ -56,7 +57,7 @@ def report_to_jira(config, result):
         for item in result:
             item.jira(config['jira_service'], jira_mapping)
     elif config.get('jira_service') and not config.get('jira_service').valid:
-        print("Jira Configuration incorrect, please fix ... ")
+        logging.info("Jira Configuration incorrect, please fix ... ")
 
 
 def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments, errors=None):
@@ -117,19 +118,17 @@ def send_emails(emails_service, jira_is_used, jira_tickets_info, attachments, er
                 """
         emails_service.send(html_body=html_body, html_style=html_style, attachments=attachments)
     elif emails_service and not emails_service.valid:
-        print("Email Configuration incorrect, please fix ... ")
+        logging.error("Email Configuration incorrect, please fix ... ")
 
 
 def execute(exec_cmd, cwd='/tmp', communicate=True):
-    print(f'Running: {exec_cmd}')
+    logging.info(f'Running: {exec_cmd}')
     proc = Popen(exec_cmd.split(), cwd=cwd, stdout=PIPE, stderr=PIPE)
 
     if communicate:
         res = proc.communicate()
-        print("Done")
-        if os.environ.get("debug", False):
-            print(f"stdout: {res[0]}")
-            print(f"stderr: {res[1]}")
+        logging.debug(f"stdout: {res[0]}")
+        logging.debug(f"stderr: {res[1]}")
         return res
     else:
         return proc
@@ -182,17 +181,15 @@ def common_post_processing(config, result, tool_name, need_other_results=False, 
     try:
         report_to_rp(config, filtered_result, tool_name)
     except BaseException as e:
-        print("Failed to report issues in RP")
-        if os.environ.get("debug", False):
-            print(format_exc())
+        logging.info("Failed to report issues in RP")
+        logging.debug(format_exc())
         if isinstance(global_errors, dict):
             global_errors["ReportPortal"] = str(e)
     try:
         report_to_jira(config, filtered_result)
     except BaseException as e:
-        print("Failed to report issues in Jira")
-        if os.environ.get("debug", False):
-            print(format_exc())
+        logging.info("Failed to report issues in Jira")
+        logging.debug(format_exc())
         if isinstance(global_errors, dict):
             global_errors["Jira"] = str(e)
     if need_other_results:

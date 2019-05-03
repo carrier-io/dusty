@@ -15,9 +15,11 @@
 import traceback
 
 from time import time
-from reportportal_client import ReportPortalService
+from reportportal_client import ReportPortalServiceAsync as ReportPortalService
 
 from dusty import constants
+
+rp_service = None
 
 
 def timestamp():
@@ -34,12 +36,28 @@ def my_error_handler(exc_info):
     traceback.print_exception(*exc_info)
 
 
+def launch_reportportal_service(rp_config):
+    if not rp_config:
+        return None
+    global rp_service
+
+    if not rp_service:
+        rp_service = ReportPortalDataWriter(endpoint=rp_config["rp_url"],
+                                            token=rp_config["rp_token"],
+                                            project=rp_config["rp_project"],
+                                            launch_name=rp_config["rp_launch_name"],
+                                            tags=rp_config["rp_launch_tags"])
+        rp_service.start_test()
+    return rp_service
+
+
 class ReportPortalDataWriter:
-    def __init__(self, endpoint, token, project, launch_name=None, tags=None,
+    def __init__(self, endpoint, token, project, log_batch_size=100, launch_name=None, tags=None,
                  launch_doc=None, launch_id=None, verify_ssl=False):
         self.endpoint = endpoint
         self.token = token
         self.project = project
+        self.log_batch_size = log_batch_size
         self.launch_name = launch_name
         self.tags = tags
         self.launch_doc = launch_doc
@@ -52,6 +70,7 @@ class ReportPortalDataWriter:
         self.service = ReportPortalService(endpoint=self.endpoint,
                                            project=self.project,
                                            token=self.token,
+                                           log_batch_size=self.log_batch_size,
                                            verify_ssl=self.verify_ssl)
         if self.launch_id:
             self.service.launch_id = self.launch_id
