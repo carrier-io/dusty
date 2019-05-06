@@ -32,7 +32,8 @@ from dusty.drivers.html import HTMLReport
 from dusty.drivers.xunit import XUnitReport
 from dusty.drivers.redis_file import RedisFile
 from dusty.drivers.influx import InfluxReport
-from dusty.utils import send_emails, common_post_processing, prepare_jira_mapping
+from dusty.drivers.loki import enable_loki_logging
+from dusty.utils import send_emails, common_post_processing, prepare_jira_mapping, flush_logs
 
 requests.packages.urllib3.disable_warnings()
 
@@ -234,6 +235,7 @@ def config_from_yaml(args):
                           min_priority=min_priority,
                           rp_config=rp_config,
                           influx=execution_config.get("influx", None),
+                          loki=execution_config.get("loki", None),
                           generate_html=generate_html,
                           generate_junit=generate_junit,
                           ptai_report_name=ptai_report_name,
@@ -318,6 +320,7 @@ def main():
         datefmt='%Y.%m.%d %H:%M:%S',
         format='%(asctime)s - %(levelname)8s - %(message)s',
     )
+    logging.raiseExceptions = False
 
     # Disable requests/urllib3 logging
     logging.getLogger("requests").setLevel(logging.WARNING)
@@ -335,6 +338,9 @@ def main():
     global_errors = dict()
 
     default_config, test_configs = config_from_yaml(args)
+
+    # Enable Loki logging
+    enable_loki_logging(default_config)
 
     for key in test_configs:
         results = []
@@ -370,6 +376,7 @@ def main():
 
     process_results(default_config, start_time, global_results, other_results=global_other_results,
                     global_errors=global_errors)
+    flush_logs()
 
 
 if __name__ == "__main__":

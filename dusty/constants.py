@@ -17,7 +17,7 @@ NON_SCANNERS_CONFIG_KEYS = ['target_host', 'target_port', 'protocol', "/",
                             'safe_pipeline_mode', 'project_name', 'environment',
                             'test_type', 'junit_report', 'jira', 'jira_mapping', 'emails',
                             'min_priority', 'code_path', 'composition_analysis', 'influx',
-                            'code_source']
+                            'code_source', 'loki']
 SASTY_SCANNERS_CONFIG_KEYS = ['language', 'npm', 'retirejs', 'ptai', 'safety', 'scan_opts']
 READ_THROUGH_ENV = ['target_host', 'target_port', 'protocol', 'project_name', 'environment']
 CONFIG_ENV_KEY = "CARRIER_SCAN_CONFIG"

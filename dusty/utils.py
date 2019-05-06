@@ -302,3 +302,8 @@ def get_dependencies(file_path, add_devdep=False):
     if add_devdep:
         deps.extend(list(package_json.get('devDependencies', {}).keys()))
     return deps
+
+
+def flush_logs():
+    for handler in logging.getLogger("").handlers:
+        handler.flush()
