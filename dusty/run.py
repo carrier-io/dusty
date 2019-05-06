@@ -287,7 +287,12 @@ def process_results(default_config, start_time, global_results=None,
     if default_config.get('jira_service', None):
         created_jira_tickets = default_config['jira_service'].get_created_tickets()
     if default_config.get('influx', None):
-        InfluxReport(global_results, other_results, created_jira_tickets, default_config)
+        try:
+            InfluxReport(global_results, other_results, created_jira_tickets, default_config)
+        except BaseException as e:
+            logging.error("Exception during influx reporting")
+            global_errors["Influx"] = str(e)
+            logging.debug(format_exc())
     if default_config.get('email_service', None):
         if html_report_file:
             attachments.append(html_report_file)
