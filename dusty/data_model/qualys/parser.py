@@ -12,6 +12,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import logging
 import base64
 import html
 from lxml import etree
@@ -57,6 +58,9 @@ class QualysWebAppParser(object):
                         url = record.findtext('URL')
                         access_pass = [a.text for a in records[0].xpath('ACCESS_PATH/URL')]
                         method = record.findtext('PAYLOADS/PAYLOAD/REQUEST/METHOD')
+                        if not method:
+                            logging.error("Bad record: %s", str(record))
+                            method = ""
                         request = record.findtext('PAYLOADS/PAYLOAD/REQUEST/URL')
                         response = record.findtext('PAYLOADS/PAYLOAD/RESPONSE/CONTENTS')
                         response = html.escape(base64.b64decode(response).decode("utf-8", errors="ignore"))
@@ -71,6 +75,3 @@ class QualysWebAppParser(object):
                                       out_of_scope=False, mitigated=None, impact=qid_impact)
                     finding.unsaved_endpoints.extend(entrypoints)
                     self.items.append(finding)
-
-
-
