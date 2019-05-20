@@ -15,54 +15,66 @@ __author__ = 'akaminski, arozumenko'
 
 import logging
 import hashlib
-import xml.etree.ElementTree
+
 from dusty.data_model.canonical_model import DefaultModel as Finding
 from dusty.constants import SEVERITY_TYPE
-from xml.sax import saxutils
+from lxml import etree
 from markdownify import markdownify as md
+from xml.sax import saxutils
 
 
-def sanitize(input):
-    return saxutils.unescape(input).replace("<", "").replace(">", "")
+def sanitize(item):
+    return saxutils.unescape(item).replace("<", "").replace(">", "")
 
 
-class SpotbugsParser(object):
-    def __init__(self, filename, test):
-        logging.debug("Spotbugs parser initialization")
+class SpotbugsParser:
+    def __init__(self, spotbugs_xml, test):
+        self.spotbugs_xml = spotbugs_xml
 
         dupes = dict()
         find_date = None
 
-        data = xml.etree.ElementTree.parse(filename).getroot()
-        for item in data.findall('BugInstance'):
-            title = item.find('ShortMessage').text
-            description = item.find('LongMessage').text
+        logging.debug("Spotbugs parser initialization")
+
+        bugs_details = self.extract_bugs_details()
+
+        context = etree.iterparse(self.spotbugs_xml, events=('end',), tag='BugInstance')
+
+        for _, item in context:
+            title = item.findtext('ShortMessage')
+            description = item.findtext('LongMessage')
             category = item.get('category')
             issue_type = item.get('type')
             severity = item.get('priority')
             classname = item.find('Class').get('classname')
             filename = item.find('Class').find('SourceLine').get('sourcefile')
             file_path = item.find('Class').find('SourceLine').get('sourcepath')
-            line = item.find('Class').find('SourceLine').find('Message').text
-            steps_to_reproduce = '\n\n'
-            details = data.find(f'.//BugPattern[@type="{issue_type}"]')
+            line = item.find('Class').find('SourceLine').findtext('Message')
+            steps_to_reproduce = '\n'*2
+
+            # TODO: rewrite this to avoid <IndexError: list index out of range> errors
             for i, element in enumerate(item.findall('Method')):
-                steps_to_reproduce += f"Classname: {classname}\t" \
-                                      f"{element.find('Message').text}\t"
+                steps_to_reproduce += f"Classname: {classname}\t{element.findtext('Message')}\t"
                 try:
-                    steps_to_reproduce += \
-                                      f"{sanitize(item.findall('SourceLine')[i].find('Message').text)}"
-                except:
+                    steps_to_reproduce += f"{sanitize(item.findall('SourceLine')[i].findtext('Message'))}"
+                except IndexError:
                     pass
 
-            if details is not None:
-                description += f'\n\n Details: {md(details.find("Details").text)}'
+            details = bugs_details.get(issue_type)
+
+            if details:
+                description += f'\n\n Details: {md(details)}'
+
             severity_level = SEVERITY_TYPE.get(int(severity), "")
+
             dupe_key = hashlib.md5(f'{title} {issue_type} {category}'.encode('utf-8')).hexdigest()
+
             if file_path:
                 dupe_key += f' {file_path}'
+
             if filename:
                 title += f' in {filename}'
+
             if dupe_key not in dupes:
                 dupes[dupe_key] = Finding(title=title, tool=category.lower().replace(" ", "_"),
                                           active=False, verified=False, description=description,
@@ -75,6 +87,25 @@ class SpotbugsParser(object):
             else:
                 dupes[dupe_key].finding['steps_to_reproduce'].append(f"<pre>{steps_to_reproduce}</pre>")
 
+            item.clear()
+            while item.getprevious() is not None:
+                del item.getparent()[0]
+
+        del context
+
         self.items = dupes.values()
 
         logging.debug("Spotbugs output parsing done")
+
+    def extract_bugs_details(self):
+        context = etree.iterparse(self.spotbugs_xml, events=('end',), tag='BugPattern')
+
+        details = dict()
+        for _, item in context:
+            details[item.get("type")] = item.findtext("Details")
+            item.clear()
+            while item.getprevious() is not None:
+                del item.getparent()[0]
+
+        del context
+        return details
