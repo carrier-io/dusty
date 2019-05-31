@@ -45,7 +45,7 @@ class SastyWrapper(object):
         results = run_in_parallel(params)
         for result in results:
             all_results.extend(result)
-        filtered_result = common_post_processing(config, all_results, language)
+        filtered_result = common_post_processing(config, all_results, language, need_other_results=True)
         return filtered_result
 
     @staticmethod
@@ -89,7 +89,7 @@ class SastyWrapper(object):
                    f"-o /tmp/brakeman.json " + SastyWrapper.get_code_path(config)
         execute(exec_cmd, cwd=SastyWrapper.get_code_path(config))
         result = BrakemanParser("/tmp/brakeman.json", "brakeman").items
-        filtered_result = common_post_processing(config, result, "brakeman")
+        filtered_result = common_post_processing(config, result, "brakeman", need_other_results=True)
         return filtered_result
 
     @staticmethod

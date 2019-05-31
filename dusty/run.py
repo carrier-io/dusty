@@ -352,6 +352,8 @@ def main():
             attr_name = config[key] if 'language' in key else key
             try:
                 results = getattr(SastyWrapper, attr_name)(config)
+                if isinstance(results, tuple):
+                    results, other_results = results
             except BaseException as e:
                 logging.error("Exception during %s Scanning" % attr_name)
                 global_errors[attr_name] = str(e)
