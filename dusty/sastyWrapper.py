@@ -12,6 +12,9 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import os
+import os.path
+
 from dusty import constants
 from dusty.utils import execute, common_post_processing, ptai_post_processing, \
     run_in_parallel, get_dependencies
@@ -152,12 +155,20 @@ class SastyWrapper(object):
 
     @staticmethod
     def ptai(config):
-        file_path = '/tmp/reports/' + config['ptai_report_name']
         filtered_statuses = config.get('filtered_statuses', constants.PTAI_DEFAULT_FILTERED_STATUSES)
         if isinstance(filtered_statuses, str):
             filtered_statuses = [item.strip() for item in filtered_statuses.split(",")]
-        result = PTAIScanParser(file_path, filtered_statuses).items
-        filtered_result = ptai_post_processing(config, result)
+        if config["ptai_report_name"] == ".":
+            filtered_result = list()
+            for root, _, files in os.walk("/tmp/reports"):
+                for name in files:
+                    file_path = os.path.join(root, name)
+                    result = PTAIScanParser(file_path, filtered_statuses).items
+                    filtered_result.extend(ptai_post_processing(config, result))
+        else:
+            file_path = '/tmp/reports/' + config['ptai_report_name']
+            result = PTAIScanParser(file_path, filtered_statuses).items
+            filtered_result = ptai_post_processing(config, result)
         return filtered_result
 
     @staticmethod
