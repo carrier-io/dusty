@@ -13,6 +13,9 @@ class InfluxReport(object):
         self.login = default_config['influx'].get('login', '')
         self.policy = default_config['influx'].get('policy', {'Blocker': 1, 'Critical': 5, 'Major': 15})
         self.password = default_config['influx'].get('password', '')
+        self.ssl = default_config['influx'].get('ssl', False)
+        self.verify_ssl = default_config['influx'].get('verify_ssl', False)
+        self.path = default_config['influx'].get('path', '')
         self.project_name = default_config['project_name']
         self.environment = default_config['environment']
         self.test_type = default_config['test_type']
@@ -26,7 +29,8 @@ class InfluxReport(object):
         self.results_by_severity['test_to_count'] = 1
         self.build_id = f'{self.execution_time} - {self.project_name}'
         self.client = InfluxDBClient(self.host, self.port, username=self.login,
-                                     password=self.password, database=self.db)
+                                     password=self.password, database=self.db,
+                                     ssl=self.ssl, verify_ssl=self.verify_ssl, path=self.path)
         self._ingest_active_errors()
 
     def sort_results_by_severity(self):
@@ -93,6 +97,3 @@ class InfluxReport(object):
             }
             jira_issues.append(issue)
         self.client.write_points(jira_issues)
-
-
-

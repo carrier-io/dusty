@@ -52,6 +52,8 @@ class JiraWrapper(object):
                             _value = [item.strip() for item in value.split(",")]
                         elif isinstance(value, int):
                             _value = [value]
+                        else:
+                            _value = value
                     else:
                         _value = {'name': value}
                     self.fields[jira_key['id']] = _value
@@ -183,5 +185,3 @@ class JiraWrapper(object):
 
     def get_created_tickets(self):
         return self.created_jira_tickets
-
-

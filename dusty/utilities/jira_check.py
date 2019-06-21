@@ -1,6 +1,6 @@
 import argparse
 from dusty.drivers.jira import JiraWrapper
-from dusty.run import config_from_yaml, parse_jira_config
+from dusty.run import parse_args, config_from_yaml, parse_jira_config
 from dusty.utils import report_to_jira
 from dusty.data_model.canonical_model import DefaultModel as Finding
 
@@ -13,7 +13,7 @@ def main():
     parser.add_argument('-p', '--password', type=str, help="")
     args, unknown = parser.parse_known_args()
     if args.delete:
-        default_config, test_configs = config_from_yaml()
+        default_config, test_configs = config_from_yaml(parse_args())
         project = default_config.get('jira_service').project
         url = default_config.get('jira_service').url
         user = args.user if args.user else default_config.get('jira_service').user
@@ -34,7 +34,7 @@ def main():
         finally:
             j.client.close()
     else:
-        default_config, test_configs = config_from_yaml()
+        default_config, test_configs = config_from_yaml(parse_args())
         title = 'Carrier test. Please remove this ticket. It was created for testing purposes only.'
         test = 'Carrier'
         description = 'Please remove this ticket. \nIt was created for testing purposes only.'
