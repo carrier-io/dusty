@@ -53,6 +53,7 @@ SEVERITY_MAPPING = {
     'Medium': 'Medium',
     'Moderate': 'Medium',
     'Low': 'Minor',
+    'Weak': 'Minor',
     'Information': 'Trivial',
     'Info': 'Trivial',
     'Pattern': 'Trivial'
