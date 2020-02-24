@@ -1,16 +1,73 @@
-PyYAML==3.13
+#
+# Common
+#
+
+# General
+setuptools==41.0.0
+
+# Depots
+hvac==0.9.5
+minio==4.0.18
+dulwich==0.19.11
+paramiko==2.6.0
+
+# YAML parsing
+PyYAML==5.1.2
+ruamel.yaml==0.15.92
+
+# Templating and formatting
+Jinja2==2.10.1
 markdown2==2.3.6
-defusedxml==0.5.0
-markdownify==0.4.1
-lxml==4.2.5
-qualysapi==5.0.4
-jinja2==2.10
-junit-xml==1.8
-redis==3.0.1
-jira==2.0.0
-packaging==19.0
-influxdb==5.2.0
+inscriptis==0.0.4.0
+
+# Modules
+python-gitlab==1.12.1
+psycopg2==2.8.4
+python-jenkins==1.5.0
+lupa==1.8
+pika==1.1.0
+
+#
+# Scanning
+#
+
+# ZAP
 python-owasp-zap-v2.4==0.0.14
+
+# Qualys
+dotted==0.1.8
+lxml==4.2.5
+
+# Nikto
+defusedxml==0.6.0
+
+# PT AI
+beautifulsoup4==4.8.0
+
+# Dependency Check
 jsonpath-rw==1.4.0
-reportportal-client @ git+https://github.com/reportportal/client-Python.git@8d2244#egg=reportportal-client
+
+# Safety
+packaging==19.1
+
+#
+# Reporting
+#
+
+# Loki
 python-logging-loki==0.1.0
+
+# Influx
+influxdb==5.2.0
+
+# Jira
+jira==2.0.0
+
+# JUnit
+junit-xml==1.8
+
+# Redis
+redis==3.0.1
+
+# ReportPortal
+reportportal-client @ git+https://github.com/reportportal/client-Python.git#egg=reportportal-client

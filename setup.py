@@ -1,4 +1,8 @@
-#   Copyright 2018 getcarrier.io
+#!/usr/bin/python3
+# coding=utf-8
+# pylint: disable=I0011,C0103,C0301,W0702
+
+#   Copyright 2019 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -12,32 +16,48 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+"""
+    Dusty setup script
+"""
+
+import pkgutil
+import importlib
+import subprocess
+
 from setuptools import setup, find_packages
 
-with open('requirements.txt') as f:
-    required = f.read().splitlines()
+with open("README.md") as f:
+    long_description = f.read()
+
+with open("requirements.txt") as f:
+    required_dependencies = f.read().splitlines()
+
+console_scripts = ["dusty = dusty.main:main"]
+legacy_scripts = "dusty.commands.legacy"
+legacy_scripts_path = importlib.import_module(legacy_scripts).__path__
+for _, name, _ in pkgutil.iter_modules(legacy_scripts_path):
+    console_scripts.append("{name} = {module}.{name}:main".format(
+        module=legacy_scripts, name=name
+    ))
+
+version = "2.0"
+try:
+    tag = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+    version = f"{version}+git.{tag.decode('utf-8').strip()}"
+except:
+    pass
 
 setup(
-    name='dusty',
-    version='1.0.0',
-    description='Core component',
-    long_description='Compilation of Tools for execution of DAST scans',
-    url='https://epam.com',
-    license='Apache License 2.0',
-    author='arozumenko',
-    author_email='artem_rozumenko@epam.com',
+    name="dusty",
+    version=version,
+    license="Apache License 2.0",
+    author="Carrier team",
+    author_email="artem_rozumenko@epam.com",
+    url="https://github.com/carrier-io/dusty",
+    description="Framework to execute various security tools and convert output to common unified format",
+    long_description=long_description,
     packages=find_packages(),
-    classifiers=[
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: Apache License 2.0",
-        "Operating System :: OS Independent",
-    ],
-    install_requires=required,
     include_package_data=True,
-    entry_points={
-        'console_scripts': [
-            'run = dusty.run:main',
-            'jira_check = dusty.utilities.jira_check:main'
-        ]
-    },
+    install_requires=required_dependencies,
+    entry_points={"console_scripts": console_scripts},
 )

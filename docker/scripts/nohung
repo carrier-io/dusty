@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# This script runs command and
+# prints "." while it is running
+# to avoid OpenShift/Jenkins bug
+
+run_command() {
+  eval "$*"
+}
+
+run_command "$*" & pid=$!
+while ps -q $pid > /dev/null 2>&1; do
+  echo -ne .;
+  sleep 10;
+done

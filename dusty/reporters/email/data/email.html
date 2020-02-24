@@ -1,0 +1,75 @@
+<html>
+  <head>
+    <style>
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 0px 5px;
+      }
+    </style>
+  </head>
+  <body>
+    {% if presenter.text_only %}
+    <p>{{ presenter.body|safe }}</p>
+
+    {% if presenter.additional_text %}<p>{{ presenter.additional_text|safe }}</p>{% endif %}
+    {% else %}
+    <p>{{ presenter.body }}</p>
+
+    {% if presenter.additional_text %}
+    <p>{{ presenter.additional_text|safe }}</p>
+    {% endif %}
+
+    {% macro jira_tickets_table(tickets) -%}
+    <table>
+        <tr>
+            <th>JIRA ID</th>
+            <th>PRIORITY</th>
+            <th>STATUS</th>
+            <th>OPEN DATE</th>
+            <th>DESCRIPTION</th>
+            <th>ASSIGNEE</th>
+        </tr>
+        {% for item in tickets %}
+        <tr>
+            <td><a href="{{ item.jira_url }}">{{ item.jira_id }}</a></td>
+            <td>{{ item.priority }}</td>
+            <td>{{ item.status }}</td>
+            <td>{{ item.open_date }}</td>
+            <td>{{ item.description }}</td>
+            <td>{{ item.assignee }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {%- endmacro %}
+
+    {% if presenter.new_jira_tickets %}
+    <p>Here’s the list of new security issues:<p>
+    {{ jira_tickets_table(presenter.new_jira_tickets) }}
+    {% else %}
+    <p>No new security issues bugs found.</p>
+    {% endif %}
+
+    {% if presenter.existing_jira_tickets %}
+    <p>Here’s the list of existing security issues:<p>
+    {{ jira_tickets_table(presenter.existing_jira_tickets) }}
+    {% endif %}
+
+    {% if presenter.errors %}
+    <p>Warning: errors occurred, scan results may be incomplete.<p>
+    <table>
+        <tr>
+            <th>TOOL</th>
+            <th>ERROR</th>
+        </tr>
+        {% for item in presenter.errors %}
+        <tr>
+            <td>{{ item.tool }}</td>
+            <td>{{ item.title }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    {% endif %}
+  </body>
+</html>

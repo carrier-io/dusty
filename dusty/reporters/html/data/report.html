@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>{{ presenter.project_name }} | Carrier | Continuous Test Execution Platform</title>
+        <link href="https://fonts.googleapis.com/css?family=Cairo:400,700" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <style type="text/css">
+            body {
+                font-family: 'Cairo', sans-serif;
+                font-weight: 400;
+                word-break: break-word;
+                color: #464547;
+            }
+            h1{
+                font-size: 20px;
+                font-weight: 700;
+                text-align: center;
+                color: #464547;
+                margin: 30px 0 15px 0;
+            }
+            h2{
+                font-size: 18px;
+                font-weight: 700;
+                text-align: left;
+                color: #5a8e96;
+                margin: 15px 0 15px 15px;
+            }
+            h3{
+                font-size: 18px;
+                font-weight: 700;
+                text-align: left;
+                color: #000000;
+            }
+            pre{
+                word-wrap: break-word;
+                white-space: pre-wrap;
+            }
+            .table-sm{
+                font-size: 16px;
+                font-weight: 700;
+                text-align: left;
+                color: #000000;
+            }
+            .status{
+                border-radius: 3px;
+                color: #4a4a4a;
+                margin: 15px 0;
+                display: inline-block;
+                padding: 8px 20px;
+            }
+            .status > span{
+                display: inline-block;
+                margin-left: 15px;
+            }
+            .status div{
+                display: inline-block;
+                vertical-align: middle;
+                margin-left: 15px;
+                min-width: 288px;
+            }
+            .status p{
+                font-weight: 600;
+                margin: 2px 0;
+            }
+            .status svg, .status span{
+                vertical-align: middle;
+            }
+            .status.passed{
+                background-color: rgba(96, 209, 121, 0.15);
+                border: solid 2px #60d179;
+            }
+            .status.warning{
+                background-color: rgba(252, 248, 204, 0.3);
+                border: solid 2px #fcf8cc;
+            }
+            .status.failed{
+                background-color: rgba(230, 98, 199, 0.2);
+                border: solid 2px #E662C7;
+            }
+            .footer {
+                font-size: 16px;
+                font-weight: 400;
+                text-align: left;
+                color: #c9c9c9;
+            }
+            .alert {
+              font-size: 16px;
+              font-weight: 700;
+              text-align: left;
+              color: #000000;
+            }
+            .alert-success {
+              background-color: rgba(96, 209, 121, 0.15);
+              border: solid 2px #60d179;
+            }
+            .alert-warning {
+              background-color: rgba(255, 238, 186, 0.9);
+              border: solid 2px #ff8b47;
+            }
+            .alert-danger {
+              background-color: rgba(230, 98, 199, 0.2);
+              border: solid 2px #e662c7;
+            }
+            tr.description {
+              border: solid 1px #f2f2f2;
+              border-top-style: hidden;
+            }
+            tr.description .table .thead-dark th {
+              color: #fff;
+              background-color: #584971;
+              border-color: #454d55;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Security tests has been COMPLETED for the {{ presenter.project_name }} project</h1>
+
+            <div class="row">
+                <div class="col">
+                    <table class="table table-sm table-striped">
+                        {% for item in presenter.project_meta %}
+                        <tr><td>{{ item.name }}</td><td>{{ item.value }}</td></tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div class="col">
+                  {% for item in presenter.project_alerts %}
+                  <div class="alert alert-{{ item.type }}" role="alert">
+                    {{ item.text }}
+                  </div>
+                  {% endfor %}
+                </div>
+            </div>
+
+            {% macro findings_table(findings) -%}
+            <div class="row">
+                <div class="col">
+                    <table class="table table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Tool name</th>
+                                <th>Description</th>
+                                <th>Severity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                          {% for item in findings %}
+                          <tr class="header">
+                              <td>{{ item.tool }}</td>
+                              <td>{{ item.title }} <span>+</span></td>
+                              <td>{{ item.severity }}</td>
+                          </tr>
+                          <tr class="description">
+                              <td colspan="3">
+                                  <div>
+                                    <!-- Item description start -->
+                                    {{ item.description|safe }}
+                                    <!-- Item description end -->
+                                    {% if item.findings %}
+                                    <!-- Item findings start -->
+                                    {{ findings_table(item.findings) }}
+                                    <!-- Item findings end -->
+                                    {% endif %}
+                                  </div>
+                              </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {%- endmacro %}
+
+            {% if presenter.project_findings %}
+            <div class="row">
+                <div class="col">
+                    <h1>Findings</h1>
+                </div>
+            </div>
+            {{ findings_table(presenter.project_findings) }}
+            {% endif %}
+
+            {% if presenter.project_information_findings %}
+            <div class="row">
+                <div class="col">
+                    <h1>Information and findings below minimal severity level</h1>
+                </div>
+            </div>
+            {{ findings_table(presenter.project_information_findings) }}
+            {% endif %}
+
+            {% if presenter.project_false_positive_findings %}
+            <div class="row">
+                <div class="col">
+                    <h1>False positives</h1>
+                </div>
+            </div>
+            {{ findings_table(presenter.project_false_positive_findings) }}
+            {% endif %}
+
+            {% if presenter.project_excluded_findings %}
+            <div class="row">
+                <div class="col">
+                    <h1>Excluded</h1>
+                </div>
+            </div>
+            {{ findings_table(presenter.project_excluded_findings) }}
+            {% endif %}
+
+            {% if presenter.project_errors %}
+            <div class="row">
+                <div class="col">
+                    <h1>Errors</h1>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col">
+                    <table class="table table-striped">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Tool name</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                          {% for item in presenter.project_errors %}
+                          <tr class="header">
+                              <td>{{ item.tool }}</td>
+                              <td>{{ item.title }} <span>+</span></td>
+                          </tr>
+                          <tr class="description">
+                              <td colspan="3">
+                                  <div>
+                                    <!-- Item description start -->
+                                    {{ item.description|safe }}
+                                    <!-- Item description end -->
+                                  </div>
+                              </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col footer"> (c) 2019-2020 Carrier | Continuous Test Execution Platform </div>
+            </div>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                var list = document.getElementsByClassName("description");
+                for (let item of list) { item.style.display = "none"; }
+            });
+            $(".header").click(function() {
+                $(this).find("span").text(function(_, value){return value=='-'?'+':'-'});
+                $(this).nextUntil("tr.header").slideToggle(100, function(){});
+            });
+        </script>
+    </body>
+</html>
