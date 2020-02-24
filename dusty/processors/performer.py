@@ -198,4 +198,4 @@ class ProcessingPerformer(ModuleModel, PerformerModel):
     @staticmethod
     def get_description():
         """ Module description or help message """
-        raise "performs result processing"
+        return "performs result processing"

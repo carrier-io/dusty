@@ -20,6 +20,6 @@ COPY scripts/nohung /usr/local/bin/nohung
 RUN set -x && chmod 755 /usr/local/bin/nohung && chown 0:0 /usr/local/bin/nohung
 
 # Dusty
-RUN set -x && pip3 install --no-cache-dir git+https://github.com/carrier-io/dusty.git@ik_ng_framework
+RUN set -x && pip3 install --no-cache-dir git+https://github.com/carrier-io/dusty.git@release-2.0
 ENV PYTHONUNBUFFERED 1
 ENTRYPOINT ["dusty"]
