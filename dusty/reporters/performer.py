@@ -283,4 +283,4 @@ class ReportingPerformer(ModuleModel, PerformerModel, ReporterModel):
     @staticmethod
     def get_description():
         """ Module description or help message """
-        raise "performs result reporting"
+        return "performs result reporting"

@@ -281,4 +281,4 @@ class ScanningPerformer(ModuleModel, PerformerModel):
     @staticmethod
     def get_description():
         """ Module description or help message """
-        raise "performs scanning"
+        return "performs scanning"
