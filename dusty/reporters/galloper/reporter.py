@@ -70,7 +70,7 @@ class Reporter(DependentModuleModel, ReporterModel):
             if item.get_meta("excluded_finding", False):
                 excluded += 1
         test_initiation_body['false_positives'] = false_positives
-        test_initiation_body['information_finding'] = info_findings
+        test_initiation_body['info_findings'] = info_findings
         test_initiation_body['excluded_finding'] = excluded
         report_id = self.galloper.create_test_results(test_initiation_body)
         test_cases = list()
