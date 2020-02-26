@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # coding=utf-8
+# pylint: disable=I0011
 
 #   Copyright 2019 getcarrier.io
 #
@@ -16,18 +17,27 @@
 #   limitations under the License.
 
 """
-    Constants
+    Base64 config seed
 """
 
+import base64
 
-LOG_FORMAT = "%(asctime)s - %(levelname)8s - %(name)s - %(message)s"
-LOG_DATE_FORMAT = "%Y.%m.%d %H:%M:%S %Z"
+from dusty.models.seed import SeedModel
 
-DEFAULT_CONFIG_SEED = ""
-DEFAULT_CONFIG_PATH = "config.yaml"
-DEFAULT_CONFIG_ENV_KEY = "CARRIER_SCAN_CONFIG"
 
-CONFIG_VERSION_KEY = "config_version"
-CURRENT_CONFIG_VERSION = 2
+class Seed(SeedModel):
+    """ Base64 config seed class """
 
-SEVERITIES = ["Critical", "High", "Medium", "Low", "Info"]
+    def handle(self, config_seed_data):
+        """ Unseed config from seed, return None on error """
+        return base64.b64decode(config_seed_data)
+
+    @staticmethod
+    def get_name():
+        """ Module name """
+        return "base64"
+
+    @staticmethod
+    def get_description():
+        """ Module description or help message """
+        return "Base64 seed"

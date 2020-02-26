@@ -16,10 +16,11 @@ LABEL author="artem_rozumenko@epam.com"
 LABEL updated.by="ivan_krakhmaliuk@epam.com"
 
 # Script to avoid OpenShift-Jenkins problems
-COPY scripts/nohung /usr/local/bin/nohung
+COPY docker/scripts/nohung /usr/local/bin/nohung
 RUN set -x && chmod 755 /usr/local/bin/nohung && chown 0:0 /usr/local/bin/nohung
 
 # Dusty
-RUN set -x && pip3 install --no-cache-dir git+https://github.com/carrier-io/dusty.git@master
+COPY . /tmp/dusty
+RUN set -x && pip3 install --no-cache-dir /tmp/dusty && rm -rf /tmp/dusty
 ENV PYTHONUNBUFFERED 1
 ENTRYPOINT ["dusty"]

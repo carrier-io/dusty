@@ -39,6 +39,11 @@ class Command(ModuleModel, CommandModel):
         """ Initialize command instance, add arguments """
         super().__init__()
         argparser.add_argument(
+            "-b", "--config-seed", dest="config_seed",
+            help="configuration seed/blob",
+            type=str, default=constants.DEFAULT_CONFIG_SEED
+        )
+        argparser.add_argument(
             "-e", "--config-variable", dest="config_variable",
             help="name of environment variable with config",
             type=str, default=constants.DEFAULT_CONFIG_ENV_KEY
@@ -68,7 +73,7 @@ class Command(ModuleModel, CommandModel):
         context = RunContext(args)
         config = ConfigModel(context)
         if args.list_suites or not args.suite:
-            suites = config.list_suites(args.config_variable, args.config_file)
+            suites = config.list_suites(args.config_seed, args.config_variable, args.config_file)
             if not args.suite:
                 log.error("Suite is not defined. Use --help to get help")
             log.info("Available suites: %s", ", ".join(suites))
@@ -82,7 +87,7 @@ class Command(ModuleModel, CommandModel):
         context.performers["processing"] = processing
         context.performers["reporting"] = reporting
         # Init config
-        config.load(args.config_variable, args.config_file, args.suite)
+        config.load(args.config_seed, args.config_variable, args.config_file, args.suite)
         scanning.validate_config(context.config)
         processing.validate_config(context.config)
         reporting.validate_config(context.config)

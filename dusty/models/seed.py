@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # coding=utf-8
+# pylint: disable=I0011,R0201,W0613
 
 #   Copyright 2019 getcarrier.io
 #
@@ -16,18 +17,15 @@
 #   limitations under the License.
 
 """
-    Constants
+    Config seed models
 """
+from dusty.models.module import ModuleModel
+from dusty.models.meta import MetaModel
 
 
-LOG_FORMAT = "%(asctime)s - %(levelname)8s - %(name)s - %(message)s"
-LOG_DATE_FORMAT = "%Y.%m.%d %H:%M:%S %Z"
+class SeedModel(ModuleModel, MetaModel):  # pylint: disable=W0223
+    """ Config seed base class """
 
-DEFAULT_CONFIG_SEED = ""
-DEFAULT_CONFIG_PATH = "config.yaml"
-DEFAULT_CONFIG_ENV_KEY = "CARRIER_SCAN_CONFIG"
-
-CONFIG_VERSION_KEY = "config_version"
-CURRENT_CONFIG_VERSION = 2
-
-SEVERITIES = ["Critical", "High", "Medium", "Low", "Info"]
+    def handle(self, config_seed_data):
+        """ Unseed config from seed, return None on error """
+        return None

@@ -32,7 +32,7 @@ from ruamel.yaml.comments import CommentedMap
 from dusty.models.depot import SecretDepotModel, ObjectDepotModel, StateDepotModel
 from dusty.tools.module import DataModuleLoader
 from dusty.tools.dict import recursive_merge, recursive_merge_existing
-from dusty.tools import log, depots
+from dusty.tools import log, depots, seeds
 from dusty import constants
 
 
@@ -44,9 +44,9 @@ class ConfigModel:
         super().__init__()
         self.context = context
 
-    def load(self, config_variable, config_file, suite):
+    def load(self, config_seed, config_variable, config_file, suite):
         """ Load and parse config """
-        config = self._load_config(config_variable, config_file)
+        config = self._load_config(config_seed, config_variable, config_file)
         if not self._validate_config_base(config, suite):
             raise ValueError("Invalid config")
         context_config = self._prepare_context_config(config, suite)
@@ -55,14 +55,16 @@ class ConfigModel:
         log.debug("Resulting context config: %s", self.context.config)
         log.info("Loaded %s suite configuration", self.context.suite)
 
-    def _load_config(self, config_variable, config_file):
-        config_data = os.environ.get(config_variable, None)
+    def _load_config(self, config_seed, config_variable, config_file):
+        log.info("Loading config from seed")
+        config_data = seeds.unseed(config_seed)
+        if not config_data:
+            log.info("Loading config from %s", config_variable)
+            config_data = os.environ.get(config_variable, None)
         if not config_data:
             log.info("Loading config from %s", config_file)
             with open(config_file, "rb") as file_:
                 config_data = file_.read()
-        else:
-            log.info("Loading config from %s", config_variable)
         config = self._variable_substitution(
             yaml.load(
                 os.path.expandvars(config_data),
@@ -267,9 +269,9 @@ class ConfigModel:
             config["suites"][suite]["settings"] = dict()
         return True
 
-    def list_suites(self, config_variable, config_file):
+    def list_suites(self, config_seed, config_variable, config_file):
         """ List available suites from config """
-        config = self._load_config(config_variable, config_file)
+        config = self._load_config(config_seed, config_variable, config_file)
         if "suites" not in config:
             log.error("Suites are not defined")
             return list()
