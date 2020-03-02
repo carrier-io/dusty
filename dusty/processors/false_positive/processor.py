@@ -19,6 +19,9 @@
     Processor: false_positive
 """
 
+from json import dumps
+from requests import get
+
 from dusty.tools import log
 from dusty.models.module import DependentModuleModel
 from dusty.models.processor import ProcessorModel
@@ -36,10 +39,29 @@ class Processor(DependentModuleModel, ProcessorModel):
         self.config = \
             self.context.config["processing"][__name__.split(".")[-2]]
 
+    def galloper_connector(self):
+        auth = None
+        if self.config.get("user") and self.config.get("password"):
+            auth = (self.config.get("user"), self.config.get("password"))
+        data = {
+            "project_name": self.context.get_meta('project_name'),
+            "scan_type": self.context.get_meta("testing_type"),
+            "app_name": self.context.get_meta("project_description")
+        }
+        fp_list = get(f'{self.config.get("galloper")}{constants.GALLOPER_API_PATH}',
+                      headers={"content-type": "application/json"}, auth=auth,
+                      data=dumps(data)).json()
+        with open(constants.GALLOPER_FPA_PATH, "w") as f:
+            f.write("\n".join(fp_list).strip())
+        return constants.GALLOPER_FPA_PATH
+
     def execute(self):
         """ Run the processor """
         log.info("Processing false-positives")
-        fp_config_path = self.config.get("file", constants.DEFAULT_FP_CONFIG_PATH)
+        if self.config.get("galloper"):
+            fp_config_path = self.galloper_connector()
+        else:
+            fp_config_path = self.config.get("file", constants.DEFAULT_FP_CONFIG_PATH)
         try:
             false_positives = list()
             # Load false positives

@@ -21,3 +21,5 @@
 
 
 DEFAULT_FP_CONFIG_PATH = "false_positive.config"
+GALLOPER_API_PATH = "/api/security/fpa"
+GALLOPER_FPA_PATH = "galloper_fpa_config.config"
