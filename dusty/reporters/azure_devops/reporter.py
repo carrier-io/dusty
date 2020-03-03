@@ -39,9 +39,9 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.context = context
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
-        organization = self.config["org"],
-        project = self.config["project"],
-        personal_access_token = self.config["pat"]
+        organization = self.config.get("org")
+        project = self.config.get("project")
+        personal_access_token = self.config.get("pat")
         team = self.config.get("team", None)
         issue_type = self.config.get("issue_type", "task")
         self.other_fields = self.config.get("custom_fields", {})
@@ -52,17 +52,16 @@ class Reporter(DependentModuleModel, ReporterModel):
         """ Report """
         # Summary
         for item in self.context.findings:
-            if not (item.get_meta("false_positive_finding", False) and item.get_meta("information_finding", False) and
-                    item.get_meta("excluded_finding", False)):
+            if item.get_meta("false_positive_finding", False) or item.get_meta("information_finding", False) or \
+                    item.get_meta("excluded_finding", False):
                 continue
             details = ''
             if isinstance(item, DastFinding):
-                details = markdown.markdown_to_text(item.description)
+                details = markdown.markdown_to_html(item.description)
             elif isinstance(item, SastFinding):
-                details = markdown.markdown_to_text("\n\n".join(item.description))
+                details = markdown.markdown_to_html("<br/>".join(item.description))
             log.debug(self.ado.create_finding(item.title, details, item.get_meta("severity", SEVERITIES[-1]),
-                                              assignee=self.assignee,
-                                              issue_hash=item.get_meta("issue_hash", "")))
+                                              assignee=self.assignee, issue_hash=item.get_meta("issue_hash", "")))
         log.info("Creating findings")
 
 

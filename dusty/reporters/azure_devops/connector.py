@@ -1,7 +1,6 @@
 from requests import post
 from . import constants as c
 
-
 class ADOConnector(object):
     def __init__(self, organization, project, personal_access_token, team=None, issue_type="task"):
         self.auth = ('', personal_access_token)
@@ -19,7 +18,7 @@ class ADOConnector(object):
         body = []
         fields_mapping = {
             "/fields/System.Title": title,
-            "/fields/Microsoft.VSTS.Common.Priority": priority,
+            "/fields/Microsoft.VSTS.Common.Priority": c.PRIORITY_MAPPING[priority],
             "/fields/System.Description": description,
             "/fields/System.AssignedTo": assignee,
             "/fields/System.AreaPath": self.team,
@@ -31,7 +30,7 @@ class ADOConnector(object):
                 body.append(_piece)
         if not self.search_for_issue(issue_hash):
             return post(self.url, auth=self.auth, json=body,
-                        headers={'content-type': 'application/json-patch+json'}).content
+                        headers={'content-type': 'application/json-patch+json'}).json()
         else:
             return {}
 
