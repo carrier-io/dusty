@@ -45,7 +45,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         team = self.config.get("team", None)
         issue_type = self.config.get("issue_type", "task")
         self.other_fields = self.config.get("custom_fields", {})
-        self.assignee = self.config.get("", None)
+        self.assignee = self.config.get("assignee", None)
         self.ado = connector.ADOConnector(organization, project, personal_access_token, team, issue_type)
 
     def report(self):
