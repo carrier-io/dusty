@@ -21,7 +21,7 @@
 """
 
 
-from dusty.tools import markdown
+from dusty.tools import markdown, log
 from dusty.models.module import DependentModuleModel
 from dusty.models.reporter import ReporterModel
 from dusty.models.finding import DastFinding, SastFinding
@@ -63,6 +63,7 @@ class Reporter(DependentModuleModel, ReporterModel):
             self.ado.create_finding(item.title, details, item.get_meta("severity", SEVERITIES[-1]),
                                     assignee=self.assignee,
                                     issue_hash=item.get_meta("issue_hash", ""))
+        log.info("Creating findings")
 
 
     @staticmethod

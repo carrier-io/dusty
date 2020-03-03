@@ -21,7 +21,7 @@
 """
 
 
-from dusty.tools import markdown
+from dusty.tools import markdown, log
 from dusty.models.module import DependentModuleModel
 from dusty.models.reporter import ReporterModel
 from dusty.models.finding import DastFinding, SastFinding
@@ -92,6 +92,7 @@ class Reporter(DependentModuleModel, ReporterModel):
             elif isinstance(item, SastFinding):
                 issue['details'] = markdown.markdown_to_html("\n\n".join(item.description))
             test_cases.append(issue)
+        log.info("Creating findings")
         self.galloper.create_findings(test_cases)
 
     @staticmethod
