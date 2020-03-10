@@ -60,8 +60,11 @@ class Reporter(DependentModuleModel, ReporterModel):
                 details = markdown.markdown_to_html(item.description)
             elif isinstance(item, SastFinding):
                 details = markdown.markdown_to_html("<br/>".join(item.description))
+            tags = [item.get_meta("tool", "scanner"), self.context.get_meta("testing_type", "DAST"),
+                    item.get_meta("severity", SEVERITIES[-1])]
             log.debug(self.ado.create_finding(item.title, details, item.get_meta("severity", SEVERITIES[-1]),
-                                              assignee=self.assignee, issue_hash=item.get_meta("issue_hash", "")))
+                                              assignee=self.assignee, issue_hash=item.get_meta("issue_hash", ""),
+                                              tags=tags))
         log.info("Creating findings")
 
 

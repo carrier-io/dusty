@@ -12,9 +12,15 @@ class ADOConnector(object):
         self.query_url = c.QUERY_ISSUE_URL.format(organization=organization, project=project)
 
     def create_finding(self, title, description=None, priority=None,
-                       assignee=None, issue_hash=None, custom_fields=None):
+                       assignee=None, issue_hash=None, custom_fields=None, tags=None):
         if not custom_fields:
             custom_fields = dict()
+        if tags:
+            if '/fields/System.Tags' not in custom_fields:
+                custom_fields['/fields/System.Tags'] = ""
+            elif not custom_fields['/fields/System.Tags'].endswith(";"):
+                custom_fields['/fields/System.Tags'] += ';'
+            custom_fields['/fields/System.Tags'] += ";".join(tags)
         body = []
         fields_mapping = {
             "/fields/System.Title": title,
