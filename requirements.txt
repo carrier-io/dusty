@@ -70,4 +70,4 @@ junit-xml==1.8
 redis==3.0.1
 
 # ReportPortal
-reportportal-client @ git+https://github.com/reportportal/client-Python.git#egg=reportportal-client
+reportportal-client @ git+https://github.com/reportportal/client-Python.git@v3#egg=reportportal-client
