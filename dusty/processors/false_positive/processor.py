@@ -43,12 +43,16 @@ class Processor(DependentModuleModel, ProcessorModel):
         auth = None
         if self.config.get("user") and self.config.get("password"):
             auth = (self.config.get("user"), self.config.get("password"))
+        if self.config.get("project_id"):
+            galloper_url = constants.GALLOPER_API_PATH.format(project_id=self.config.get("project_id"))
+        else:
+            galloper_url = constants.LEGACY_GALLOPER_API_PATH
         data = {
             "project_name": self.context.get_meta('project_name'),
             "scan_type": self.context.get_meta("testing_type"),
             "app_name": self.context.get_meta("project_description")
         }
-        fp_list = get(f'{self.config.get("galloper")}{constants.GALLOPER_API_PATH}',
+        fp_list = get(f'{self.config.get("galloper")}{galloper_url}',
                       headers={"content-type": "application/json"}, auth=auth,
                       data=dumps(data)).json()
         with open(constants.GALLOPER_FPA_PATH, "w") as f:

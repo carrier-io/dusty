@@ -19,5 +19,8 @@
     Constants
 """
 
-REPORT_API = '/api/security'
-FINDING_API = '/api/security/finding'
+LEGACY_API = '/api/security'
+LEGACY_FINDING_API = '/api/security/finding'
+
+REPORT_API = '/api/v1/security/{project_id}'
+FINDING_API = '/api/v1/security/{project_id}/finding'

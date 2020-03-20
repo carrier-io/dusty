@@ -21,5 +21,6 @@
 
 
 DEFAULT_FP_CONFIG_PATH = "false_positive.config"
-GALLOPER_API_PATH = "/api/security/fpa"
+LEGACY_GALLOPER_API_PATH = "/api/security/fpa"
+GALLOPER_API_PATH = "/api/v1/security/{project_id}/fpa"
 GALLOPER_FPA_PATH = "galloper_fpa_config.config"

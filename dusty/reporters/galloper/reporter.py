@@ -40,6 +40,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
         self.galloper = connector.GalloperConnector(self.config['url'],
+                                                    self.config.get('project_id'),
                                                     self.config.get('login'),
                                                     self.config.get('password'))
 
@@ -99,6 +100,7 @@ class Reporter(DependentModuleModel, ReporterModel):
     def fill_config(data_obj):
         """ Make sample config """
         data_obj.insert(len(data_obj), "url", "http://GALLOPER_URL", comment="REST API for reporting")
+        data_obj.insert(len(data_obj), "project_id", "1", comment="ID of project to report to")
         data_obj.insert(len(data_obj), "login", "", comment="Login to REST API")
         data_obj.insert(len(data_obj), "password", "", comment="Password to REST API")
 
