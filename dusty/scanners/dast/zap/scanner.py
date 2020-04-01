@@ -293,6 +293,34 @@ class Scanner(DependentModuleModel, ScannerModel):
 
     def _setup_scan_policy(self):
         self._scan_policy_name = "Default Policy"
+        # Use user-provided policy (if any)
+        if self.config.get("scan_policy_data", None) or self.config.get("scan_policy_from", None):
+            log.info("Using user-provided scan policy")
+            # Write to temp file if needed
+            if self.config.get("scan_policy_data", None):
+                policy_file_fd, policy_file = tempfile.mkstemp()
+                os.close(policy_file_fd)
+                with open(policy_file, "w") as policy:
+                    log.debug("Scan policy data: '%s'", self.config.get("scan_policy_data"))
+                    policy.write(self.config.get("scan_policy_data"))
+            else:
+                policy_file = self.config.get("scan_policy_from")
+            # Load policy into ZAP
+            default_policies = self._zap_api.ascan.scan_policy_names
+            log.info("Importing scan policy from %s", policy_file)
+            self._zap_api.ascan.import_scan_policy(policy_file)
+            current_policies = self._zap_api.ascan.scan_policy_names
+            log.debug("Policies after load: %s", current_policies)
+            # Remove temporary file
+            if self.config.get("scan_policy_data", None):
+                os.remove(policy_file)
+            # Set name
+            loaded_policy_names = list(set(current_policies) - set(default_policies))
+            if loaded_policy_names:
+                self._scan_policy_name = loaded_policy_names[0]
+                log.info("Scan policy set to '%s'", self._scan_policy_name)
+            return
+        # Setup 'simple' scan policy
         self._scan_policies = [
             item.strip() for item in self.config.get("scan_types", "all").split(",")
         ]
