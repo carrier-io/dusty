@@ -54,7 +54,7 @@ class Processor(DependentModuleModel, ProcessorModel):
         }
         fp_list = get(f'{self.config.get("galloper")}{galloper_url}',
                       headers={"content-type": "application/json"}, auth=auth,
-                      data=dumps(data)).json()
+                      params=data).json()
         with open(constants.GALLOPER_FPA_PATH, "w") as f:
             f.write("\n".join(fp_list).strip())
         return constants.GALLOPER_FPA_PATH
