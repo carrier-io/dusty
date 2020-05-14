@@ -1,5 +1,5 @@
-FROM ubuntu:xenial
-#   Copyright 2018-2019 getcarrier.io
+FROM debian:buster-slim
+#   Copyright 2018-2020 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,102 +15,82 @@ FROM ubuntu:xenial
 LABEL author="artem_rozumenko@epam.com"
 LABEL updated.by="ivan_krakhmaliuk@epam.com"
 
-# Software versions
-ARG JAVA_OPENJDK_URL=https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
-ARG JAVA_OPENJDK_VERSION=10.0.2
-ARG RUBY_VERSION=2.3.0-dev
-ARG GOLANG_VERSION=1.12.4
+# Core software and tools versions
+ARG GOLANG_VERSION=1.14.2
+ARG NODEJS_VERSION=14
 
-# SAST tool versions
-ARG BANDIT_VERSION=1.5.1
-ARG SPOTBUGS_VERSION=3.1.12
-ARG FINDSECBUGS_VERSION=1.8.0
-ARG DEPENDENCY_CHECK_VERSION=5.2.1
-ARG GITLEAKS_VERSION=2.1.0
+# SAST software and tools versions: python
+ARG BANDIT_VERSION=1.6.2
+ARG SAFETY_VERSION=1.9.0
+
+# SAST software and tools versions: golang
+ARG GOSEC_VERSION=2.3.0
+
+# SAST software and tools versions: nodejs
+ARG NODEJSSCAN_VERSION=3.7
+ARG RETIRE_VERSION=2.2.1
+
+# SAST software and tools versions: ruby
+ARG BRAKEMAN_VERSION=4.8.1
+
+# SAST software and tools versions: java
+ARG FINDSECBUGS_VERSION=1.10.1
+
+# SAST software and tools versions
+ARG GITLEAKS_VERSION=4.1.1
+ARG DEPENDENCY_CHECK_VERSION=5.3.2
 
 # Default locale
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-# Base software package
+# Core: Python
 RUN set -x \
   && apt-get update \
   && apt-get install --no-install-recommends -y \
-    software-properties-common apt-transport-https ca-certificates curl gnupg2 wget \
-  && add-apt-repository ppa:jonathonf/python-3.6 \
-  && apt-get update \
-  && apt-get install --no-install-recommends -y \
-    default-jre default-jdk xvfb git gcc make \
-    build-essential libssl-dev zlib1g-dev libbz2-dev libpcap-dev unzip \
-    libreadline-dev libsqlite3-dev llvm libncurses5-dev libncursesw5-dev \
-    xz-utils tk-dev libffi-dev liblzma-dev perl libnet-ssleay-perl python-dev python-pip \
-    libxslt1-dev libxml2-dev libyaml-dev openssh-server  python-lxml \
-    xdot python-gtk2 python-gtksourceview2 dmz-cursor-theme supervisor \
-    python-setuptools maven python3.6 python3.6-dev \
-    virtualenv python-virtualenv python3-virtualenv checkinstall \
-    autoconf bison libreadline6-dev libgdbm3 libgdbm-dev \
-    rbenv ruby-build \
-    libpq-dev \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-
-# Docker
-RUN set -x \
-  && curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
-  && apt-key fingerprint 0EBFCD88 \
-  && echo "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable" | \
-	 tee /etc/apt/sources.list.d/docker.list \
-  && apt-get update \
-  && apt-get install --no-install-recommends -y docker-ce \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-
-# Java
-RUN set -x \
-  && cd /opt \
-  && wget -qO- ${JAVA_OPENJDK_URL} | tar vxfz - \
-  && find /opt/jdk-${JAVA_OPENJDK_VERSION}/bin/ -type f -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash
-
-# Ruby
-RUN set -x \
-  && cd /tmp \
-  && rbenv install ${RUBY_VERSION} \
-  && rbenv global ${RUBY_VERSION} \
-  && rm -rf /tmp/ruby-*
-
-# NodeJS
-RUN set -x \
-  && curl -sL https://deb.nodesource.com/setup_10.x | bash - \
-  && apt-get update \
-  && apt-get install --no-install-recommends -y nodejs \
+      ca-certificates curl \
+      python3 python3-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
-  && npm -g i n && n 10.13.0 --test && npm -g i npm@6.1 http-server@0.11.1 retire@1.6.0 --test \
-  && rm -rf /tmp/npm-*
-
-# Python
-RUN set -x \
-  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 9999 \
   && curl -sL https://bootstrap.pypa.io/get-pip.py | python3 - \
-  && pip3 install --upgrade pip wheel setuptools \
-  && curl -sL https://bootstrap.pypa.io/get-pip.py | python2 - \
-  && pip2 install --upgrade pip wheel setuptools \
-  && pip --version \
-  && pip2 --version \
   && pip3 --version
 
-# Golang
+# Core: Golang
 ENV GOPATH=/go
 ENV PATH=$GOPATH/bin:/usr/local/go/bin:$PATH
 RUN set -x \
-  && wget -qO- https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzvf - \
+  && curl -sL https://golang.org/dl/go${GOLANG_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzvf - \
   && mkdir -p "$GOPATH/src" "$GOPATH/bin" \
   && chmod -R 777 "$GOPATH" \
   && go version
 
-# Dotnet Core
+# Core: NodeJS
 RUN set -x \
-  && wget -q https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+  && curl -sL https://deb.nodesource.com/setup_${NODEJS_VERSION}.x | bash - \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y nodejs \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Core: Ruby
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y ruby \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Core: Java
+RUN set -x \
+  && mkdir -p /usr/share/man/man1 \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y default-jre-headless ca-certificates-java \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Core: Dotnet Core
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
+RUN set -x \
+  && curl -sL https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -o packages-microsoft-prod.deb \
   && dpkg -i packages-microsoft-prod.deb \
   && rm packages-microsoft-prod.deb \
   && apt-get update \
@@ -120,48 +100,69 @@ RUN set -x \
 
 # SAST: pybandit (Python SAST tool)
 RUN set -x \
-  && pip3 install bandit==${BANDIT_VERSION}
+  && pip3 install --no-cache-dir --disable-pip-version-check bandit==${BANDIT_VERSION}
 
 # SAST: safety (Python SAST composition analysis tool)
 RUN set -x \
-  && pip3 install safety
+  && pip3 install --no-cache-dir --disable-pip-version-check safety==${SAFETY_VERSION}
 
-# SAST: Spotbugs
+# SAST: gosec (Golang Security Checker)
 RUN set -x \
-  && cd /opt \
-  && curl -LOJ http://repo.maven.apache.org/maven2/com/github/spotbugs/spotbugs/${SPOTBUGS_VERSION}/spotbugs-${SPOTBUGS_VERSION}.zip \
-  && unzip spotbugs-${SPOTBUGS_VERSION}.zip \
-  && rm -rf spotbugs-${SPOTBUGS_VERSION}.zip \
-  && cd /opt/spotbugs-${SPOTBUGS_VERSION}/plugin \
-  && curl -LOJ https://search.maven.org/remotecontent?filepath=com/h3xstream/findsecbugs/findsecbugs-plugin/${FINDSECBUGS_VERSION}/findsecbugs-plugin-${FINDSECBUGS_VERSION}.jar \
-  && cd ../.. \
-  && find /opt/spotbugs-${SPOTBUGS_VERSION}/bin/ -type f -maxdepth 1 -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash
+  && curl -sL https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/gosec_${GOSEC_VERSION}_linux_amd64.tar.gz | tar -C /usr/local/bin -xzvf - \
+  && gosec --version
+
+# SAST: NodeJsScan
+RUN set -x \
+  && pip3 install --no-cache-dir --disable-pip-version-check nodejsscan==${NODEJSSCAN_VERSION}
+
+# SAST: retirejs
+RUN set -x \
+  && npm install -g retire@${RETIRE_VERSION}
+
+# SAST: brakeman (Ruby SAST tool)
+RUN set -x \
+  && gem install brakeman -v ${BRAKEMAN_VERSION} \
+  && brakeman --version
+
+# SAST: FindSecBugs
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y unzip \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /opt/findsecbugs-${FINDSECBUGS_VERSION} \
+  && cd /opt/findsecbugs-${FINDSECBUGS_VERSION} \
+  && curl -LOJ https://github.com/find-sec-bugs/find-sec-bugs/releases/download/version-${FINDSECBUGS_VERSION}/findsecbugs-cli-${FINDSECBUGS_VERSION}.zip \
+  && unzip findsecbugs-cli-${FINDSECBUGS_VERSION}.zip \
+  && rm -f findsecbugs-cli-${FINDSECBUGS_VERSION}.zip \
+  && chmod a+x /opt/findsecbugs-${FINDSECBUGS_VERSION}/*.sh \
+  && find /opt/findsecbugs-${FINDSECBUGS_VERSION} -type f -iname '*.sh' -maxdepth 1 -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash \
+  && update-alternatives --install /usr/bin/spotbugs spotbugs /usr/bin/findsecbugs.sh 9999
+
+# SAST: gitleaks
+RUN set -x \
+  && curl -sL https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-linux-amd64 -o /usr/local/bin/gitleaks \
+  && chmod a+x /usr/local/bin/gitleaks \
+  && gitleaks --version
 
 # SAST: Dependency Check
 RUN set -x \
   && cd /opt \
-  && curl -LOJ  https://bintray.com/jeremy-long/owasp/download_file?file_path=dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
+  && curl -LOJ https://bintray.com/jeremy-long/owasp/download_file?file_path=dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
   && unzip dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
   && rm -rf dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
-  && find /opt/dependency-check/bin/ -type f -maxdepth 1 -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash \
+  && chmod a+x /opt/dependency-check/bin/*.sh \
+  && find /opt/dependency-check/bin/ -type f -iname '*.sh' -maxdepth 1 -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash \
   && dependency-check.sh --updateonly \
   && chmod -R 777 /opt/dependency-check/data \
   && ls -al /opt/dependency-check/data
 
-# SAST: NodeJsScan
+# Dusty depencies
 RUN set -x \
-  && pip3 install nodejsscan
-
-# SAST: bakeman (Ruby SAST tool)
-RUN set -x \
-  && gem install brakeman
-
-# SAST: gosec (Golang Security Checker)
-RUN set -x \
-  && go get github.com/securego/gosec/cmd/gosec \
-  && rm -rf $GOPATH/src/*
-
-# SAST: gitleaks
-RUN set -x \
-  && wget https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-linux-amd64 -O /usr/local/bin/gitleaks \
-  && chmod a+x /usr/local/bin/gitleaks
+  && apt-get update \
+  && apt-get install --no-install-recommends -y \
+    libpq-dev \
+    git \
+    build-essential \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*

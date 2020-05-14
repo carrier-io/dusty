@@ -35,61 +35,73 @@ def parse_findings(output_file, scanner):
     # SSLyze report has no severity. Set all to Medium
     severity = "Medium"
     # Walk results
-    for target in data["accepted_targets"]:
-        chain_info = ""
-        for each in target["commands_results"]["certinfo"]["certificate_chain"]:
-            chain_info += f'{each["subject"]}\n'
-        certificate_validation = []
-        for validation_result in \
-                target["commands_results"]["certinfo"]["path_validation_result_list"]:
-            if validation_result["verify_string"] != "ok":
-                certificate_validation.append(
-                    f"Certificate chain is not trusted by "
-                    f"{validation_result['trust_store']['name']} "
-                    f"trust_store version {validation_result['trust_store']['version']}"
+    try:
+        # Process each scanned target result
+        for target in data["server_scan_results"]:
+            # Heartbleed
+            if target["scan_commands_results"]["heartbleed"]["is_vulnerable_to_heartbleed"]:
+                finding = DastFinding(
+                    title="SSL: Server is vulnerable to HeartBleed",
+                    description=markdown.markdown_escape(
+                        f"Server is vulnerable to heartbleed"
+                    )
                 )
-        # Create finding objects
-        if certificate_validation:
-            descr = "\n".join(certificate_validation)
-            finding = DastFinding(
-                title="Certificate is not trusted",
-                description=markdown.markdown_escape(
-                    f"Certificate chain: {chain_info}\n {descr}"
+                finding.set_meta("tool", scanner.get_name())
+                finding.set_meta("severity", severity)
+                scanner.findings.append(finding)
+            # CCS Injection
+            if target[
+                    "scan_commands_results"
+            ]["openssl_ccs_injection"]["is_vulnerable_to_ccs_injection"]:
+                finding = DastFinding(
+                    title="SSL: Server is vulnerable to CCS Injection",
+                    description=markdown.markdown_escape(
+                        f"Server is vulnerable to CCS Injection"
+                    )
                 )
-            )
-            finding.set_meta("tool", scanner.get_name())
-            finding.set_meta("severity", severity)
-            scanner.findings.append(finding)
-        if target["commands_results"]["heartbleed"]["is_vulnerable_to_heartbleed"]:
-            finding = DastFinding(
-                title="Certificate is vulnerable to Heardbleed",
-                description=markdown.markdown_escape(
-                    f"Certificate chain: {chain_info}\n is vulnerable to heartbleed"
+                finding.set_meta("tool", scanner.get_name())
+                finding.set_meta("severity", severity)
+                scanner.findings.append(finding)
+            # Robot
+            if "NOT_VULNERABLE" not in target["scan_commands_results"]["robot"]["robot_result"]:
+                finding = DastFinding(
+                    title="SSL: Server is vulnerable to Robot",
+                    description=markdown.markdown_escape(
+                        f"SSL server is vulnerable to robot with "
+                        f'{target["scan_commands_results"]["robot"]["robot_result"]}'
+                    )
                 )
-            )
-            finding.set_meta("tool", scanner.get_name())
-            finding.set_meta("severity", severity)
-            scanner.findings.append(finding)
-        if "NOT_VULNERABLE" not in target["commands_results"]["robot"]["robot_result_enum"]:
-            finding = DastFinding(
-                title="Certificate is vulnerable to Robot",
-                description=markdown.markdown_escape(
-                    f"Certificate chain: {chain_info}\n "
-                    f"is vulnerable to robot with "
-                    f'{target["commands_results"]["robot"]["robot_result_enum"]}'
-                )
-            )
-            finding.set_meta("tool", scanner.get_name())
-            finding.set_meta("severity", severity)
-            scanner.findings.append(finding)
-        if target["commands_results"]["openssl_ccs"]["is_vulnerable_to_ccs_injection"]:
-            finding = DastFinding(
-                title="Certificate is vulnerable to CCS Injection",
-                description=markdown.markdown_escape(
-                    f"Certificate chain: {chain_info}\n "
-                    f"is vulnerable to CCS Injection"
-                )
-            )
-            finding.set_meta("tool", scanner.get_name())
-            finding.set_meta("severity", severity)
-            scanner.findings.append(finding)
+                finding.set_meta("tool", scanner.get_name())
+                finding.set_meta("severity", severity)
+                scanner.findings.append(finding)
+            # Certificate validation
+            for deployment in target[
+                    "scan_commands_results"
+            ]["certificate_info"]["certificate_deployments"]:
+                # Collect target chain info
+                chain_info = ""
+                for each in reversed(deployment["received_certificate_chain"]):
+                    chain_info += f'{each["subject"]["rfc4514_string"]}\n\n'
+                # Collect certificate chain validation info
+                certificate_validation = []
+                for validation_result in deployment["path_validation_results"]:
+                    if validation_result["verified_certificate_chain"] is None:
+                        certificate_validation.append(
+                            f"- Is not trusted by "
+                            f"{validation_result['trust_store']['name']} "
+                            f"({validation_result['trust_store']['version']})"
+                        )
+                # Create finding object
+                if certificate_validation:
+                    descr = "\n\n".join(certificate_validation)
+                    finding = DastFinding(
+                        title="SSL: Certificate is not trusted",
+                        description=markdown.markdown_escape(
+                            f"Certificate chain: \n\n{chain_info}\n {descr}"
+                        )
+                    )
+                    finding.set_meta("tool", scanner.get_name())
+                    finding.set_meta("severity", severity)
+                    scanner.findings.append(finding)
+    except:  # pylint: disable=W0702
+        log.exception("Failed to parse results")

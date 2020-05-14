@@ -61,9 +61,14 @@ def parse_findings(data, scanner):
                     f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[text()="{_qid}"]/..'
                 )
                 for record in records:
-                    references.append(html.escape(
-                        base64.b64decode(record.findtext("DATA")).decode("utf-8", errors="ignore")
-                    ))
+                    try:
+                        references.append(html.escape(
+                            base64.b64decode(
+                                record.findtext("DATA")
+                            ).decode("utf-8", errors="ignore")
+                        ))
+                    except:  # pylint: disable=W0702
+                        log.exception("Failed to add information reference. Skipping")
             else:
                 records = obj.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[text()="{_qid}"]/..')
                 for record in records:

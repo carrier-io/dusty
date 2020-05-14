@@ -92,7 +92,7 @@ class DependencyCheckParser(object):
             if 'cvssv3' in each:
                 cvss3_vector = self._calculate_vector(each['cvssv3'])
                 step += f"\ncvssv3: " \
-                    f"{cwe_to_severity(each['cvssv2']['score'])}(f{each['cvssv2']['score']})\n" \
+                    f"{cwe_to_severity(each['cvssv3']['score'])}(f{each['cvssv3']['score']})\n" \
                     f"Attack Vector: {cvss3_vector}"
             if 'references' in each:
                 step += '\n\nReferences:\n'

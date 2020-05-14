@@ -51,7 +51,7 @@ class Scanner(DependentModuleModel, ScannerModel):
         # Run task
         task = subprocess.run([
             "retire", f"--jspath={self.config.get('code')}", "--outputformat=json",
-            f"--outputpath={output_file}", "--includemeta", "--exitwith=0"
+            f"--outputpath={output_file}", "--exitwith=0"
         ], cwd=output_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log.log_subprocess_result(task)
         parse_findings(output_file, self)

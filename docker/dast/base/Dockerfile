@@ -1,5 +1,5 @@
-FROM ubuntu:xenial
-#   Copyright 2018-2019 getcarrier.io
+FROM debian:buster-backports
+#   Copyright 2018-2020 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -15,131 +15,129 @@ FROM ubuntu:xenial
 LABEL author="artem_rozumenko@epam.com"
 LABEL updated.by="ivan_krakhmaliuk@epam.com"
 
-# Software versions
-ARG JAVA_OPENJDK_URL=https://download.java.net/java/GA/jdk10/10.0.2/19aef61b38124481863b1413dce1855f/13/openjdk-10.0.2_linux-x64_bin.tar.gz
-ARG JAVA_OPENJDK_VERSION=10.0.2
-ARG RUBY_VERSION=2.3.0-dev
+# Core software and tools versions
+ARG NODEJS_VERSION=14
 
-# DAST tool versions
-ARG ARACHNI_VERSION=1.5.1
-ARG ARACHNI_WEB_VERSION=0.5.12
-ARG NMAP_VERSION=7.40
-ARG W3AF_REVISION=356b14b975039706f4fd7f4f5db5b114cd75f14e
-ARG SSLYZE_VERSION=2.0.1
-ARG ZAP_VERSION=2019-02-25
+# DAST software and tools versions
+ARG AEMHACKER_VERSION=bd242b078032d04b102e96cbf15bc3d9f5dde8e9
+ARG MASSCAN_VERSION=8189d513fb9ecd8333a8be7475044d03fb029318
+ARG NIKTO_VERSION=46df35c7a4ca8569e750b309f04a557a48812502
+ARG NMAP_VERSION=7.80
+ARG SSLYZE_VERSION=3.0.3
+ARG W3AF_VERSION=1910600684c22c767a1105fbfcb051db73ad1280
+ARG ZAP_VERSION=2.9.0
 
 # Default locale
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-# Base software package
+# Core: Python
 RUN set -x \
   && apt-get update \
   && apt-get install --no-install-recommends -y \
-    software-properties-common apt-transport-https ca-certificates curl gnupg2 wget \
-  && add-apt-repository ppa:jonathonf/python-3.6 \
-  && apt-get update \
-  && apt-get install --no-install-recommends -y \
-    default-jre default-jdk xvfb git gcc make \
-    build-essential libssl-dev zlib1g-dev libbz2-dev libpcap-dev unzip \
-    libreadline-dev libsqlite3-dev llvm libncurses5-dev libncursesw5-dev \
-    xz-utils tk-dev libffi-dev liblzma-dev perl libnet-ssleay-perl python-dev python-pip \
-    libxslt1-dev libxml2-dev libyaml-dev openssh-server  python-lxml \
-    xdot python-gtk2 python-gtksourceview2 dmz-cursor-theme supervisor \
-    python-setuptools maven python3.6 python3.6-dev \
-    virtualenv python-virtualenv python3-virtualenv checkinstall \
-    autoconf bison libreadline6-dev libgdbm3 libgdbm-dev \
-    rbenv ruby-build \
-    libpq-dev \
+      ca-certificates curl \
+      python python-dev \
+      python3 python3-dev \
   && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/* \
+  && curl -sL https://bootstrap.pypa.io/get-pip.py | python3 - \
+  && curl -sL https://bootstrap.pypa.io/get-pip.py | python - \
+  && pip3 --version \
+  && pip2 --version \
+  && pip --version
 
-# Docker
+# Core: NodeJS
 RUN set -x \
-  && curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
-  && apt-key fingerprint 0EBFCD88 \
-  && echo "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable" | \
-	 tee /etc/apt/sources.list.d/docker.list \
-  && apt-get update \
-  && apt-get install --no-install-recommends -y docker-ce \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-
-# Java
-RUN set -x \
-  && cd /opt \
-  && wget -qO- ${JAVA_OPENJDK_URL} | tar vxfz - \
-  && find /opt/jdk-${JAVA_OPENJDK_VERSION}/bin/ -type f -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash
-
-# Ruby
-RUN set -x \
-  && cd /tmp \
-  && rbenv install ${RUBY_VERSION} \
-  && rbenv global ${RUBY_VERSION} \
-  && rm -rf /tmp/ruby-*
-
-# NodeJS
-RUN set -x \
-  && curl -sL https://deb.nodesource.com/setup_10.x | bash - \
+  && curl -sL https://deb.nodesource.com/setup_${NODEJS_VERSION}.x | bash - \
   && apt-get update \
   && apt-get install --no-install-recommends -y nodejs \
   && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Core: Java
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y default-jre-headless ca-certificates-java \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# DAST: AEM Hacker
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y git \
+  && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
-  && npm -g i n && n 10.13.0 --test && npm -g i npm@6.1 http-server@0.11.1 retire@1.6.0 --test \
-  && rm -rf /tmp/npm-*
-
-# Python
-RUN set -x \
-  && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 9999 \
-  && curl -sL https://bootstrap.pypa.io/get-pip.py | python3 - \
-  && pip3 install --upgrade pip wheel setuptools \
-  && curl -sL https://bootstrap.pypa.io/get-pip.py | python2 - \
-  && pip2 install --upgrade pip wheel setuptools \
-  && pip --version \
-  && pip2 --version \
-  && pip3 --version
-
-# DAST: Arachni
-RUN set -x \
-  && mkdir /opt/arachni \
-  && cd /tmp \
-  && wget -qO- https://github.com/Arachni/arachni/releases/download/v${ARACHNI_VERSION}/arachni-${ARACHNI_VERSION}-${ARACHNI_WEB_VERSION}-linux-x86_64.tar.gz | tar xvz -C /opt/arachni --strip-components=1 \
-  && find /opt/arachni/bin/ -type f -iname 'arachni*' -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash
+  && cd /opt \
+  && git clone https://github.com/0ang3el/aem-hacker.git \
+  && cd aem-hacker \
+  && git reset --hard ${AEMHACKER_VERSION} \
+  && pip3 install --upgrade -r requirements.txt \
+  && echo '#!/bin/bash' > /opt/aem-hacker/aem-wrapper.sh \
+  && echo 'python3 /opt/aem-hacker/aem_hacker.py $*' >> /opt/aem-hacker/aem-wrapper.sh \
+  && chmod a+x *.py *.sh \
+  && rm -rf .git \
+  && cd .. \
+  && update-alternatives --install /usr/bin/aem-wrapper.sh aem-wrapper.sh /opt/aem-hacker/aem-wrapper.sh 9999
 
 # DAST: Masscan
 RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y build-essential libpcap-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
   && cd /opt \
   && git clone https://github.com/robertdavidgraham/masscan \
   && cd masscan \
+  && git reset --hard ${MASSCAN_VERSION} \
   && make -j4 \
+  && rm -rf .git \
   && update-alternatives --install /usr/bin/masscan masscan /opt/masscan/bin/masscan 9999
 
 # DAST: Nikto
 RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y libnet-ssleay-perl \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
   && cd /opt \
   && git clone https://github.com/sullo/nikto \
+  && cd nikto \
+  && git reset --hard ${NIKTO_VERSION} \
+  && rm -rf .git \
   && update-alternatives --install /usr/bin/nikto.pl nikto.pl /opt/nikto/program/nikto.pl 9999 \
   && update-alternatives --install /usr/bin/replay.pl replay.pl /opt/nikto/program/replay.pl 9999
 
 # DAST: Nmap
 RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y checkinstall libssl-dev flex bison \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
   && cd /tmp \
-  && curl -O https://nmap.org/dist/nmap-${NMAP_VERSION}.tar.bz2 \
-  && bzip2 -cd nmap-${NMAP_VERSION}.tar.bz2 | tar xvf - \
-  && rm -f nmap-${NMAP_VERSION}.tar.bz2 \
+  && curl -sL https://nmap.org/dist/nmap-${NMAP_VERSION}.tar.bz2 | tar -xjvf - \
   && cd nmap-${NMAP_VERSION} \
   && bash configure \
   && make \
-  && checkinstall -y \
+  && env LINGUAS="" checkinstall -y \
   && cd .. \
   && rm -rf nmap-${NMAP_VERSION}
 
+# DAST: Sslyze
+RUN set -x \
+  && pip3 install sslyze==${SSLYZE_VERSION} \
+  && sslyze --update_trust_stores
+
 # DAST: W3af
 RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y libxml2-dev libxslt1-dev zlib1g-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && pip install git+https://github.com/gitpython-developers/gitdb.git@857196a7312209eed5c84fca857ab6c486bcbd6b \
   && cd /opt \
   && git clone https://github.com/andresriancho/w3af.git \
   && cd w3af \
-  && git reset --hard ${W3AF_REVISION} \
+  && git reset --hard ${W3AF_VERSION} \
   && ./w3af_console; true \
   && sed 's/sudo //g' -i /tmp/w3af_dependency_install.sh \
   && sed 's/apt-get/apt-get -y/g' -i /tmp/w3af_dependency_install.sh \
@@ -147,31 +145,21 @@ RUN set -x \
   && /tmp/w3af_dependency_install.sh \
   && rm -f /tmp/w3af_dependency_install.sh \
   && sed 's/dependency_check()/#dependency_check()/g' -i w3af_console \
+  && rm -rf .git \
   && update-alternatives --install /usr/bin/w3af_console w3af_console /opt/w3af/w3af_console 9999
-
-# DAST: Sslyze
-RUN set -x \
-  && pip3 install sslyze==${SSLYZE_VERSION} \
-  && sslyze --update_trust_stores
-
-# DAST: Aem-hacker
-RUN set -x \
-  && cd /opt \
-  && git clone https://github.com/0ang3el/aem-hacker.git \
-  && cd aem-hacker \
-  && pip3 install --upgrade -r requirements.txt \
-  && echo '#!/bin/bash' > /opt/aem-hacker/aem-wrapper.sh \
-  && echo 'python3 /opt/aem-hacker/aem_hacker.py $*' >> /opt/aem-hacker/aem-wrapper.sh \
-  && chmod a+x *.py *.sh \
-  && cd .. \
-  && update-alternatives --install /usr/bin/aem-wrapper.sh aem-wrapper.sh /opt/aem-hacker/aem-wrapper.sh 9999
 
 # DAST: ZAP
 RUN set -x \
   && cd /opt \
-  && curl -LOJ https://github.com/zaproxy/zaproxy/releases/download/w${ZAP_VERSION}/ZAP_WEEKLY_D-${ZAP_VERSION}.zip \
-  && unzip ZAP_WEEKLY_D-${ZAP_VERSION}.zip \
-  && rm -f ZAP_WEEKLY_D-${ZAP_VERSION}.zip \
-  && mv ZAP_D-${ZAP_VERSION} zap \
+  && curl -sL https://github.com/zaproxy/zaproxy/releases/download/v${ZAP_VERSION}/ZAP_${ZAP_VERSION}_Linux.tar.gz | tar -xzvf - \
+  && mv ZAP_${ZAP_VERSION} zap \
   && chmod +x /opt/zap/zap.sh \
-  && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-D-${ZAP_VERSION}.jar 9999
+  && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-${ZAP_VERSION}.jar 9999
+
+# Dusty depencies
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y \
+    libpq-dev \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*

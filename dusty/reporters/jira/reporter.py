@@ -186,10 +186,12 @@ class Reporter(DependentModuleModel, ReporterModel):
                     "assignee": issue.fields.assignee
                 }
                 if created:
-                    new_tickets.append(ticket_meta)
+                    if not self._ticket_in_list(ticket_meta, new_tickets):
+                        new_tickets.append(ticket_meta)
                 else:
                     if issue.fields.status.name in constants.JIRA_OPENED_STATUSES:
-                        existing_tickets.append(ticket_meta)
+                        if not self._ticket_in_list(ticket_meta, existing_tickets):
+                            existing_tickets.append(ticket_meta)
             except:  # pylint: disable=W0702
                 log.exception(f"Failed to create ticket for {finding['title']}")
                 error = Error(
@@ -201,6 +203,13 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.set_meta("new_tickets", new_tickets)
         self.set_meta("existing_tickets", existing_tickets)
         self.set_meta("mapping", mapping_meta)
+
+    @staticmethod
+    def _ticket_in_list(ticket_meta, tickets_list):
+        for item in tickets_list:
+            if item["jira_id"] == ticket_meta["jira_id"]:
+                return True
+        return False
 
     @staticmethod
     def fill_config(data_obj):

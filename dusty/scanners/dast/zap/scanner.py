@@ -180,8 +180,9 @@ class Scanner(DependentModuleModel, ScannerModel):
             self._zap_daemon = None
 
     def _wait_for_passive_scan(self):
+        limit = self.config.get("passive_scan_wait_threshold", 0)
         status.wait_for_completion(
-            lambda: int(self._zap_api.pscan.records_to_scan) > 0,
+            lambda: int(self._zap_api.pscan.records_to_scan) > limit,
             lambda: int(self._zap_api.pscan.records_to_scan),
             "Passive scan queue: %d items"
         )
@@ -488,6 +489,10 @@ class Scanner(DependentModuleModel, ScannerModel):
         data_obj.insert(
             len(data_obj), "split_by_endpoint", False,
             comment="(optional) Create separate findings for every endpoint"
+        )
+        data_obj.insert(
+            len(data_obj), "passive_scan_wait_threshold", 0,
+            comment="(optional) Wait until N items left in passive scan queue"
         )
         data_obj.insert(
             len(data_obj), "save_intermediates_to", "/data/intermediates/dast",

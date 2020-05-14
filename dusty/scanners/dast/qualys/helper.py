@@ -299,6 +299,19 @@ class QualysHelper:
         except:  # pylint: disable=W0702
             return "UNKNOWN"
 
+    def get_scan_summary(self, scan_id):
+        """ Get scan summary """
+        response = self._request(
+            f"/qps/rest/3.0/status/was/wasscan/{scan_id}",
+            validator=lambda r: r.ok and \
+                dot(r.json()).ServiceResponse.responseCode == "SUCCESS"
+        )
+        obj = dot(response.json())
+        try:
+            return obj.ServiceResponse.data[0].WasScan.summary
+        except:  # pylint: disable=W0702
+            return dict()
+
     def create_report(self, name, webapp_id, report_template):
         """ Create report """
         response = self._request(
