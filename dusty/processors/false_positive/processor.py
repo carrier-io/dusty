@@ -41,8 +41,11 @@ class Processor(DependentModuleModel, ProcessorModel):
 
     def galloper_connector(self):
         auth = None
+        headers = {"content-type": "application/json"}
         if self.config.get("user") and self.config.get("password"):
             auth = (self.config.get("user"), self.config.get("password"))
+        elif self.config.get("token"):
+            headers["Authorization"] = f'bearer {self.config.get("token")}'
         if self.config.get("project_id"):
             galloper_url = constants.GALLOPER_API_PATH.format(project_id=self.config.get("project_id"))
         else:
@@ -53,7 +56,7 @@ class Processor(DependentModuleModel, ProcessorModel):
             "app_name": self.context.get_meta("project_description")
         }
         fp_list = get(f'{self.config.get("galloper")}{galloper_url}',
-                      headers={"content-type": "application/json"}, auth=auth,
+                      headers=headers, auth=auth,
                       params=data).json()
         with open(constants.GALLOPER_FPA_PATH, "w") as f:
             f.write("\n".join(fp_list).strip())
