@@ -42,7 +42,8 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.galloper = connector.GalloperConnector(self.config['url'],
                                                     self.config.get('project_id'),
                                                     self.config.get('user'),
-                                                    self.config.get('password'))
+                                                    self.config.get('password'),
+                                                    self.config.get('token'))
 
     def report(self):
         """ Report """
