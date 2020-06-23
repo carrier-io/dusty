@@ -25,6 +25,7 @@ __author__ = 'arozumenko'
 import html
 from json import load
 from jsonpath_rw import parse
+from dusty.tools import log
 
 
 def cwe_to_severity(cwe_score):
@@ -83,23 +84,31 @@ class DependencyCheckParser(object):
             if max_priority < _max:
                 max_priority = _max
             step = f"<pre>{each['name']} \n\n Description: {html.escape(each['description'])}\n\n"
-            if 'cvssv2' in each:
-                cvss2_vector = self._calculate_vector(each['cvssv2'])
-                step += f"cvssv2: " \
-                    f"{cwe_to_severity(each['cvssv2']['score'])}(f{each['cvssv2']['score']})\n" \
-                    f"Attack Vector: {cvss2_vector}"
-
-            if 'cvssv3' in each:
-                cvss3_vector = self._calculate_vector(each['cvssv3'])
-                step += f"\ncvssv3: " \
-                    f"{cwe_to_severity(each['cvssv3']['score'])}(f{each['cvssv3']['score']})\n" \
-                    f"Attack Vector: {cvss3_vector}"
-            if 'references' in each:
-                step += '\n\nReferences:\n'
-                for ref in each['references']:
-                    step += f"Name: {ref.get('name', '')}\n " \
-                        f"Link: {ref.get('url', '')}\n " \
-                        f"Source: {ref.get('source', '')}\n\n"
+            try:
+                if 'cvssv2' in each:
+                    cvss2_vector = self._calculate_vector(each['cvssv2'])
+                    step += f"cvssv2: " \
+                        f"{cwe_to_severity(each['cvssv2']['score'])}(f{each['cvssv2']['score']})\n" \
+                        f"Attack Vector: {cvss2_vector}"
+            except:
+                log.exception("Failed to add CVSSV2 vector")
+            try:
+                if 'cvssv3' in each:
+                    cvss3_vector = self._calculate_vector(each['cvssv3'])
+                    step += f"\ncvssv3: " \
+                        f"{cwe_to_severity(each['cvssv3']['score'])}(f{each['cvssv3']['score']})\n" \
+                        f"Attack Vector: {cvss3_vector}"
+            except:
+                log.exception("Failed to add CVSSV3 vector")
+            try:
+                if 'references' in each:
+                    step += '\n\nReferences:\n'
+                    for ref in each['references']:
+                        step += f"Name: {ref.get('name', '')}\n " \
+                            f"Link: {ref.get('url', '')}\n " \
+                            f"Source: {ref.get('source', '')}\n\n"
+            except:
+                log.exception("Failed to add references")
             steps.append(f"{step}</pre>")
         return max_priority, steps
 
