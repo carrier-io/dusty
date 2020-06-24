@@ -35,9 +35,9 @@ class Seed(SeedModel):
         }
         if environ.get("token"):
             headers["Authorization"] = f"bearer {environ.get('token')}"
-        seed_url = f"{environ.get('galloper_url')}/tests/" \
+        seed_url = f"{environ.get('galloper_url')}/api/v1/tests/" \
                    f"{environ.get('project_id')}/security/{config_seed_data}"
-        return get(seed_url, params={"type": "dusty"}, headers=headers).json()
+        return get(seed_url, params={"type": "dusty"}, headers=headers).content
 
     @staticmethod
     def get_name():
