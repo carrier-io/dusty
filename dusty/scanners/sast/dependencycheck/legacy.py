@@ -23,7 +23,7 @@
 __author__ = 'arozumenko'
 
 import html
-from json import load
+from json import load, dumps
 from jsonpath_rw import parse
 from dusty.tools import log
 
@@ -95,9 +95,12 @@ class DependencyCheckParser(object):
             try:
                 if 'cvssv3' in each:
                     cvss3_vector = self._calculate_vector(each['cvssv3'])
-                    step += f"\ncvssv3: " \
-                        f"{cwe_to_severity(each['cvssv3']['score'])}(f{each['cvssv3']['score']})\n" \
-                        f"Attack Vector: {cvss3_vector}"
+                    if 'score' in each['cvssv3']:
+                        step += f"\ncvssv3: " \
+                            f"{cwe_to_severity(each['cvssv3']['score'])}(f{each['cvssv3']['score']})\n" \
+                            f"Attack Vector: {cvss3_vector}"
+                    else:
+                        step += f"\ncvssv3: {dumps(each['cvssv3'])}\nAttack Vector: {cvss3_vector}"
             except:
                 log.exception("Failed to add CVSSV3 vector")
             try:
