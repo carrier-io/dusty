@@ -39,7 +39,7 @@ class JiraWrapper(object):
         try:
             self.connect()
         except:
-            logging.error("Failed to connect to Jira")
+            logging.exception("Failed to connect to Jira")
             self.valid = False
             return
         self.projects = [project.key for project in self.client.projects()]
