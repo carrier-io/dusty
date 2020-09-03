@@ -24,7 +24,7 @@ import base64
 import hashlib
 
 from urllib.parse import urlparse
-from lxml import etree
+from defusedxml.cElementTree import parse
 
 from dusty.tools import log, url, markdown
 from dusty.models.finding import DastFinding
@@ -35,8 +35,7 @@ from . import constants
 def parse_findings(output_file, scanner):
     """ Parse findings (code from dusty 1.0) """
     log.debug("Parsing findings")
-    parser = etree.XMLParser(resolve_entities=False, huge_tree=True)
-    w3scan = etree.parse(output_file, parser)
+    w3scan = parse(output_file)
     root = w3scan.getroot()
     dupes = dict()
     for vulnerability in root.findall("vulnerability"):

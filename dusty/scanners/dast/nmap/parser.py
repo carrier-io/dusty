@@ -24,7 +24,7 @@
     Ported to Dusty 2.0 by: LifeDJIK
 """
 
-from lxml import etree
+from defusedxml.cElementTree import parse
 
 from dusty.tools import log, url, markdown
 from dusty.models.finding import DastFinding
@@ -35,8 +35,7 @@ from dusty.constants import SEVERITIES
 def parse_findings(output_file, scanner):
     """ Parse findings (code from dusty 1.0) """
     log.debug("Parsing findings")
-    parser = etree.XMLParser(resolve_entities=False, huge_tree=True)
-    nscan = etree.parse(output_file, parser)
+    nscan = parse(output_file)
     root = nscan.getroot()
     # Check validity
     if "nmaprun" not in root.tag:

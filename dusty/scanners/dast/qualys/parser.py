@@ -23,7 +23,7 @@
 import html
 import base64
 
-from lxml import etree
+from defusedxml.cElementTree import fromstring
 
 from dusty.tools import log, url, markdown
 from dusty.models.finding import DastFinding
@@ -34,8 +34,7 @@ from . import constants
 def parse_findings(data, scanner):
     """ Parse findings """
     log.debug("Parsing findings")
-    parser = etree.XMLParser(remove_blank_text=True, no_network=True, recover=True)
-    obj = etree.fromstring(data, parser)
+    obj = fromstring(data)
     qids = obj.xpath("/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID")
     disabled_titles = constants.QUALYS_DISABLED_TITLES
     for qid in qids:
