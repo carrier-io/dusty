@@ -23,7 +23,11 @@
 import os
 import json
 import builtins
-import core.scanner as njsscan  # pylint: disable=E0611
+
+try:
+    import core.scanner as njsscan  # pylint: disable=E0611
+except:
+    njsscan = None  # pylint: disable=C0103
 
 from dusty.tools import log
 from dusty.models.module import DependentModuleModel
@@ -44,6 +48,10 @@ class Scanner(DependentModuleModel, ScannerModel):
 
     def execute(self):
         """ Run the scanner """
+        # Check if we are running inside SAST container
+        if njsscan is None:
+            log.error("NodeJsScan is not installed in this environment")
+            return
         # Replace print function to hide njsscan print()s
         original_print = print
         builtins.print = lambda *args, **kwargs: log.debug(" ".join([str(item) for item in args]))
