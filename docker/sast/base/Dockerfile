@@ -39,6 +39,8 @@ ARG FINDSECBUGS_VERSION=1.10.1
 # SAST software and tools versions
 ARG GITLEAKS_VERSION=4.1.1
 ARG DEPENDENCY_CHECK_VERSION=5.3.2
+ARG INSIDER_VERSION=2.0.5
+ARG SEMGREP_VERSION=0.22.0
 
 # Default locale
 ENV LC_ALL=C.UTF-8
@@ -156,6 +158,18 @@ RUN set -x \
   && dependency-check.sh --updateonly \
   && chmod -R 777 /opt/dependency-check/data \
   && ls -al /opt/dependency-check/data
+
+# SAST: insider
+RUN set -x \
+  && curl -sL https://github.com/insidersec/insider/releases/download/${INSIDER_VERSION}/insider_${INSIDER_VERSION}_linux_x86_64.tar.gz | tar -C /usr/local/bin -xzvf -
+
+# SAST: semgrep
+RUN set -x \
+  && pip3 install --no-cache-dir --disable-pip-version-check semgrep==${SEMGREP_VERSION} \
+  && mkdir -p /opt/semgrep/rulesets \
+  && curl -sL https://semgrep.dev/c/p/findsecbugs -o /opt/semgrep/rulesets/findsecbugs.yml \
+  && curl -sL https://semgrep.dev/c/p/r2c-CI -o /opt/semgrep/rulesets/r2c-CI.yml \
+  && curl -sL https://semgrep.dev/c/p/r2c-security-audit -o /opt/semgrep/rulesets/r2c-security-audit.yml
 
 # Dusty depencies
 RUN set -x \
