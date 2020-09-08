@@ -38,14 +38,27 @@ class Scanner(DependentModuleModel, ScannerModel):
 
     def prepare(self):
         """ Prepare scanner """
-        scanners = ["spotbugs"]
+        scanners = ["semgrep"]
+        scanner_configs = {
+            "semgrep": {
+                "ruleset": "/opt/semgrep/rulesets/findsecbugs.yml",
+            }
+        }
+        if self.config.get("artifact_analysis", False):
+            scanners.remove("semgrep")
+            scanners.append("spotbugs")
         if self.config.get("composition_analysis", False):
             scanners.append("dependencycheck")
             self.config["comp_path"] = self.config.get("scan_path", self.config.get("code"))
             self.config["comp_opts"] = self.config.get("scan_opts", "")
         for scanner in scanners:
             log.info("Adding %s scanner", scanner)
-            self.context.performers["scanning"].schedule_scanner("sast", scanner, self.config)
+            if scanner in scanner_configs:
+                scanner_config = scanner_configs[scanner].copy()
+                scanner_config.update(self.config)
+            else:
+                scanner_config = self.config
+            self.context.performers["scanning"].schedule_scanner("sast", scanner, scanner_config)
 
     @staticmethod
     def fill_config(data_obj):
@@ -53,6 +66,9 @@ class Scanner(DependentModuleModel, ScannerModel):
         data_obj.insert(len(data_obj), "code", "/path/to/code", comment="scan target")
         data_obj.insert(
             len(data_obj), "composition_analysis", False, comment="enable composition analysis"
+        )
+        data_obj.insert(
+            len(data_obj), "artifact_analysis", False, comment="scan .class/.jar files"
         )
         data_obj.insert(
             len(data_obj), "scan_path", "/path/to/code",
