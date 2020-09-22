@@ -59,6 +59,11 @@ class EmailHelper:
             self.connection.starttls(context=ssl._create_unverified_context())  # pylint: disable=W0212
             self.connection.ehlo()
             self.connection.login(self.login, self.password)
+        except smtplib.SMTPServerDisconnected:
+            log.warning("Seems like SMTP with TSL didn't work, trying with SMTP_SSL")
+            self.connection = smtplib.SMTP_SSL(host=self.server, port=self.port, timeout=self.timeout)
+            self.connection.ehlo()
+            self.connection.login(self.login, self.password)
         except:  # pylint: disable=W0702
             log.exception("Failed to connect to SMTP server")
             error = Error(
