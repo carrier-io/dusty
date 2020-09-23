@@ -24,12 +24,17 @@ import time
 from dusty.tools import log
 
 
-def wait_for_completion(condition, status, message, interval=10):
+def wait_for_completion(condition, status, message, interval=10, limit=None):
     """ Watch progress """
     current_status = status()
     log.get_outer_logger().info(message, current_status)
+    time_passed = 0
     while condition():
+        if limit is not None and time_passed > int(limit):
+            log.get_outer_logger().warning("Time limit exceded")
+            break
         time.sleep(interval)
+        time_passed += interval
         next_status = status()
         if next_status != current_status:
             log.get_outer_logger().info(message, next_status)

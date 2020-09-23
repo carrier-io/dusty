@@ -89,7 +89,7 @@ class Scanner(DependentModuleModel, ScannerModel):
             log.exception("Exception during ZAP scanning")
             error = Error(
                 tool=self.get_name(),
-                error=f"Exception during ZAP scanning",
+                error="Exception during ZAP scanning",
                 details=f"```\n{traceback.format_exc()}\n```"
             )
             self.errors.append(error)
@@ -105,7 +105,7 @@ class Scanner(DependentModuleModel, ScannerModel):
                 log.exception("Exception during ZAP findings processing")
                 error = Error(
                     tool=self.get_name(),
-                    error=f"Exception during ZAP findings processing",
+                    error="Exception during ZAP findings processing",
                     details=f"```\n{traceback.format_exc()}\n```"
                 )
                 self.errors.append(error)
@@ -115,6 +115,18 @@ class Scanner(DependentModuleModel, ScannerModel):
 
     def _start_zap(self):
         """ Start ZAP daemon, create API client """
+        # External ZAP daemon
+        if self.config.get("external_zap_daemon", None):
+            log.info("Using external ZAP daemon")
+            self._zap_api = ZAPv2(
+                apikey=self.config.get("external_zap_api_key", "dusty"),
+                proxies={
+                    "http": self.config.get("external_zap_daemon"),
+                    "https": self.config.get("external_zap_daemon")
+                }
+            )
+            return
+        # Internal ZAP daemon
         log.info("Starting ZAP daemon")
         bind_host = "127.0.0.1"
         if self.config.get("bind_all_interfaces", True):
@@ -152,7 +164,7 @@ class Scanner(DependentModuleModel, ScannerModel):
         return False
 
     def _save_intermediates(self):
-        if self.config.get("save_intermediates_to", None):
+        if self.config.get("save_intermediates_to", None) and self._zap_daemon is None:
             log.info("Saving intermediates")
             base = os.path.join(self.config.get("save_intermediates_to"), __name__.split(".")[-2])
             try:
@@ -184,7 +196,8 @@ class Scanner(DependentModuleModel, ScannerModel):
         status.wait_for_completion(
             lambda: int(self._zap_api.pscan.records_to_scan) > limit,
             lambda: int(self._zap_api.pscan.records_to_scan),
-            "Passive scan queue: %d items"
+            "Passive scan queue: %d items",
+            limit=self.config.get("passive_scan_wait_limit", None)
         )
 
     def _prepare_context(self):  # pylint: disable=R0912
@@ -493,6 +506,18 @@ class Scanner(DependentModuleModel, ScannerModel):
         data_obj.insert(
             len(data_obj), "passive_scan_wait_threshold", 0,
             comment="(optional) Wait until N items left in passive scan queue"
+        )
+        data_obj.insert(
+            len(data_obj), "passive_scan_wait_limit", 600,
+            comment="(optional) Time limit (in seconds) for passive scan"
+        )
+        data_obj.insert(
+            len(data_obj), "external_zap_daemon", "http://192.168.0.2:8091",
+            comment="(optional) Do not start internal ZAP daemon, use external one"
+        )
+        data_obj.insert(
+            len(data_obj), "external_zap_api_key", "dusty",
+            comment="(optional) API key for external ZAP daemon"
         )
         data_obj.insert(
             len(data_obj), "save_intermediates_to", "/data/intermediates/dast",
