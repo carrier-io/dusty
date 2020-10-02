@@ -137,7 +137,7 @@ class Scanner(DependentModuleModel, ScannerModel):
         zap_home_dir = tempfile.mkdtemp()
         log.debug("ZAP home directory: %s", zap_home_dir)
         self._zap_daemon = subprocess.Popen([
-            "/usr/bin/java", self.config.get("java_options", "-Xmx499m"),
+            "/usr/bin/java", self.config.get("java_options", "-Xmx1g"),
             "-jar", constants.ZAP_PATH,
             "-dir", zap_home_dir,
             "-daemon", "-port", "8091", "-host", bind_host,
@@ -496,7 +496,7 @@ class Scanner(DependentModuleModel, ScannerModel):
             comment="(optional) Send ZAP daemon output to stdout"
         )
         data_obj.insert(
-            len(data_obj), "java_options", "-Xmx499m",
+            len(data_obj), "java_options", "-Xmx1g",
             comment="(optional) Java options for ZAP daemon"
         )
         data_obj.insert(
