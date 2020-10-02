@@ -23,6 +23,7 @@ import os
 import io
 import zipfile
 import importlib
+import pkg_resources
 
 
 class DataModuleLoader(importlib.abc.MetaPathFinder):
@@ -72,3 +73,14 @@ class DataModuleLoader(importlib.abc.MetaPathFinder):
             return data
         except:
             raise OSError("Resource not found")
+
+
+class DataModuleProvider(pkg_resources.NullProvider):  # pylint: disable=W0223
+    """ Allows to load resources from ZIP in-memory data """
+
+    def __init__(self, module):
+        pkg_resources.NullProvider.__init__(self, module)
+        self.module_name = getattr(module, "__name__", "")
+
+    def _has(self, path):
+        return path in self.loader.storage_files

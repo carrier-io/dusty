@@ -51,6 +51,10 @@ class Reporter(DependentModuleModel, ReporterModel):
 
     def report(self):
         """ Report """
+        # Remove "Epic Link" from fields if requested
+        if self.config.get("separate_epic_linkage", False) and \
+                "Epic Link" in self.config.get("fields"):
+            epic_link = self.config.get("fields").pop("Epic Link")
         # Prepare wrapper
         log.info("Creating legacy wrapper instance")
         wrapper = JiraWrapper(
@@ -147,6 +151,41 @@ class Reporter(DependentModuleModel, ReporterModel):
             else:
                 log.warning("Unsupported finding type")
                 continue # raise ValueError("Unsupported item type")
+        # Cut description if length above configured limit
+        if self.config.get("max_description_size", False):
+            for finding in findings:
+                if len(finding["description"]) > int(self.config.get("max_description_size")):
+                    if "comments" not in finding:
+                        finding["comments"] = list()
+                    #
+                    comment_chunks = list()
+                    cut_line_len = len(constants.JIRA_DESCRIPTION_CUT)
+                    cut_point = int(self.config.get("max_description_size")) - cut_line_len
+                    #
+                    item_description = finding["description"]
+                    finding["description"] = \
+                        f"{item_description[:cut_point]}{constants.JIRA_DESCRIPTION_CUT}"
+                    #
+                    description_data = item_description[cut_point:]
+                    comment_cut_threshold = min(
+                        constants.JIRA_COMMENT_MAX_SIZE,
+                        int(self.config.get("max_description_size"))
+                    )
+                    cut_point = comment_cut_threshold - cut_line_len
+                    #
+                    while description_data:
+                        if len(description_data) > comment_cut_threshold:
+                            comment_chunks.append(
+                                f"{description_data[:cut_point]}{constants.JIRA_DESCRIPTION_CUT}"
+                            )
+                            description_data = description_data[cut_point:]
+                        else:
+                            comment_chunks.append(description_data)
+                            break
+                    #
+                    while comment_chunks:
+                        finding["comments"].insert(0, comment_chunks.pop())
+        # Sort findings by severity-tool-title
         findings.sort(key=lambda item: (
             SEVERITIES.index(item["raw"].get_meta("severity", SEVERITIES[-1])),
             item["raw"].get_meta("tool", ""),
@@ -170,6 +209,13 @@ class Reporter(DependentModuleModel, ReporterModel):
                 if created and "comments" in finding:
                     for comment in finding["comments"]:
                         wrapper.add_comment_to_issue(issue, comment)
+                if created and self.config.get("separate_epic_linkage", False):
+                    try:
+                        wrapper.client.add_issues_to_epic(epic_link, [str(issue.key)])
+                    except:  # pylint: disable=W0702
+                        log.exception(
+                            "Failed to add ticket %s to epic %s", str(issue.key), epic_link
+                        )
                 try:
                     result_priority = issue.fields.priority
                 except:  # pylint: disable=W0702
@@ -275,6 +321,14 @@ class Reporter(DependentModuleModel, ReporterModel):
         mapping_obj.insert(
             len(mapping_obj),
             "Trivial", "Low"
+        )
+        data_obj.insert(
+            len(data_obj), "separate_epic_linkage", False,
+            comment="(optional) Link to Epics after ticket creation"
+        )
+        data_obj.insert(
+            len(data_obj), "max_description_size", constants.JIRA_DESCRIPTION_MAX_SIZE,
+            comment="(optional) Cut description longer than set limit"
         )
 
     @staticmethod

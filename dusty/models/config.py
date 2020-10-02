@@ -26,11 +26,12 @@ import sys
 import yaml
 import pkgutil
 import importlib
+import pkg_resources
 
 from ruamel.yaml.comments import CommentedMap
 
 from dusty.models.depot import SecretDepotModel, ObjectDepotModel, StateDepotModel
-from dusty.tools.module import DataModuleLoader
+from dusty.tools.module import DataModuleLoader, DataModuleProvider
 from dusty.tools.dict import recursive_merge, recursive_merge_existing
 from dusty.tools import log, depots, seeds
 from dusty import constants
@@ -97,6 +98,8 @@ class ConfigModel:
             context_config = recursive_merge(
                 config["suites"].get(context_config.get("inherit_from")), context_config
             )
+        # Register provider for template and resource loading from modules
+        pkg_resources.register_loader_type(DataModuleLoader, DataModuleProvider)
         # Process depots and load modules
         for _ in range(3):
             self._load_modules(context_config)
@@ -136,6 +139,7 @@ class ConfigModel:
             module_object = depots.get_object(self.context, module_name)
             if module_object is not None:
                 sys.meta_path.insert(0, DataModuleLoader(module_object))
+                importlib.invalidate_caches()
                 self.context.modules.append(module_name)
                 log.info("Loaded module from %s", module_name)
 
