@@ -374,6 +374,11 @@ class Scanner(DependentModuleModel, ScannerModel):
             )
         else:
             scan_id = self._zap_api.spider.scan(self.config.get("target"))
+        #
+        if scan_id is None or scan_id == "does_not_exist":
+            log.warning("ZAP failed to return scan ID. Please check that target URL is accessible from Carrier DAST container")  # pylint: disable=C0301
+            return
+        #
         status.wait_for_completion(
             lambda: int(self._zap_api.spider.status(scan_id)) < 100,
             lambda: int(self._zap_api.spider.status(scan_id)),
@@ -406,6 +411,11 @@ class Scanner(DependentModuleModel, ScannerModel):
                 self.config.get("target"),
                 scanpolicyname=self._scan_policy_name
             )
+        #
+        if scan_id is None or scan_id == "does_not_exist":
+            log.warning("ZAP failed to return scan ID. Please check that target URL is accessible from Carrier DAST container")  # pylint: disable=C0301
+            return
+        #
         status.wait_for_completion(
             lambda: int(self._zap_api.ascan.status(scan_id)) < 100,
             lambda: int(self._zap_api.ascan.status(scan_id)),
