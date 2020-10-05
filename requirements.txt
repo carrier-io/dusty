@@ -22,6 +22,7 @@ inscriptis==0.0.4.0
 
 # XML parsing
 defusedxml==0.6.0
+elementpath==2.0.3
 
 # Modules
 python-gitlab==1.12.1

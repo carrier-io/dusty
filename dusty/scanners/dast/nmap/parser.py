@@ -24,6 +24,7 @@
     Ported to Dusty 2.0 by: LifeDJIK
 """
 
+import elementpath
 from defusedxml.cElementTree import parse
 
 from dusty.tools import log, url, markdown
@@ -66,7 +67,12 @@ def parse_findings(output_file, scanner):
                 if "accuracy" in osv.attrib:
                     hostInfo += "Accuracy: {0}%\n".format(osv.attrib["accuracy"])
             hostInfo += "\n"
-        for portelem in host.xpath("ports/port[state/@state='open']"):
+        #
+        xpath_port_selector = "ports/port[state/@state='open']"
+        if scanner.config.get("include_unfiltered", False):
+            xpath_port_selector = "ports/port[state/@state=('open','unfiltered')]"
+        #
+        for portelem in elementpath.select(host, xpath_port_selector):
             port = portelem.attrib["portid"]
             protocol = portelem.attrib["protocol"]
             #

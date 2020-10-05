@@ -133,6 +133,10 @@ class Scanner(DependentModuleModel, ScannerModel):
             comment="(optional) Ports to exclude"
         )
         data_obj.insert(
+            len(data_obj), "include_unfiltered", False,
+            comment="(optional) Include 'unfiltered' ports in report"
+        )
+        data_obj.insert(
             len(data_obj), "nmap_parameters", "-v -sVA",
             comment="(optional) Additional scanner parameters"
         )
