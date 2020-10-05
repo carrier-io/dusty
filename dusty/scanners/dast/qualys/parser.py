@@ -38,7 +38,7 @@ def parse_findings(data, scanner):
     obj = fromstring(data)
     qids = elementpath.select(obj, "/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID")
     disabled_titles = constants.QUALYS_DISABLED_TITLES
-    for qid in qids:
+    for qid in qids:  # pylint: disable=R1702
         qid_title = qid.findtext("TITLE")
         if qid_title not in disabled_titles:
             _qid = qid.findtext("QID")
@@ -63,11 +63,19 @@ def parse_findings(data, scanner):
                 )
                 for record in records:
                     try:
-                        references.append(html.escape(
-                            base64.b64decode(
-                                record.findtext("DATA")
-                            ).decode("utf-8", errors="ignore")
-                        ))
+                        base64_data = record.findtext("DATA")
+                        if base64_data:
+                            references.append(html.escape(
+                                base64.b64decode(
+                                    base64_data
+                                ).decode("utf-8", errors="ignore")
+                            ))
+                        #
+                        ssl_data = record.findtext("SSL_DETAILS/RESULT")
+                        if ssl_data:
+                            references.append(html.escape(
+                                ssl_data
+                            ).replace("\n", "\n\n"))
                     except:  # pylint: disable=W0702
                         log.exception("Failed to add information reference. Skipping")
             else:
