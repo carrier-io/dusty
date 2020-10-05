@@ -23,6 +23,7 @@
 import html
 import base64
 
+import elementpath
 from defusedxml.cElementTree import fromstring
 
 from dusty.tools import log, url, markdown
@@ -35,7 +36,7 @@ def parse_findings(data, scanner):
     """ Parse findings """
     log.debug("Parsing findings")
     obj = fromstring(data)
-    qids = obj.xpath("/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID")
+    qids = elementpath.select(obj, "/WAS_WEBAPP_REPORT/GLOSSARY/QID_LIST/QID")
     disabled_titles = constants.QUALYS_DISABLED_TITLES
     for qid in qids:
         qid_title = qid.findtext("TITLE")
@@ -50,13 +51,14 @@ def parse_findings(data, scanner):
             wasc = qid.findtext("WASC") if qid.findtext("WASC") else ""
             cwe = qid.findtext("CWE") if qid.findtext("CWE") else ""
             cvss_base = qid.findtext("CVSS_BASE") if qid.findtext("CVSS_BASE") else ""
-            if qid.xpath("SEVERITY"):
+            if elementpath.select(qid, "SEVERITY"):
                 qid_severity = constants.QUALYS_SEVERITIES[int(qid.findtext("SEVERITY"))]
             references = []
             entrypoints = []
             if "Information Gathered" in qid_category:
                 qid_severity = "Info"
-                records = obj.xpath(
+                records = elementpath.select(
+                    obj,
                     f'//INFORMATION_GATHERED_LIST/INFORMATION_GATHERED/QID[text()="{_qid}"]/..'
                 )
                 for record in records:
@@ -69,10 +71,14 @@ def parse_findings(data, scanner):
                     except:  # pylint: disable=W0702
                         log.exception("Failed to add information reference. Skipping")
             else:
-                records = obj.xpath(f'//VULNERABILITY_LIST/VULNERABILITY/QID[text()="{_qid}"]/..')
+                records = elementpath.select(
+                    obj, f'//VULNERABILITY_LIST/VULNERABILITY/QID[text()="{_qid}"]/..'
+                )
                 for record in records:
                     record_url = record.findtext('URL')
-                    access_pass = [a.text for a in records[0].xpath('ACCESS_PATH/URL')]
+                    access_pass = [
+                        a.text for a in elementpath.select(records[0], 'ACCESS_PATH/URL')
+                    ]
                     method = record.findtext('PAYLOADS/PAYLOAD/REQUEST/METHOD')
                     if not method:
                         log.error("Bad record: %s", str(record))

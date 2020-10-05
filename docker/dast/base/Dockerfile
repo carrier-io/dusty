@@ -156,6 +156,10 @@ RUN set -x \
   && chmod +x /opt/zap/zap.sh \
   && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-${ZAP_VERSION}.jar 9999
 
+# Legacy module depencies (will be removed as soon as all external modules adapted)
+RUN set -x \
+  && pip3 install lxml==4.2.5
+
 # Dusty depencies
 RUN set -x \
   && apt-get update \

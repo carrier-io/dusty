@@ -171,6 +171,10 @@ RUN set -x \
   && curl -sL https://semgrep.dev/c/p/r2c-CI -o /opt/semgrep/rulesets/r2c-CI.yml \
   && curl -sL https://semgrep.dev/c/p/r2c-security-audit -o /opt/semgrep/rulesets/r2c-security-audit.yml
 
+# Legacy module depencies (will be removed as soon as all external modules adapted)
+RUN set -x \
+  && pip3 install lxml==4.2.5
+
 # Dusty depencies
 RUN set -x \
   && apt-get update \
