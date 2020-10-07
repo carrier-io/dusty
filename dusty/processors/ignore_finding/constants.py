@@ -21,6 +21,6 @@
 
 
 DEFAULT_IGN_CONFIG_PATH = "ignore.config"
-LEGACY_GALLOPER_API_PATH = "/api/security/ign"
-GALLOPER_API_PATH = "/api/v1/security/{project_id}/ign"
+LEGACY_GALLOPER_API_PATH = "/api/security/fpa"
+GALLOPER_API_PATH = "/api/v1/security/{project_id}/fpa"
 GALLOPER_IGN_PATH = "galloper_ign_config.config"

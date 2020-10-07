@@ -54,7 +54,8 @@ class Processor(DependentModuleModel, ProcessorModel):
         data = {
             "project_name": self.context.get_meta('project_name'),
             "scan_type": self.context.get_meta("testing_type"),
-            "app_name": self.context.get_meta("project_description")
+            "app_name": self.context.get_meta("project_description"),
+            "type": "false-positive",
         }
         fp_list = get(f'{self.config.get("galloper")}{galloper_url}',
                       headers=headers, auth=auth,
