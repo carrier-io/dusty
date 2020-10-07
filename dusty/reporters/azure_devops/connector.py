@@ -4,6 +4,7 @@ from . import constants as c
 class ADOConnector(object):
     def __init__(self, organization, project, personal_access_token, team=None, issue_type="task"):
         self.auth = ('', personal_access_token)
+        self.project = f"{project}"
         self.team = f"{project}"
         if team:
             self.team = f"{project}\\{team}"
@@ -28,7 +29,7 @@ class ADOConnector(object):
             "/fields/System.Description": description,
             "/fields/System.AssignedTo": assignee,
             "/fields/System.AreaPath": self.team,
-            "/fields/System.IterationPath": self.team
+            "/fields/System.IterationPath": self.project
         }
         for key, value in {**fields_mapping, **custom_fields}.items():
             if value:
