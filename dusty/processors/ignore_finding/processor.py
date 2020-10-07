@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # coding=utf-8
 
-#   Copyright 2019 getcarrier.io
+#   Copyright 2020 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 #   limitations under the License.
 
 """
-    Processor: false_positive
+    Processor: ignore_finding
 """
 
 from json import dumps
@@ -31,7 +31,7 @@ from . import constants
 
 
 class Processor(DependentModuleModel, ProcessorModel):
-    """ Process findings: filter false-positives """
+    """ Process findings: filter ignored """
 
     def __init__(self, context):
         """ Initialize processor instance """
@@ -59,21 +59,21 @@ class Processor(DependentModuleModel, ProcessorModel):
         fp_list = get(f'{self.config.get("galloper")}{galloper_url}',
                       headers=headers, auth=auth,
                       params=data).json()
-        with open(constants.GALLOPER_FPA_PATH, "w") as f:
+        with open(constants.GALLOPER_IGN_PATH, "w") as f:
             f.write("\n".join(fp_list).strip())
-        return constants.GALLOPER_FPA_PATH
+        return constants.GALLOPER_IGN_PATH
 
     def execute(self):
         """ Run the processor """
-        log.info("Processing false-positives")
+        log.info("Processing ignored findings")
         if self.config.get("galloper"):
-            fp_config_path = self.galloper_connector()
+            ign_config_path = self.galloper_connector()
         else:
-            fp_config_path = self.config.get("file", constants.DEFAULT_FP_CONFIG_PATH)
+            ign_config_path = self.config.get("file", constants.DEFAULT_IGN_CONFIG_PATH)
         try:
-            false_positives = dict()
+            ignored_findings = dict()
             # Load false positives
-            with open(fp_config_path, "r") as file:
+            with open(ign_config_path, "r") as file:
                 for line in file.readlines():
                     if line.strip():
                         line_data = line.strip()
@@ -84,13 +84,13 @@ class Processor(DependentModuleModel, ProcessorModel):
                             line_hash = line_data.split("#", 1)[0].strip()
                             line_comment = line_data.split("#", 1)[1].strip()
                         #
-                        false_positives[line_hash] = line_comment
+                        ignored_findings[line_hash] = line_comment
             # Process findings
             for item in self.context.findings:
                 issue_hash = item.get_meta("issue_hash", "<no_hash>")
-                if issue_hash in false_positives:
-                    item.set_meta("false_positive_finding", True)
-                    issue_comment = false_positives[issue_hash]
+                if issue_hash in ignored_findings:
+                    item.set_meta("excluded_finding", True)
+                    issue_comment = ignored_findings[issue_hash]
                     if issue_comment is not None:
                         if isinstance(item, DastFinding):
                             item.description = f"**Finding comment:** {issue_comment}\n\n" + \
@@ -99,13 +99,13 @@ class Processor(DependentModuleModel, ProcessorModel):
                             item.description[0] = f"**Finding comment:** {issue_comment}\n\n" + \
                                 item.description[0]
         except:  # pylint: disable=W0702
-            log.exception("Failed to process false-positives")
+            log.exception("Failed to process ignored findings")
 
     @staticmethod
     def fill_config(data_obj):
         """ Make sample config """
         data_obj.insert(
-            len(data_obj), "file", "/path/to/false_positive.config",
+            len(data_obj), "file", "/path/to/ignore.config",
             comment="File with issue hashes"
         )
 
@@ -117,9 +117,9 @@ class Processor(DependentModuleModel, ProcessorModel):
     @staticmethod
     def get_name():
         """ Module name """
-        return "False-positive"
+        return "Ignored"
 
     @staticmethod
     def get_description():
         """ Module description """
-        return "False-positive processor"
+        return "Ignored finding processor"
