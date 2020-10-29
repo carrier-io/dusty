@@ -23,7 +23,7 @@
 import traceback
 
 from time import time
-from reportportal_client import ReportPortalServiceAsync as ReportPortalService
+from reportportal_client import ReportPortalService
 
 from . import constants # from dusty import constants
 
@@ -101,10 +101,10 @@ class ReportPortalDataWriter:
             return True
         return False
 
-    def start_test_item(self, issue, description, tags, item_type='STEP', parameters={}):
-        self.service.start_test_item(issue, description=description,
-                                     tags=tags, start_time=timestamp(),
-                                     item_type=item_type, parameters=parameters)
+    def start_test_item(self, issue, description, item_type='STEP'):
+        return self.service.start_test_item(issue, description=description,
+                                            start_time=timestamp(),
+                                            item_type=item_type)
 
     def test_item_message(self, message, level="ERROR", attachment=None):
         if len(message) > constants.MAX_MESSAGE_LEN:
@@ -120,6 +120,6 @@ class ReportPortalDataWriter:
             self.service.log(time=timestamp(), message=message,
                              level=level, attachment=attachment)
 
-    def finish_test_item(self, status="FAILED"):
-        self.service.finish_test_item(end_time=timestamp(),
+    def finish_test_item(self, item_id, status="FAILED"):
+        self.service.finish_test_item(item_id=item_id, end_time=timestamp(),
                                       status=status)

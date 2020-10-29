@@ -74,17 +74,13 @@ class Reporter(DependentModuleModel, ReporterModel):
                 ]
                 if item.get_meta("confidence", None):
                     tags.append(f'Confidence: {item.get_meta("confidence")}')
-                self._rp_client.start_test_item(
-                    item.title,
-                    description=item_description,
-                    tags=tags
-                )
+                item_id = self._rp_client.start_test_item(item.title, description=item_description)
                 if item.get_meta("legacy.images", None):
                     for attachment in item.get_meta("legacy.images"):
                         self._rp_client.test_item_message(attachment["name"], "INFO", attachment)
                 self._rp_client.test_item_message("!!!MARKDOWN_MODE!!! %s " % item_details, "INFO")
                 self._rp_client.test_item_message(item.get_meta("issue_hash", "<no_hash>"), "ERROR")
-                self._rp_client.finish_test_item()
+                self._rp_client.finish_test_item(item_id)
             elif isinstance(item, SastFinding):
                 item_details = markdown.markdown_unescape("\n\n".join(item.description))
                 item_description = item_details
@@ -95,14 +91,10 @@ class Reporter(DependentModuleModel, ReporterModel):
                 ]
                 if item.get_meta("confidence", None):
                     tags.append(f'Confidence: {item.get_meta("confidence")}')
-                self._rp_client.start_test_item(
-                    item.title,
-                    description=item_description,
-                    tags=tags
-                )
+                item_id = self._rp_client.start_test_item(item.title, description=item_description)
                 self._rp_client.test_item_message("!!!MARKDOWN_MODE!!! %s " % item_details, "INFO")
                 self._rp_client.test_item_message(item.get_meta("issue_hash", "<no_hash>"), "ERROR")
-                self._rp_client.finish_test_item()
+                self._rp_client.finish_test_item(item_id)
             else:
                 log.warning("Unsupported finding type")
                 continue # raise ValueError("Unsupported item type")
