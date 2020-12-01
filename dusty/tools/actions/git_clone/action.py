@@ -24,6 +24,7 @@ import io
 import shutil
 
 import dulwich  # pylint: disable=E0401
+from dulwich import refs  # pylint: disable=E0401
 from dulwich import porcelain  # pylint: disable=E0401
 from dulwich.contrib.paramiko_vendor import ParamikoSSHVendor  # pylint: disable=E0401
 import paramiko.transport  # pylint: disable=E0401
@@ -85,12 +86,41 @@ class Action(ActionModel):
         repository = porcelain.clone(
             source, target, checkout=False, depth=depth, errstream=log.DebugLogStream(), **auth_args
         )
+        # Get current HEAD tree (default branch)
+        try:
+            head_tree = repository[b"HEAD"]
+        except:  # pylint: disable=W0702
+            head_tree = None
+        # Get target tree (requested branch)
+        branch_b = branch.encode("utf-8")
+        try:
+            target_tree = repository[b"refs/remotes/origin/" + branch_b]
+        except:  # pylint: disable=W0702
+            target_tree = None
         # Checkout branch
-        log.info("Checking out branch %s", branch)
-        branch = branch.encode("utf-8")
-        repository[b"refs/heads/" + branch] = repository[b"refs/remotes/origin/" + branch]
-        repository.refs.set_symbolic_ref(b"HEAD", b"refs/heads/" + branch)
-        repository.reset_index(repository[b"HEAD"].tree)
+        if target_tree is not None:
+            log.info("Checking out branch %s", branch)
+            repository[b"refs/heads/" + branch_b] = repository[b"refs/remotes/origin/" + branch_b]
+            repository.refs.set_symbolic_ref(b"HEAD", b"refs/heads/" + branch_b)
+            repository.reset_index(repository[b"HEAD"].tree)
+        elif head_tree is not None:
+            try:
+                default_branch_name = repository.refs.follow(b"HEAD")[0][1]
+                if default_branch_name.startswith(refs.LOCAL_BRANCH_PREFIX):
+                    default_branch_name = default_branch_name[len(refs.LOCAL_BRANCH_PREFIX):]
+                default_branch_name = default_branch_name.decode("utf-8")
+                log.warning(
+                    "Branch %s was not found. Checking out default branch %s",
+                    branch, default_branch_name
+                )
+            except:  # pylint: disable=W0702
+                log.warning("Branch %s was not found. Trying to check out default branch", branch)
+            try:
+                repository.reset_index(repository[b"HEAD"].tree)
+            except:  # pylint: disable=W0702
+                log.exception("Failed to checkout default branch")
+        else:
+            log.error("Branch %s was not found and default branch is not set. Skipping checkout")
         # Delete .git if requested
         if self.config.get("delete_git_dir", False):
             log.info("Deleting .git directory")
