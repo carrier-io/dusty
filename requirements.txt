@@ -12,11 +12,11 @@ dulwich==0.19.11
 paramiko==2.6.0
 
 # YAML parsing
-PyYAML==5.1.2
+PyYAML==5.3
 ruamel.yaml==0.16.10
 
 # Templating and formatting
-Jinja2==2.10.1
+Jinja2==2.10.3
 markdown2==2.3.6
 inscriptis==0.0.4.0
 
@@ -61,7 +61,7 @@ packaging==20.4
 python-logging-loki==0.1.0
 
 # Influx
-influxdb==5.2.0
+influxdb==5.3.0
 
 # Jira
 jira==2.0.0
@@ -74,3 +74,12 @@ redis==3.0.1
 
 # ReportPortal
 reportportal-client==5.0.5
+
+# Observer
+observer @ git+https://github.com/LifeDJIK/observer.git#egg=observer
+
+# Docker
+docker==4.4.0
+
+# PoC fixes
+requests==2.23.0

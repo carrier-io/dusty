@@ -31,6 +31,7 @@ import urllib
 import tempfile
 import traceback
 import subprocess
+import collections
 import pkg_resources
 
 from ruamel.yaml.comments import CommentedSeq
@@ -66,25 +67,103 @@ class Scanner(DependentModuleModel, ScannerModel):
     def execute(self):
         """ Run the scanner """
         try:
-            self._start_zap()
-            if not self._wait_for_zap_start():
-                log.error("ZAP failed to start")
-                error = Error(
-                    tool=self.get_name(),
-                    error="ZAP failed to start",
-                    details="ZAP daemon failed to start"
+            if self.config.get("exec_side_scenario", None):
+                log.warning("ZAP scanning running in experimental mode")
+                container = None
+                #
+                self._start_zap()
+                if not self._wait_for_zap_start():
+                    log.error("ZAP failed to start")
+                    error = Error(
+                        tool=self.get_name(),
+                        error="ZAP failed to start",
+                        details="ZAP daemon failed to start"
+                    )
+                    self.errors.append(error)
+                    return
+                #
+                log.info("Target: %s", self.config.get("target"))
+                #
+                self._prepare_context()
+                self._setup_scan_policy()
+                #
+                import docker
+                # Start chrome
+                log.info("Getting docker client")
+                client = docker.from_env()
+                #
+                log.info("Starting chrome container")
+                container = client.containers.run(
+                    "getcarrier/dast:poc-chrome-87.0",
+                    auto_remove=True,
+                    detach=True,
+                    network_mode=f"container:{os.environ['HOSTNAME']}",
                 )
-                self.errors.append(error)
-                return
-            log.info("Target: %s", self.config.get("target"))
-            self._prepare_context()
-            self._setup_scan_policy()
-            self._spider()
-            self._wait_for_passive_scan()
-            self._ajax_spider()
-            self._wait_for_passive_scan()
-            self._active_scan()
-            self._wait_for_passive_scan()
+                #
+                log.info("Waiting for chrome to start")
+                time.sleep(10.0)
+                #
+                # Run observer test
+                scenario_path = self.config.get("exec_side_scenario")
+                with open(scenario_path, "rb") as file:
+                    scenario = json.load(file)
+                #
+                os.environ["STANDALONE"] = "yes"
+                os.environ["REMOTE_URL"] = "localhost:4444"
+                os.environ["PROXY"] = "http://localhost:8091"
+                #
+                args = collections.namedtuple(
+                    "Namespace", [
+                        "aggregation", "browser", "data", "export",
+                        "file", "loop", "report", "scenario", "test_id"
+                    ]
+                )(
+                    aggregation="max", browser="chrome_87.0", data="",
+                    export=[], file="", loop=1, report=[],
+                    scenario=scenario_path, test_id=""
+                )
+                #
+                from selene.support.shared import SharedConfig
+                from observer.driver_manager import set_config, set_args, close_driver
+                from observer.executors.scenario_executor import execute_scenario
+                #
+                config = SharedConfig()
+                config.base_url = scenario['url']
+                set_config(config)
+                set_args(args)
+                #
+                execute_scenario(scenario, args)
+                close_driver()
+                #
+                # Stop chrome
+                log.info("Stopping chrome")
+                container.stop()
+                #
+                log.info("Running ZAP active scan")
+                self._active_scan()
+                #
+                log.info("Waiting for ZAP passive scan")
+                self._wait_for_passive_scan()
+            else:
+                self._start_zap()
+                if not self._wait_for_zap_start():
+                    log.error("ZAP failed to start")
+                    error = Error(
+                        tool=self.get_name(),
+                        error="ZAP failed to start",
+                        details="ZAP daemon failed to start"
+                    )
+                    self.errors.append(error)
+                    return
+                log.info("Target: %s", self.config.get("target"))
+                self._prepare_context()
+                self._setup_scan_policy()
+                self._spider()
+                self._wait_for_passive_scan()
+                self._ajax_spider()
+                self._wait_for_passive_scan()
+                self._active_scan()
+                self._wait_for_passive_scan()
         except:
             log.exception("Exception during ZAP scanning")
             error = Error(
@@ -95,6 +174,12 @@ class Scanner(DependentModuleModel, ScannerModel):
             self.errors.append(error)
         finally:
             try:
+                try:
+                    # Stop chrome again if needed
+                    if container is not None:
+                        container.stop()
+                except:
+                    pass
                 # Get report
                 log.info("Getting ZAP report")
                 zap_report = self._zap_api.core.jsonreport()
