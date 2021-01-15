@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # coding=utf-8
-# pylint: disable=I0011,E0401,W0702,W0703,W1510
+# pylint: disable=I0011,E0401,W0702,W0703
 
 #   Copyright 2020 getcarrier.io
 #
@@ -53,8 +53,10 @@ class Scanner(DependentModuleModel, ScannerModel):
         set_options = list()
         if not self.config.get("show_without_fix", False):
             set_options.append("--ignore-unfixed")
+        if self.config.get("skip_update", True):
+            set_options.append("--skip-update")
         task = subprocess.run([
-            "trivy", "image", "--skip-update", "--format", "json",
+            "trivy", "image", "--format", "json",
         ] + set_options + [
         ] + shlex.split(self.config.get("trivy_options", "--no-progress")) + [
             "--timeout", self.config.get("timeout", "1h"),
@@ -93,6 +95,10 @@ class Scanner(DependentModuleModel, ScannerModel):
         data_obj.insert(
             len(data_obj), "timeout", "1h",
             comment="(optional) Scan timeout. Default: 1h"
+        )
+        data_obj.insert(
+            len(data_obj), "skip_update", True,
+            comment="(optional) Do not update on start (for CI/CD usage)"
         )
         data_obj.insert(
             len(data_obj), "show_without_fix", False,
