@@ -22,6 +22,7 @@
 
 import os
 from dusty.tools import log as logging # import logging
+from dusty.tools.dict import recursive_merge
 from copy import deepcopy
 from jira import JIRA
 from traceback import format_exc
@@ -39,7 +40,7 @@ class JiraWrapper(object):
         try:
             self.connect()
         except:
-            logging.exception("Failed to connect to Jira")
+            logging.error("Failed to connect to Jira")
             self.valid = False
             return
         self.projects = [project.key for project in self.client.projects()]
@@ -94,7 +95,7 @@ class JiraWrapper(object):
         return content.replace("###", "h3.").replace("**", "*")
 
     def create_issue(self, title, priority, description, issue_hash, attachments=None, get_or_create=True,
-                     additional_labels=None):
+                     additional_labels=None, field_overrides=None):
 
         def replace_defaults(value):
             if isinstance(value, str) and const.JIRA_FIELD_USE_DEFAULT_VALUE in value:
@@ -117,6 +118,10 @@ class JiraWrapper(object):
             'priority': {'name': priority}
         }
         fields = deepcopy(self.fields)
+        #
+        if field_overrides is not None:
+            fields = recursive_merge(fields, deepcopy(field_overrides))
+        #
         for key, value in fields.items():
             if isinstance(value, str):
                 if const.JIRA_FIELD_DO_NOT_USE_VALUE in value:

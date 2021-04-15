@@ -32,12 +32,12 @@ JIRA_SEVERITIES = {
     'Blocker': 0
 }
 JIRA_ALTERNATIVES = {
-    'Trivial': ['Low', 'Minor'],
+    'Trivial': ['Lowest', 'Low', 'Minor'],
     'Minor': ['Low', 'Medium'],
     'Medium': ['Major'],
-    'Major': ['High', 'Critical'],
+    'Major': ['Normal', 'High', 'Critical'],
     'Critical': ['Very High', 'Blocker'],
-    'Blocker': ['Very High', 'Critical']
+    'Blocker': ['Very High', 'Highest', 'Critical']
 }
 JIRA_OPENED_STATUSES = ['Open', 'In Progress']
 JIRA_DESCRIPTION_MAX_SIZE = 61908
