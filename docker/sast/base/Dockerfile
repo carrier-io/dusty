@@ -156,7 +156,7 @@ RUN set -x \
 # SAST: Dependency Check
 RUN set -x \
   && cd /opt \
-  && curl -LOJ https://bintray.com/jeremy-long/owasp/download_file?file_path=dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
+  && curl -sL https://github.com/jeremylong/DependencyCheck/releases/download/v${DEPENDENCY_CHECK_VERSION}/dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip -o dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
   && unzip dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
   && rm -rf dependency-check-${DEPENDENCY_CHECK_VERSION}-release.zip \
   && chmod a+x /opt/dependency-check/bin/*.sh \
