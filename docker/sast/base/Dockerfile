@@ -29,6 +29,7 @@ ARG GOSEC_VERSION=2.3.0
 # SAST software and tools versions: nodejs
 ARG NODEJSSCAN_VERSION=3.7
 ARG RETIRE_VERSION=2.2.1
+ARG YARN_VERSION=1.22.10
 
 # SAST software and tools versions: ruby
 ARG BRAKEMAN_VERSION=4.8.1
@@ -121,6 +122,10 @@ RUN set -x \
 # SAST: retirejs
 RUN set -x \
   && npm install -g retire@${RETIRE_VERSION}
+
+# SAST: yarn for depcheck and other scanners reading yarn.lock
+RUN set -x \
+  && npm install -g yarn@${YARN_VERSION}
 
 # SAST: brakeman (Ruby SAST tool)
 RUN set -x \
