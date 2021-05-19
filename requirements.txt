@@ -31,6 +31,9 @@ python-jenkins==1.5.0
 lupa==1.8
 pika==1.1.0
 
+# Events and RPCs
+arbiter @ git+https://github.com/carrier-io/arbiter.git#egg=arbiter
+
 #
 # Scanning
 #
