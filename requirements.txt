@@ -12,7 +12,7 @@ dulwich==0.19.11
 paramiko==2.6.0
 
 # YAML parsing
-PyYAML==5.1.2
+PyYAML==5.3.1
 ruamel.yaml==0.16.10
 
 # Templating and formatting
