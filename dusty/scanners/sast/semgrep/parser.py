@@ -70,6 +70,15 @@ def parse_findings(filename, scanner):
             vuln_info_chunks.append(f"**CWE:** {markdown.markdown_escape(vuln_meta['cwe'])}")
         if "owasp" in vuln_meta:
             vuln_info_chunks.append(f"**OWASP:** {markdown.markdown_escape(vuln_meta['owasp'])}")
+        vuln_info_chunks.append(f"**File:** {markdown.markdown_escape(vuln_file)}")
+        if "start" in item and "line" in item["start"]:
+            vuln_info_chunks.append(
+                f"**Start line:** {markdown.markdown_escape(str(item['start']['line']))}"
+            )
+        if "end" in item and "line" in item["end"]:
+            vuln_info_chunks.append(
+                f"**End line:** {markdown.markdown_escape(str(item['end']['line']))}"
+            )
         if "lines" in vuln_data:
             vuln_info_chunks.append(f"**Lines:** {markdown.markdown_escape(vuln_data['lines'])}")
         #
