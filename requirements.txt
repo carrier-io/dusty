@@ -4,6 +4,7 @@
 
 # General
 setuptools==41.0.0
+requests==2.25.0
 
 # Depots
 hvac==0.9.5
