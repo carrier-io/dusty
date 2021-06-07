@@ -29,8 +29,6 @@ from logging import DEBUG, INFO
 
 import pkg_resources
 import dusty.commands
-
-import arbiter.config  # Load arbiter now, this will initialize logging to some state, Dusty will correct this soon
 from dusty.tools import log
 
 

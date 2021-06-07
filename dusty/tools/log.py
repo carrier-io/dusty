@@ -31,6 +31,10 @@ from dusty import constants
 
 def init(level=logging.INFO):
     """ Initialize logging """
+    # Remove all existing handlers
+    for handler in list(logging.root.handlers):
+        logging.root.removeHandler(handler)
+    # Configure logging
     logging.basicConfig(
         level=level,
         datefmt=constants.LOG_DATE_FORMAT,
