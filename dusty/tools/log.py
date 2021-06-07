@@ -34,6 +34,7 @@ def init(level=logging.INFO):
     # Remove all existing handlers
     for handler in list(logging.root.handlers):
         logging.root.removeHandler(handler)
+        handler.close()
     # Configure logging
     logging.basicConfig(
         level=level,
