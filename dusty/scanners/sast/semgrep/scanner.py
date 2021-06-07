@@ -53,6 +53,8 @@ class Scanner(DependentModuleModel, ScannerModel):
             "semgrep",
             "--disable-version-check", "--quiet", "--no-rewrite-rule-ids", "--json",
             "--config", self.config.get("ruleset"), "--output", output_file,
+            "--timeout", str(self.config.get("timeout", "15")),
+            "--timeout-threshold", str(self.config.get("timeout_threshold", "5")),
             self.config.get("code")
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log.log_subprocess_result(task)
@@ -86,6 +88,8 @@ class Scanner(DependentModuleModel, ScannerModel):
         """ Make sample config """
         data_obj.insert(len(data_obj), "code", "/path/to/code", comment="scan target")
         data_obj.insert(len(data_obj), "ruleset", "/path/to/ruleset.yml", comment="scan rules")
+        data_obj.insert(len(data_obj), "timeout", "15", comment="(optional) max seconds per rule")
+        data_obj.insert(len(data_obj), "timeout_threshold", "5", comment="(optional) max rules that can timeout")
         data_obj.insert(
             len(data_obj), "save_intermediates_to", "/data/intermediates/dast",
             comment="(optional) Save scan intermediates (raw results, logs, ...)"
