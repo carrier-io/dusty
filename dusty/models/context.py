@@ -22,6 +22,7 @@
 
 from dusty.tools import log
 from dusty.tools.dict import LastUpdatedOrderedDict
+from dusty.tools.event import EventManager
 from dusty.models.meta import MetaModel
 from dusty.models.state import StateModel
 
@@ -50,3 +51,4 @@ class RunContext(MetaModel):
         }
         self.actions = LastUpdatedOrderedDict()  # action -> instance
         self.modules = list()
+        self.event = EventManager()

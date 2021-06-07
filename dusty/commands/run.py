@@ -103,10 +103,18 @@ class Command(ModuleModel, CommandModel):
         # Prepare scanning and processing
         scanning.prepare()
         processing.prepare()
-        # Perform
+        # Perform scanning
+        context.event.emit("status", "Scanning started")
         scanning.perform()
+        context.event.emit("status", "Scanning finished")
+        # Perform processing
+        context.event.emit("status", "Processing started")
         processing.perform()
+        context.event.emit("status", "Processing finished")
+        # Perform reporting
+        context.event.emit("status", "Reporting started")
         reporting.perform()
+        context.event.emit("status", "Reporting finished")
         # Done
         context.state.save()
         reporting.flush()
