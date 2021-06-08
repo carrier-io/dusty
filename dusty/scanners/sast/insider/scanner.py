@@ -48,10 +48,13 @@ class Scanner(DependentModuleModel, ScannerModel):
         output_dir = tempfile.mkdtemp()
         log.debug("Output directory: %s", output_dir)
         # Run task
+        timeout_seconds = int(self.config.get("timeout", "0"))
+        task_timeout = timeout_seconds if timeout_seconds > 0 else None
+        #
         task = subprocess.run([
             "insider", "-force", "-no-html",
             "-target", self.config.get("code"), "-tech", self.config.get("tech")
-        ], cwd=output_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ], cwd=output_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=task_timeout)
         log.log_subprocess_result(task)
         output_file = os.path.join(output_dir, os.listdir(output_dir)[0])
         parse_findings(output_file, self)
@@ -86,6 +89,10 @@ class Scanner(DependentModuleModel, ScannerModel):
         data_obj.insert(
             len(data_obj), "tech", "csharp",
             comment="technology specification: android, ios, csharp, javascript"
+        )
+        data_obj.insert(
+            len(data_obj), "timeout", "0",
+            comment="(optional) timeout in seconds for insider invocation, set 0 to disable"
         )
         data_obj.insert(
             len(data_obj), "save_intermediates_to", "/data/intermediates/dast",
