@@ -23,7 +23,7 @@ ARG AEMHACKER_VERSION=bd242b078032d04b102e96cbf15bc3d9f5dde8e9
 ARG MASSCAN_VERSION=8189d513fb9ecd8333a8be7475044d03fb029318
 ARG NIKTO_VERSION=46df35c7a4ca8569e750b309f04a557a48812502
 ARG NMAP_VERSION=7.80
-ARG SSLYZE_VERSION=3.0.3
+ARG SSLYZE_VERSION=4.1.0
 ARG W3AF_VERSION=1910600684c22c767a1105fbfcb051db73ad1280
 ARG ZAP_VERSION=2.9.0
 
@@ -41,7 +41,7 @@ RUN set -x \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* \
   && curl -sL https://bootstrap.pypa.io/get-pip.py | python3 - \
-  && curl -sL https://bootstrap.pypa.io/get-pip.py | python - \
+  && curl -sL https://bootstrap.pypa.io/pip/2.7/get-pip.py | python - \
   && pip3 --version \
   && pip2 --version \
   && pip --version
