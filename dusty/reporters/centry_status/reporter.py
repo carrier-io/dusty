@@ -20,6 +20,8 @@
     Reporter: Carrier 3.0 status reporting
 """
 
+import requests
+
 from dusty.tools import log
 from dusty.models.module import DependentModuleModel
 from dusty.models.reporter import ReporterModel
@@ -41,6 +43,7 @@ class Reporter(DependentModuleModel, ReporterModel):
 
     def _status_listener(self, event, data):
         log.debug("Got event: event=%s, data=%s", event, data)
+        requests.put(f'{self.config["url"]}/api/v1/security/{self.config["project_id"]}/update_status/{self.config["test_id"]}', json={"test_status": data})
 
     @staticmethod
     def fill_config(data_obj):
@@ -49,7 +52,7 @@ class Reporter(DependentModuleModel, ReporterModel):
     @staticmethod
     def validate_config(config):
         """ Validate config """
-        required = []
+        required = ["url", "project_id", "test_id"]
         not_set = [item for item in required if item not in config]
         if not_set:
             error = f"Required configuration options not set: {', '.join(not_set)}"

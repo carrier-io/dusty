@@ -98,25 +98,59 @@ class Command(ModuleModel, CommandModel):
         context.state.load()
         # Prepare reporters first
         reporting.prepare()
+        context.event.emit("status", {
+            "status": "Preparing",
+            "percentage": 10,
+            "description": "Carrier is preparing to run the scan",
+        })
         # Run actions
         actions.run(context)
         # Prepare scanning and processing
         scanning.prepare()
         processing.prepare()
         # Perform scanning
-        context.event.emit("status", "Scanning started")
+        context.event.emit("status", {
+            "status": "Scanning started",
+            "percentage": 20,
+            "description": "Started: scan targets with security scanners",
+        })
         scanning.perform()
-        context.event.emit("status", "Scanning finished")
+        context.event.emit("status", {
+            "status": "Scanning finished",
+            "percentage": 50,
+            "description": "Finished: scan targets with security scanners",
+        })
         # Perform processing
-        context.event.emit("status", "Processing started")
+        context.event.emit("status", {
+            "status": "Processing started",
+            "percentage": 60,
+            "description": "Started: process scan results",
+        })
         processing.perform()
-        context.event.emit("status", "Processing finished")
+        context.event.emit("status", {
+            "status": "Processing finished",
+            "percentage": 70,
+            "description": "Finished: process scan results",
+        })
         # Perform reporting
-        context.event.emit("status", "Reporting started")
+        context.event.emit("status", {
+            "status": "Reporting started",
+            "percentage": 80,
+            "description": "Started: report results",
+        })
         reporting.perform()
-        context.event.emit("status", "Reporting finished")
+        context.event.emit("status", {
+            "status": "Reporting finished",
+            "percentage": 90,
+            "description": "Finished: report results",
+        })
         # Done
         context.state.save()
+        context.event.emit("status", {
+            "status": "Finished",
+            "percentage": 100,
+            "description": "All done",
+        })
         reporting.flush()
         log.debug("Done")
         # Show quality gate statistics if any
