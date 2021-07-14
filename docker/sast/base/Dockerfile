@@ -43,6 +43,7 @@ ARG DEPENDENCY_CHECK_VERSION=5.3.2
 ARG INSIDER_VERSION=2.0.5
 ARG SEMGREP_VERSION=0.52.0
 ARG TRIVY_VERSION=0.12.0
+ARG SECURITY_SCAN_VERSION=5.2.2
 
 # Default locale
 ENV LC_ALL=C.UTF-8
@@ -98,7 +99,7 @@ RUN set -x \
   && dpkg -i packages-microsoft-prod.deb \
   && rm packages-microsoft-prod.deb \
   && apt-get update \
-  && apt-get install --no-install-recommends -y dotnet-sdk-2.2 \
+  && apt-get install --no-install-recommends -y dotnet-sdk-5.0 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
@@ -181,6 +182,10 @@ RUN set -x \
 RUN set -x \
   && curl -sL https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz | tar -C /usr/local/bin -xzvf - \
   && trivy image --download-db-only
+
+# SAST: Security Code Scan
+RUN set -x \
+  && dotnet tool install security-scan --version ${SECURITY_SCAN_VERSION} --tool-path /usr/local/bin
 
 # Legacy module depencies (will be removed as soon as all external modules adapted)
 RUN set -x \
