@@ -22,11 +22,15 @@
 import os
 import io
 import shutil
+import getpass
 
 import dulwich  # pylint: disable=E0401
 from dulwich import refs  # pylint: disable=E0401
 from dulwich import porcelain  # pylint: disable=E0401
 from dulwich.contrib.paramiko_vendor import ParamikoSSHVendor  # pylint: disable=E0401
+
+import paramiko  # pylint: disable=E0401
+import paramiko.client  # pylint: disable=E0401
 import paramiko.transport  # pylint: disable=E0401
 
 from dusty.commands.git_clone import _dulwich_repo_get_default_identity  # pylint: disable=E0401
