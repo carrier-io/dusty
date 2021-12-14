@@ -200,3 +200,25 @@ RUN set -x \
     build-essential \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+# Resolver depencies
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y maven \
+  && apt-get install --no-install-recommends -y gradle \
+  && apt-get install --no-install-recommends -y ant \
+  && apt-get install --no-install-recommends -y ivy \
+  && apt-get install --no-install-recommends -y nuget \
+  && npm install -g lerna \
+  && npm install -g bower \
+  && pip3 install virtualenv pipdeptree \
+  && apt-get install --no-install-recommends -y php-cli php-curl composer \
+  && curl -sL https://github.com/sbt/sbt/releases/download/v1.5.6/sbt-1.5.6.tgz | tar -C /opt -xzvf - \
+  && update-alternatives --install /usr/bin/sbt sbt /opt/sbt/bin/sbt 9999 \
+  && curl -sL https://swift.org/builds/swift-5.3.3-release/ubuntu1804/swift-5.3.3-RELEASE/swift-5.3.3-RELEASE-ubuntu18.04.tar.gz | tar -C /opt -xzvf - \
+  && find /opt/swift-5.3.3-RELEASE-ubuntu18.04/usr/bin/ -maxdepth 1 -type f,l -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash \
+  && apt-get install --no-install-recommends -y ruby-full \
+  && apt-get install --no-install-recommends -y ruby ruby-dev make gcc libcurl4 libc6-dev git \
+  && gem install cocoapods -v '< 1.11' \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
