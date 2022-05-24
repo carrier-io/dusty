@@ -43,7 +43,11 @@ class Reporter(DependentModuleModel, ReporterModel):
 
     def _status_listener(self, event, data):
         log.debug("Got event: event=%s, data=%s", event, data)
-        requests.put(f'{self.config["url"]}/api/v1/security/{self.config["project_id"]}/update_status/{self.config["test_id"]}', json={"test_status": data})
+        requests.put(
+            f'{self.config["url"]}/api/v1/security/test_status/{self.config["project_id"]}/{self.config["test_id"]}',
+            json={"test_status": data},
+            headers={"Authorization": f'Bearer {self.config["token"]}'}
+        )
 
     @staticmethod
     def fill_config(data_obj):
@@ -52,7 +56,7 @@ class Reporter(DependentModuleModel, ReporterModel):
     @staticmethod
     def validate_config(config):
         """ Validate config """
-        required = ["url", "project_id", "test_id"]
+        required = ["url", "project_id", "test_id", "token"]
         not_set = [item for item in required if item not in config]
         if not_set:
             error = f"Required configuration options not set: {', '.join(not_set)}"
