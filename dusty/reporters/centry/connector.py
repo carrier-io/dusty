@@ -26,5 +26,5 @@ class CentryConnector(object):
     def create_findings(self, findings):
         result = post(f'{self.url}{self.finding_api}',
                       data=dumps(findings),
-                      headers=self.headers).json()
-        return result
+                      headers=self.headers)
+        return result.content
