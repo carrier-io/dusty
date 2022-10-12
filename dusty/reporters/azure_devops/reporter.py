@@ -20,7 +20,6 @@
     Reporter: Galloper
 """
 
-
 from dusty.tools import markdown, log
 from dusty.models.module import DependentModuleModel
 from dusty.models.reporter import ReporterModel
@@ -43,7 +42,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         project = self.config.get("project")
         personal_access_token = self.config.get("pat")
         team = self.config.get("team", None)
-        issue_type = self.config.get("issue_type", "task")
+        issue_type = self.config.get("issue_type")
         self.other_fields = self.config.get("custom_fields", {})
         self.assignee = self.config.get("assignee", None)
         self.ado = connector.ADOConnector(organization, project, personal_access_token, team, issue_type)
@@ -62,11 +61,11 @@ class Reporter(DependentModuleModel, ReporterModel):
                 details = markdown.markdown_to_html("<br/>".join(item.description))
             tags = [item.get_meta("tool", "scanner"), self.context.get_meta("testing_type", "DAST"),
                     item.get_meta("severity", SEVERITIES[-1])]
-            log.debug(self.ado.create_finding(item.title, details, item.get_meta("severity", SEVERITIES[-1]),
-                                              assignee=self.assignee, issue_hash=item.get_meta("issue_hash", ""),
-                                              tags=tags))
+            post_result = self.ado.create_finding(item.title, details, item.get_meta("severity", SEVERITIES[-1]),
+                                                  assignee=self.assignee, issue_hash=item.get_meta("issue_hash", ""),
+                                                  tags=tags)
+            log.debug(post_result.status_code, post_result.reason)
         log.info("Creating findings")
-
 
     @staticmethod
     def fill_config(data_obj):
