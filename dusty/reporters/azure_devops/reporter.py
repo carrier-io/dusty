@@ -64,7 +64,8 @@ class Reporter(DependentModuleModel, ReporterModel):
             post_result = self.ado.create_finding(item.title, details, item.get_meta("severity", SEVERITIES[-1]),
                                                   assignee=self.assignee, issue_hash=item.get_meta("issue_hash", ""),
                                                   tags=tags)
-            log.debug(post_result.status_code, post_result.reason)
+            if post_result:
+                log.debug(post_result.status_code, post_result.reason)
         log.info("Creating findings")
 
     @staticmethod
