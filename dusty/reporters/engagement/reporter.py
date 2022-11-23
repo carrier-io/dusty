@@ -63,7 +63,10 @@ class Reporter(DependentModuleModel, ReporterModel):
     @staticmethod
     def fill_config(self, data_obj):
         """ Make sample config """
-        return
+        data_obj.insert(len(data_obj), "url", "http://CENTRY_URL", comment="REST API for reporting")
+        data_obj.insert(len(data_obj), "project_id", "1", comment="ID of project to report to")
+        data_obj.insert(len(data_obj), "token", "", comment="Token for authentication")
+        data_obj.insert(len(data_obj), "engagement_id", "", comment="Engagement id under which tests being executed")
 
     @staticmethod
     def get_name():
