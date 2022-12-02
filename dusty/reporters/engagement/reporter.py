@@ -17,7 +17,7 @@
 #   limitations under the License.
 
 """
-    Reporter: Galloper
+    Reporter: Engagement
 """
 
 
@@ -38,7 +38,9 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
         self.issues_connector = connector.IssuesConnector(
-            self.config['url'], self.config.get('token')
+            self.config['url'], 
+            self.config['token'],
+            self.config['project_id']
         )
 
     def report(self):

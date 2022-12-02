@@ -19,4 +19,4 @@
     Constants
 """
 
-ISSUES_API = '/api/v1/issues/findings'
+ISSUES_API = '/api/v1/issues/findings/{}'

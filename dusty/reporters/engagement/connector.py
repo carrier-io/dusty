@@ -4,10 +4,10 @@ from json import dumps
 from . import constants as c
 
 class IssuesConnector(object):
-    def __init__(self, url, token=None):
+    def __init__(self, url, token, project_id):
         self.url = url
         self.token = token
-        self.issues_api = c.ISSUES_API
+        self.issues_api = c.ISSUES_API.format(project_id)
         self.headers = {
             "Content-type": "application/json",
             "Authorization": f"Bearer {token}",
