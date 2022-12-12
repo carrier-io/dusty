@@ -20,7 +20,7 @@
     Reporter: Engagement
 """
 
-
+import hashlib
 from dusty.tools import markdown, log
 from dusty.models.module import DependentModuleModel
 from dusty.models.reporter import ReporterModel
@@ -35,6 +35,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         """ Initialize reporter instance """
         super().__init__()
         self.context = context
+        self.target = list(context.config['scanners']['dast'].values())[0]['target']
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
         self.issues_connector = connector.IssuesConnector(
@@ -47,8 +48,10 @@ class Reporter(DependentModuleModel, ReporterModel):
         """ Report """
         issues = []
         for finding in self.context.findings:
+            title = self.get_title(finding.title)
             issue = {
-                'title': finding.title,
+                'issue_id': self.get_hash_code(title),
+                'title': title,
                 "description": markdown.markdown_to_html(finding.description),
                 "severity": finding.get_meta("severity", SEVERITIES[-1]),
                 "project": None,
@@ -58,10 +61,14 @@ class Reporter(DependentModuleModel, ReporterModel):
                 "source_type": "security"
             }
             issues.append(issue)
-
         self.issues_connector.create_issues(issues)
- 
-
+    
+    def get_hash_code(self, title):
+        return hashlib.sha256(title.strip().encode('utf-8')).hexdigest()
+    
+    def get_title(self, title):
+        return f"{title}. DAST SCAN: {self.target}"
+    
     @staticmethod
     def fill_config(self, data_obj):
         """ Make sample config """
@@ -69,6 +76,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         data_obj.insert(len(data_obj), "project_id", "1", comment="ID of project to report to")
         data_obj.insert(len(data_obj), "token", "", comment="Token for authentication")
         data_obj.insert(len(data_obj), "engagement_id", "", comment="Engagement id under which tests being executed")
+
 
     @staticmethod
     def get_name():
