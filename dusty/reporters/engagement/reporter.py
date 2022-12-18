@@ -35,6 +35,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         """ Initialize reporter instance """
         super().__init__()
         self.context = context
+        self.report_id = context.config['reporters']['centry']['test_id']
         self.target = list(context.config['scanners']['dast'].values())[0]['target']
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
@@ -58,7 +59,8 @@ class Reporter(DependentModuleModel, ReporterModel):
                 "asset": None,
                 "type": "Vulnerability",
                 "engagement": self.config['engagement_id'],
-                "source_type": "security"
+                "source_type": "security",
+                "report_id": self.report_id,
             }
             issues.append(issue)
         self.issues_connector.create_issues(issues)
