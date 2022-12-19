@@ -52,6 +52,7 @@ def parse_findings(data, scanner):
         finding.set_meta("tool", scanner.get_name())
         finding.set_meta("severity", constants.NPM_SEVERITY_MAPPING[item["severity"]])
         finding.set_meta("legacy.file", item["file_path"])
+        finding.set_meta("legacy.cwe", item['cwe'])
         endpoints = list()
         finding.set_meta("endpoints", endpoints)
         log.debug(f"Endpoints: {finding.get_meta('endpoints')}")

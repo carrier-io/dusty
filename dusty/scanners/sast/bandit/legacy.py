@@ -51,6 +51,7 @@ class BanditParser(object):
             sev = item["issue_severity"]
             mitigation = item["issue_text"]
             references = item["test_id"]
+            confidence = item["issue_confidence"]
 
             dupe_key = title + item["filename"] + str(item["line_number"])
 
@@ -65,6 +66,7 @@ class BanditParser(object):
                     "file_path": item["filename"],
                     "line": item["line_number"],
                     "date": find_date,
-                    "bandit_id": item["test_id"]
+                    "bandit_id": item["test_id"],
+                    "confidence": confidence
                 }
         self.items = dupes.values()
