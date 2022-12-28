@@ -218,6 +218,7 @@ RUN set -x \
   && find /opt/swift-5.3.3-RELEASE-ubuntu18.04/usr/bin/ -maxdepth 1 -type f,l -printf 'update-alternatives --install /usr/bin/%f %f %p 9999\n' | bash \
   && apt-get install --no-install-recommends -y ruby-full \
   && apt-get install --no-install-recommends -y ruby ruby-dev make gcc libcurl4 libc6-dev git \
+  && gem install public_suffix -v 4.0.7 \
   && gem install cocoapods -v '< 1.11' \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
