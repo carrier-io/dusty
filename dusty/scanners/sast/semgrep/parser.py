@@ -67,9 +67,9 @@ def parse_findings(filename, scanner):
                 f"**Rule source:** {markdown.markdown_escape(vuln_meta['source-rule-url'])}"
             )
         if "cwe" in vuln_meta:
-            vuln_info_chunks.append(f"**CWE:** {markdown.markdown_escape(", ".join(vuln_meta['cwe']))}")
+            vuln_info_chunks.append(f"**CWE:** {markdown.markdown_escape(', '.join(vuln_meta['cwe']))}")
         if "owasp" in vuln_meta:
-            vuln_info_chunks.append(f"**OWASP:** {markdown.markdown_escape(", ".join(vuln_meta['owasp']))}")
+            vuln_info_chunks.append(f"**OWASP:** {markdown.markdown_escape(', '.join(vuln_meta['owasp']))}")
         vuln_info_chunks.append(f"**File:** {markdown.markdown_escape(vuln_file)}")
         if "start" in item and "line" in item["start"]:
             vuln_info_chunks.append(
