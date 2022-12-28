@@ -89,6 +89,8 @@ class Scanner(DependentModuleModel, ScannerModel):
         additional_options = list()
         if self.config.get("redact_offenders", None):
             additional_options.append("--redact")
+        if self.config.get("folder_scan", None):
+            additional_options.append("--no-git")
         # Use custom rules
         if self.config.get("use_custom_rules", None):
             custom_rules_path = self.config.get("custom_rules_path", None)
