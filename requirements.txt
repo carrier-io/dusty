@@ -20,6 +20,7 @@ ruamel.yaml==0.16.10
 Jinja2==2.10.1
 markdown2==2.3.6
 inscriptis==0.0.4.0
+markupsafe==2.0.1
 
 # XML parsing
 defusedxml==0.6.0
