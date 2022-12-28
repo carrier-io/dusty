@@ -150,8 +150,7 @@ RUN set -x \
 
 # SAST: gitleaks
 RUN set -x \
-  && curl -sL https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks-linux-amd64 -o /usr/local/bin/gitleaks \
-  && chmod a+x /usr/local/bin/gitleaks \
+  && curl -sL https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz | tar -C /usr/local/bin -xzvf - \
   && gitleaks --version
 
 # SAST: Dependency Check
