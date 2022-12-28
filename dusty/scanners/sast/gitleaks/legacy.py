@@ -56,7 +56,7 @@ class GitleaksScanParser(object):
                     dupes[title]["skipped_commits"] += 1
             else:
                 dupes[title] = {
-                    "description": ("\n\n**Tags:** ") + item.get('tags'),
+                    "description": ("\n\n**Keywords:** ") + item.get('keywords'),
                     # "severity": item.get('severity'),
                     "date": item.get('date'),
                     "rule": item.get('rule'),
