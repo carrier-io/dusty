@@ -104,7 +104,7 @@ class Scanner(DependentModuleModel, ScannerModel):
         # Run task
         task = subprocess.run(
             [
-                "gitleaks", "--repo-path", self.config.get("code"), "--report", output_file
+                "gitleaks", "detect", "--source", self.config.get("code"), "--report-path", output_file
             ] + additional_options,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log.log_subprocess_result(task)
