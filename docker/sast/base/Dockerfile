@@ -225,7 +225,5 @@ RUN set -x \
 
 # Additional tools
 RUN set -x \
-  && apt-get update \
-  && apt-get install --no-install-recommends -y bundle-audit \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+  && gem install bundler-audit \
+  && bundle-audit update
