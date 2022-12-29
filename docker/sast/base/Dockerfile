@@ -225,5 +225,6 @@ RUN set -x \
 
 # Additional tools
 RUN set -x \
+  && gem install bundler -v 2.3.26 \
   && gem install bundler-audit \
   && bundle-audit update
