@@ -222,3 +222,10 @@ RUN set -x \
   && gem install cocoapods -v '< 1.11' \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+# Additional tools
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y bundle-audit \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
