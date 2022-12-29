@@ -34,30 +34,29 @@ Endpoint = namedtuple("Endpoint", ["raw"])
 def parse_findings(data, scanner):
     """ Parse findings """
     try:
-        pass
-        # findings = GitleaksScanParser(data, scanner).items
-        # # Make finding instances
-        # for item in findings:
-        #     description = item["description"]
-        #     if scanner.config.get("additional_text", None):
-        #         description = scanner.config.get("additional_text") + "\n\n" + description
-        #     finding = SastFinding(
-        #         title=item["title"],
-        #         description=[
-        #             "\n\n".join([
-        #                 description,
-        #                 f"**File to review:** {markdown.markdown_escape(item['file_path'])}"
-        #             ])
-        #         ]
-        #     )
-        #     finding.set_meta("tool", scanner.get_name())
-        #     finding.set_meta("severity", item["severity"])
-        #     finding.set_meta("legacy.file", item["file_path"])
-        #     endpoints = list()
-        #     if item["file_path"]:
-        #         endpoints.append(Endpoint(raw=item["file_path"]))
-        #     finding.set_meta("endpoints", endpoints)
-        #     log.debug(f"Endpoints: {finding.get_meta('endpoints')}")
-        #     scanner.findings.append(finding)
+        findings = GitleaksScanParser(data, scanner).items
+        # Make finding instances
+        for item in findings:
+            description = item["description"]
+            if scanner.config.get("additional_text", None):
+                description = scanner.config.get("additional_text") + "\n\n" + description
+            finding = SastFinding(
+                title=item["title"],
+                description=[
+                    "\n\n".join([
+                        description,
+                        f"**File to review:** {markdown.markdown_escape(item['file_path'])}"
+                    ])
+                ]
+            )
+            finding.set_meta("tool", scanner.get_name())
+            finding.set_meta("severity", item["severity"])
+            finding.set_meta("legacy.file", item["file_path"])
+            endpoints = list()
+            if item["file_path"]:
+                endpoints.append(Endpoint(raw=item["file_path"]))
+            finding.set_meta("endpoints", endpoints)
+            log.debug(f"Endpoints: {finding.get_meta('endpoints')}")
+            scanner.findings.append(finding)
     except:  # pylint: disable=W0702
         log.exception("Failed to parse findings")

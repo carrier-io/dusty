@@ -56,11 +56,11 @@ class GitleaksScanParser(object):
                     dupes[title]["skipped_commits"] += 1
             else:
                 dupes[title] = {
-                    "description": ("\n\n**Keywords:** ") + item.get('keywords', ''),
+                    "description": ("\n\n**Tags:** ") + ", ".join(item.get('Tags')),
                     # "severity": item.get('severity'),
-                    "date": item.get('date'),
-                    "rule": item.get('rule'),
-                    "file_path": item.get('file'),
+                    "date": item.get('Date'),
+                    "rule": item.get('Description'),
+                    "file_path": item.get('File'),
                     "skipped_commits": 0,
                     "commits": [self.get_commit_info(item, show_offender_line, squash_commits)]
                 }
@@ -89,19 +89,19 @@ class GitleaksScanParser(object):
             })
 
     def get_title(self, item):
-        return f"{item.get('rule')} in {item.get('file')} file detected"
+        return f"{item.get('Description')} in {item.get('File')} file detected"
 
     def get_commit_info(self, item, show_offender_line, squash_commits):
-        line = item.get("line")
+        line = item.get("Match")
         if len(line) > 100:
-            line = f"{line[:100]} ... (offender: {item.get('offender')[:100]})"
+            line = f"{line[:100]} ... (offender: {item.get('Secret')[:100]})"
         if squash_commits:
             return html.escape(markdown.markdown_table_escape(
                 line if show_offender_line else "<hidden>"
             ))
         return " | ".join([
-            html.escape(markdown.markdown_table_escape(item.get("commit")[:8])),
-            html.escape(markdown.markdown_table_escape(item.get("author"))),
+            html.escape(markdown.markdown_table_escape(item.get("Commit")[:8])),
+            html.escape(markdown.markdown_table_escape(item.get("Author"))),
             html.escape(markdown.markdown_table_escape(
                 line if show_offender_line else "<hidden>"
             ))
