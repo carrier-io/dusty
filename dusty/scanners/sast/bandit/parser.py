@@ -68,6 +68,7 @@ def parse_findings(data, scanner):
         finding.set_meta("severity", constants.BANDIT_SEVERITIES[item["severity"]])
         finding.set_meta("legacy.file", item["file_path"])
         finding.set_meta("legacy.line", item["line"])
+        finding.set_meta("confidence", item["confidence"])
         finding.set_meta("endpoints", [namedtuple("Endpoint", ["raw"])(raw=item["file_path"])])
         log.debug(f"Endpoints: {finding.get_meta('endpoints')}")
         scanner.findings.append(finding)
