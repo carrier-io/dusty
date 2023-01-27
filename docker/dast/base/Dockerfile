@@ -149,14 +149,15 @@ RUN set -x \
   && update-alternatives --install /usr/bin/w3af_console w3af_console /opt/w3af/w3af_console 9999
 
 # DAST: ZAP
+ARG ZAP_VERSION=2.11.1
 RUN set -x \
   && cd /opt \
   && curl -sL https://github.com/zaproxy/zaproxy/releases/download/v${ZAP_VERSION}/ZAP_${ZAP_VERSION}_Linux.tar.gz | tar -xzvf - \
   && mv ZAP_${ZAP_VERSION} zap \
   && chmod +x /opt/zap/zap.sh \
   && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-${ZAP_VERSION}.jar 9999 \
-  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addonupdate \
-  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addoninstallall
+  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addonupdate
+  # && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addoninstallall
 
 # Legacy module depencies (will be removed as soon as all external modules adapted)
 RUN set -x \
