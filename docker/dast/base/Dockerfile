@@ -154,7 +154,8 @@ RUN set -x \
   && curl -sL https://github.com/zaproxy/zaproxy/releases/download/v${ZAP_VERSION}/ZAP_${ZAP_VERSION}_Linux.tar.gz | tar -xzvf - \
   && mv ZAP_${ZAP_VERSION} zap \
   && chmod +x /opt/zap/zap.sh \
-  && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-${ZAP_VERSION}.jar 9999
+  && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-${ZAP_VERSION}.jar 9999 \
+  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addonupdate
 
 # Legacy module depencies (will be removed as soon as all external modules adapted)
 RUN set -x \
