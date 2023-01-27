@@ -155,7 +155,8 @@ RUN set -x \
   && mv ZAP_${ZAP_VERSION} zap \
   && chmod +x /opt/zap/zap.sh \
   && update-alternatives --install /opt/zap/zap.jar zap.jar /opt/zap/zap-${ZAP_VERSION}.jar 9999 \
-  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addonupdate
+  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addonupdate \
+  && /usr/bin/java -jar /opt/zap/zap.jar -cmd -addoninstallall
 
 # Legacy module depencies (will be removed as soon as all external modules adapted)
 RUN set -x \
