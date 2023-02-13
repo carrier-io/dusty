@@ -4,13 +4,16 @@ from . import constants as c
 
 
 class CentryConnector(object):
-    def __init__(self, url, token, project_id, test_id):
+    def __init__(self, url, token, project_id, test_id, test_type):
         self.url = url
         self.project_id = project_id
         self.test_id = test_id
+        self.test_type = test_type
         #
-        self.report_url = c.REPORT_API.format(project_id=self.project_id, test_id=self.test_id)
-        self.finding_api = c.FINDING_API.format(project_id=self.project_id, test_id=self.test_id)
+        test_plugin = c.TEST_MAPPING[test_type]
+
+        self.report_url = c.REPORT_API.format(project_id=self.project_id, test_id=self.test_id, test_plugin=test_plugin)
+        self.finding_api = c.FINDING_API.format(project_id=self.project_id, test_id=self.test_id, test_plugin=test_plugin)
         #
         self.headers = {
             "Content-type": "application/json",

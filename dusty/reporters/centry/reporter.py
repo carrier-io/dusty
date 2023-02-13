@@ -43,7 +43,8 @@ class Reporter(DependentModuleModel, ReporterModel):
             self.config['url'],
             self.config.get('token'),
             self.config.get('project_id'),
-            self.config.get('test_id')
+            self.config.get('test_id'),
+            self.context.config['settings']['testing_type'].lower(),
         )
 
     def report(self):

@@ -35,8 +35,8 @@ class Reporter(DependentModuleModel, ReporterModel):
         """ Initialize reporter instance """
         super().__init__()
         self.context = context
+        self.test_type = self.context.config['settings']['testing_type']
         self.report_id = context.config['reporters']['centry']['test_id']
-        self.target = list(context.config['scanners']['dast'].values())[0]['target']
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
         self.issues_connector = connector.IssuesConnector(
@@ -53,7 +53,7 @@ class Reporter(DependentModuleModel, ReporterModel):
             issue = {
                 'issue_id': self.get_hash_code(title),
                 'title': title,
-                "description": markdown.markdown_to_html(finding.description),
+                "description": self.format_description(finding.description),
                 "severity": finding.get_meta("severity", SEVERITIES[-1]),
                 "project": None,
                 "asset": None,
@@ -69,7 +69,17 @@ class Reporter(DependentModuleModel, ReporterModel):
         return hashlib.sha256(title.strip().encode('utf-8')).hexdigest()
     
     def get_title(self, title):
-        return f"{title}. DAST SCAN: {self.target}"
+        return f"{title}. {self.test_type} SCAN: {self.get_target()}"
+    
+    def get_target(self):
+        if self.test_type == "SAST":
+            return self.context.config.get('actions', {}).get('git_clone', {}).get('source')
+        return list(self.context.config['scanners']['dast'].values())[0]['target']
+    
+    def format_description(self, description):
+        if self.test_type == 'SAST':
+            return description
+        return markdown.markdown_to_html(description)
     
     @staticmethod
     def fill_config(self, data_obj):
