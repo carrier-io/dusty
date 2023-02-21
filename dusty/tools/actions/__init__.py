@@ -49,6 +49,28 @@ def run(context):
             log.exception("Failed to run action %s", action_name)
 
 
+def post_run(context):
+    """ Run post-actions defined in context config """
+    log.debug("Running post-actions for current context")
+    # Check context settings
+    if "post_actions" not in context.config:
+        context.config["post_actions"] = dict()
+    # Run post-actions
+    for action_name in list(context.config["post_actions"]):
+        try:
+            action = importlib.import_module(
+                f"dusty.tools.actions.{action_name}.action"
+            ).Action(
+                context,
+                context.config["post_actions"][action_name]
+            )
+            context.post_actions[action.get_name()] = action
+            log.info("Running post-action %s", action_name)
+            action.run()
+        except:  # pylint: disable=W0702
+            log.exception("Failed to run post-action %s", action_name)
+
+
 def fill_config(data_obj):
     """ Make sample config """
     actions_module = importlib.import_module("dusty.tools.actions")

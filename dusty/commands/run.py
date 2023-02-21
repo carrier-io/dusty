@@ -144,6 +144,8 @@ class Command(ModuleModel, CommandModel):
             "percentage": 90,
             "description": "Finished: report results",
         })
+        # Run post-actions
+        actions.post_run(context)
         # Done
         context.state.save()
         context.event.emit("status", {
