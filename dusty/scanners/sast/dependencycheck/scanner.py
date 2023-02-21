@@ -51,9 +51,26 @@ class Scanner(DependentModuleModel, ScannerModel):
         output_dir = tempfile.mkdtemp()
         log.debug("Output directory: %s", output_dir)
         # Run task
-        task = subprocess.run([
-            "dependency-check.sh", "-n", "-f", "JSON",
-            "-o", output_dir, "-s", self.config.get("comp_path")
+        tool_options = list()
+        #
+        db_path = self.config.get("db_path", None)
+        if db_path is not None:
+            log.info("Setting local DB directory: %s", db_path)
+            tool_options.append("-d")
+            tool_options.append(db_path)
+        #
+        if self.config.get("skip_update", True):
+            tool_options.append("-n")
+        #
+        target_path = None
+        if self.config.get("code", None) is not None:
+            target_path = self.config.get("code")
+        else:
+            target_path = self.config.get("comp_path")
+        #
+        task = subprocess.run(["dependency-check.sh"] + tool_options + [
+            "-f", "JSON",
+            "-o", output_dir, "-s", target_path
         ] + additional_parameters, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log.log_subprocess_result(task)
         output_file = os.path.join(output_dir, "dependency-check-report.json")
@@ -98,7 +115,7 @@ class Scanner(DependentModuleModel, ScannerModel):
     @staticmethod
     def validate_config(config):
         """ Validate config """
-        required = ["comp_path"]
+        required = []
         not_set = [item for item in required if item not in config]
         if not_set:
             error = f"Required configuration options not set: {', '.join(not_set)}"
