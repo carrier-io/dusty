@@ -44,7 +44,8 @@ class NpmScanParser(object):
         self.items = []
         data = json.loads(data)
         advisories = data.get('advisories')
-        for action in data['actions']:
+        actions = data.get('actions', tuple())
+        for action in actions:
             module = action.get('module')
             if module in deps:
                 EXTENDED_SEVERITIES = {
@@ -66,7 +67,13 @@ class NpmScanParser(object):
                         unique_ids[id] = advisory.get('title')
                         tmp_values['file_paths'][unique_ids[id]] = []
                         current_severity = advisory.get('severity').title()
-                        tmp_values['cwes'].append(advisory.get('cwe'))
+
+                        if type(advisories.get('cwe')) == str:
+                            tmp_values['cwes'].append(advisories.get('cwe'))
+                        else:
+                            for cwe in advisories.get('cwe', []):
+                                tmp_values['cwes'].append(cwe)
+
                         if EXTENDED_SEVERITIES.get(current_severity) \
                                 < EXTENDED_SEVERITIES.get(severity):
                             severity = current_severity

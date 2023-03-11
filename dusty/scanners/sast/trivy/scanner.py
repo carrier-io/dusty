@@ -55,12 +55,19 @@ class Scanner(DependentModuleModel, ScannerModel):
             set_options.append("--ignore-unfixed")
         if self.config.get("skip_update", True):
             set_options.append("--skip-update")
+        
+        scan_type = "fs"
+        scan_target = self.config.get('code')
+        if self.config.get('image_scan'):
+            scan_type = "image"
+            scan_target = self.config['image_name']
+
         task = subprocess.run([
-            "trivy", "image", "--format", "json",
+            "trivy", scan_type, "--format", "json",
         ] + set_options + [
         ] + shlex.split(self.config.get("trivy_options", "--no-progress")) + [
             "--timeout", self.config.get("timeout", "1h"),
-            "--output", output_file, self.config.get("code"),
+            "--output", output_file, scan_target,
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log.log_subprocess_result(task)
         parse_findings(output_file, self)

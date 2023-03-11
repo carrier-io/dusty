@@ -60,8 +60,8 @@ class Action(ActionModel):
         src_zip.extractall(target)
         # Delete artifact if requested
         if self.config.get("delete", False):
-            delete_url = f"{os.environ.get('galloper_url')}/api/v1/artifacts/" \
-                          f"{os.environ.get('project_id')}/{bucket}/file?fname[]={srcobj}"
+            delete_url = f"{os.environ.get('galloper_url')}/api/v1/artifacts/artifact/" \
+                          f"{os.environ.get('project_id')}/{bucket}/{srcobj}"
             requests.delete(delete_url, headers=headers)
 
     @staticmethod
