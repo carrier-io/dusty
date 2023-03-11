@@ -50,5 +50,6 @@ class RunContext(MetaModel):
             "state": LastUpdatedOrderedDict()
         }
         self.actions = LastUpdatedOrderedDict()  # action -> instance
+        self.post_actions = LastUpdatedOrderedDict()  # action -> instance
         self.modules = list()
         self.event = EventManager()

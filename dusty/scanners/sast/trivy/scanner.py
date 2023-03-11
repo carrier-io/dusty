@@ -51,19 +51,29 @@ class Scanner(DependentModuleModel, ScannerModel):
         os.close(output_file_fd)
         # Run task
         set_options = list()
+        tool_options = list()
         if not self.config.get("show_without_fix", False):
             set_options.append("--ignore-unfixed")
         if self.config.get("skip_update", True):
             set_options.append("--skip-update")
         
+        # to know which command to use: fs or image
         scan_type = "fs"
         scan_target = self.config.get('code')
         if self.config.get('image_scan'):
             scan_type = "image"
             scan_target = self.config['image_name']
-
+        #
+        db_path = self.config.get("db_path", None)
+        if db_path is not None:
+            log.info("Setting local DB/cache directory: %s", db_path)
+            tool_options.append("--cache-dir")
+            tool_options.append(db_path)
+        #
         task = subprocess.run([
-            "trivy", scan_type, "--format", "json",
+            "trivy",
+        ] + tool_options + [
+            scan_type, "--format", "json",
         ] + set_options + [
         ] + shlex.split(self.config.get("trivy_options", "--no-progress")) + [
             "--timeout", self.config.get("timeout", "1h"),
