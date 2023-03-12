@@ -87,7 +87,9 @@ class ConfigModel:
         if isinstance(obj, str):
             if re.match(r"^\$\![a-zA-Z_][a-zA-Z0-9_]*$", obj.strip()) \
                     and obj.strip()[2:] in os.environ:
-                return os.environ[obj.strip()[2:]]
+                result = os.environ[obj.strip()[2:]]
+                log.filter_secrets.add(result)
+                return result
         return obj
 
     def _prepare_context_config(self, config, suite):
@@ -255,6 +257,7 @@ class ConfigModel:
                         "depots_resolved_secrets",
                         self.context.get_meta("depots_resolved_secrets", 0) + 1
                     )
+                    log.filter_secrets.add(obj_value)
                     return obj_value
         return obj
 

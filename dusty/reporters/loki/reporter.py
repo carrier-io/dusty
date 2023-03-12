@@ -77,6 +77,7 @@ class Reporter(DependentModuleModel, ReporterModel):
                 tags={"project": self.context.get_meta("project_name", "Unnamed Project")},
                 auth=auth,
             )
+        handler.setFormatter(log.filter_formatters[0])
         logging.getLogger("").addHandler(handler)
         log.info(
             "Enabled Loki logging in %s mode for Dusty {}".format(

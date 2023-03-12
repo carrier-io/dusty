@@ -60,6 +60,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         #
         mode = "sync"
         handler = CarrierLokiLogHandler(self.config)
+        handler.setFormatter(log.filter_formatters[0])
         #
         logging.getLogger("").addHandler(handler)
         log.info(
