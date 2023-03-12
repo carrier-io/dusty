@@ -23,6 +23,7 @@
 import os
 import signal
 import pkgutil
+import warnings
 import argparse
 import importlib
 from logging import DEBUG, INFO
@@ -34,6 +35,11 @@ from dusty.tools import log
 
 def main():
     """ Main """
+    # Disable deprecation warnings for paramiko for now
+    warnings.filterwarnings(
+        action="ignore",
+        module="paramiko.*"
+    )
     # Initialize argument parser
     parent = argparse.ArgumentParser(add_help=False)
     parent.add_argument(

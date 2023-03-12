@@ -31,6 +31,7 @@ import pkg_resources
 from ruamel.yaml.comments import CommentedMap
 
 from dusty.models.depot import SecretDepotModel, ObjectDepotModel, StateDepotModel
+from dusty.tools.module import LocalModuleLoader, LocalModuleProvider
 from dusty.tools.module import DataModuleLoader, DataModuleProvider
 from dusty.tools.dict import recursive_merge, recursive_merge_existing
 from dusty.tools import log, depots, seeds
@@ -99,6 +100,7 @@ class ConfigModel:
                 config["suites"].get(context_config.get("inherit_from")), context_config
             )
         # Register provider for template and resource loading from modules
+        pkg_resources.register_loader_type(LocalModuleLoader, LocalModuleProvider)
         pkg_resources.register_loader_type(DataModuleLoader, DataModuleProvider)
         # Process depots and load modules
         for _ in range(3):
@@ -124,6 +126,31 @@ class ConfigModel:
         return result
 
     def _load_modules(self, context_config):
+        # Local modules
+        local_module_path = context_config["settings"].get("local_module_path", None)
+        if local_module_path is not None and os.path.exists(local_module_path):
+            local_modules = [
+                item for item in os.listdir(local_module_path)
+                if os.path.isdir(os.path.join(local_module_path, item)) and not item.startswith(".")
+            ]
+            #
+            for module_name in local_modules:
+                if module_name in self.context.modules:
+                    continue
+                if f"{module_name}.zip" in self.context.modules:
+                    continue
+                #
+                module_path = os.path.join(local_module_path, module_name)
+                sys.meta_path.insert(0, LocalModuleLoader(module_name, module_path))
+                #
+                importlib.invalidate_caches()
+                pkg_resources._initialize_master_working_set()  # pylint: disable=W0212
+                #
+                self.context.modules.append(module_name)
+                self.context.modules.append(f"{module_name}.zip")  # Allow to override depot modules
+                #
+                log.info("Loaded local module: %s", module_name)
+        # Depot modules (ZIP-objects)
         modules_to_load = list()
         for item in [
                 value for key, value in context_config["settings"].items() if \
@@ -140,6 +167,7 @@ class ConfigModel:
             if module_object is not None:
                 sys.meta_path.insert(0, DataModuleLoader(module_object))
                 importlib.invalidate_caches()
+                pkg_resources._initialize_master_working_set()  # pylint: disable=W0212
                 self.context.modules.append(module_name)
                 log.info("Loaded module from %s", module_name)
 
@@ -296,6 +324,10 @@ class ConfigModel:
             len(global_obj), "settings", CommentedMap(), comment="General config"
         )
         settings_obj = global_obj["settings"]
+        settings_obj.insert(
+            len(settings_obj), "local_module_path", "/path/to/modules",
+            comment="(optional) Load extension modules from path"
+        )
         settings_obj.insert(
             len(settings_obj), "load_module_from", "module.zip",
             comment="(optional) Load extension module from depot. Can be a string or list"
