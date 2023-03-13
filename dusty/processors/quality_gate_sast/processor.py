@@ -100,12 +100,11 @@ class Processor(DependentModuleModel, ProcessorModel):
                     "Quality gate failed: %s -> %d %s %d",
                     severity, severity_results, comparison_mapping[operation], policy_threshold
                 )
-                self.context.set_meta("fail_quality_gate", True)
                 stats_data[severity]["status"] = "FAIL"
                 stats_data["total"] = "FAIL"
-            else:
-                self.context.set_meta("fail_quality_gate", False)
 
+        self.context.set_meta("fail_quality_gate", stats_data['total'] == "FAIL")
+        
         # Prepare stats
         stats = list()
         stats.append("============= Quality gate stats ============")
