@@ -49,6 +49,14 @@ ARG SECURITY_SCAN_VERSION=5.2.2
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
+# Core: System
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y \
+      dos2unix procps \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
 # Core: Python
 RUN set -x \
   && apt-get update \
