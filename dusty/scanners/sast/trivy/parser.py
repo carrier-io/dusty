@@ -45,11 +45,11 @@ def parse_findings(filename, scanner):
         "CRITICAL": "Critical",
     }
     # Parse JSON
-    if not isinstance(data, list) or not data:
+    if not isinstance(data, list) or not data or "Results" not in data or not data["Results"]:
         log.info("No data in report")
         return
     # Make finding instances
-    for data_block in data:
+    for data_block in data["Results"]:
         if not data_block.get("Vulnerabilities", list()):
             log.info("Skipping empty data block: %s", data_block.get("Target", data_block))
             continue
