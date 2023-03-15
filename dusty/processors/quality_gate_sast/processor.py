@@ -103,7 +103,8 @@ class Processor(DependentModuleModel, ProcessorModel):
                 stats_data[severity]["status"] = "FAIL"
                 stats_data["total"] = "FAIL"
 
-        self.context.set_meta("fail_quality_gate", stats_data['total'] == "FAIL")
+        if thresholds:
+            self.context.set_meta("fail_quality_gate", stats_data['total'] == "FAIL")
         
         # Prepare stats
         stats = list()
