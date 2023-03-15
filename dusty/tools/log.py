@@ -29,6 +29,10 @@ import requests
 from dusty import constants
 
 
+filter_secrets = set()
+filter_formatters = []
+
+
 def init(level=logging.INFO):
     """ Initialize logging """
     # Remove all existing handlers
@@ -42,6 +46,12 @@ def init(level=logging.INFO):
         format=constants.LOG_FORMAT,
     )
     logging.raiseExceptions = False
+    # Enable filtering
+    filter_formatters.append(SecretFilteringFormatter(constants.LOG_FORMAT))
+    filter_formatter = filter_formatters[0]
+    #
+    for handler in list(logging.root.handlers):
+        handler.setFormatter(filter_formatter)
     # Disable requests/urllib3 logging
     logging.getLogger("requests").setLevel(logging.WARNING)
     logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -126,3 +136,18 @@ class DebugLogStream(io.RawIOBase):
     def write(self, b):
         for line in b.decode().splitlines():
             get_outer_logger().debug(line)
+
+
+class SecretFilteringFormatter(logging.Formatter):
+    """ Replace secrets with ***** """
+
+    def format(self, record):
+        item = logging.Formatter.format(self, record)
+        #
+        secrets = list(filter_secrets)
+        secrets.sort(key=lambda value: len(value), reverse=True)
+        #
+        for secret in secrets:
+            item = item.replace(secret, "*****")
+        #
+        return item

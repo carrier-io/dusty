@@ -25,6 +25,77 @@ import zipfile
 import importlib
 import pkg_resources
 
+from dusty.tools import log
+
+
+class LocalModuleLoader(importlib.abc.MetaPathFinder):
+    """ Allows to load modules from local data """
+
+    def __init__(self, module_name, module_path):
+        self.module_name = module_name
+        self.module_path = module_path
+
+    def _fullname_to_filename(self, fullname):
+        base = fullname.replace(".", os.sep)
+        base = os.path.join(self.module_path, base)
+        # Try module directory
+        filename = os.path.join(base, "__init__.py")
+        if os.path.isfile(filename):
+            return filename, True
+        # Try module file
+        filename = f"{base}.py"
+        if os.path.isfile(filename):
+            return filename, False
+        # Not found
+        return None, None
+
+    def find_spec(self, fullname, path, target=None):  # pylint: disable=W0613
+        """ Find spec for new module """
+        filename, is_package = self._fullname_to_filename(fullname)
+        if filename is None:
+            return None
+        return importlib.machinery.ModuleSpec(
+            fullname, self, origin=filename, is_package=is_package
+        )
+
+    def create_module(self, spec):  # pylint: disable=W0613,R0201
+        """ Create new module """
+        return None
+
+    def exec_module(self, module):
+        """ Execute new module """
+        module.__file__ = module.__spec__.origin
+        with open(module.__file__, "rb") as file:
+            code_filename = os.path.relpath(module.__file__, self.module_path)
+            code = compile(
+                source=file.read(),
+                filename=f"{self.module_name}:{code_filename}",
+                mode="exec",
+                dont_inherit=True,
+            )
+            exec(code, module.__dict__)  # pylint: disable=W0122
+
+    def get_data(self, path):
+        """ Read data resource """
+        try:
+            with open(path, "rb") as file:
+                data = file.read()
+            return data
+        except Exception as exception:
+            raise OSError("Resource not found") from exception
+
+
+class LocalModuleProvider(pkg_resources.NullProvider):  # pylint: disable=W0223
+    """ Allows to load resources from local data """
+
+    def __init__(self, module):
+        pkg_resources.NullProvider.__init__(self, module)
+        self.module = module
+        self.module_name = getattr(module, "__name__", "")
+
+    def _has(self, path):
+        return os.path.exists(path)
+
 
 class DataModuleLoader(importlib.abc.MetaPathFinder):
     """ Allows to load modules from ZIP in-memory data """
@@ -63,7 +134,13 @@ class DataModuleLoader(importlib.abc.MetaPathFinder):
         """ Execute new module """
         module.__file__ = module.__spec__.origin
         with self.storage.open(module.__file__, "r") as file:
-            exec(file.read(), module.__dict__)  # pylint: disable=W0122
+            code = compile(
+                source=file.read(),
+                filename=f"[module]:{module.__file__}",
+                mode="exec",
+                dont_inherit=True,
+            )
+            exec(code, module.__dict__)  # pylint: disable=W0122
 
     def get_data(self, path):
         """ Read data resource """

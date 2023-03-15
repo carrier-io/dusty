@@ -39,7 +39,7 @@ ARG FINDSECBUGS_VERSION=1.10.1
 
 # SAST software and tools versions
 ARG GITLEAKS_VERSION=8.15.2
-ARG DEPENDENCY_CHECK_VERSION=7.4.2
+ARG DEPENDENCY_CHECK_VERSION=8.1.2
 ARG INSIDER_VERSION=2.0.5
 ARG SEMGREP_VERSION=1.2.1
 ARG TRIVY_VERSION=0.35.0
@@ -48,6 +48,14 @@ ARG SECURITY_SCAN_VERSION=5.2.2
 # Default locale
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
+
+# Core: System
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y \
+      dos2unix procps \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 # Core: Python
 RUN set -x \

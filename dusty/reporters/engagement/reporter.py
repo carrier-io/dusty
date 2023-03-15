@@ -40,7 +40,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
         self.issues_connector = connector.IssuesConnector(
-            self.config['url'], 
+            self.config['url'],
             self.config['token'],
             self.config['project_id']
         )
@@ -64,10 +64,10 @@ class Reporter(DependentModuleModel, ReporterModel):
             }
             issues.append(issue)
         self.issues_connector.create_issues(issues)
-    
+
     def get_hash_code(self, title):
         return hashlib.sha256(title.strip().encode('utf-8')).hexdigest()
-    
+
     def get_title(self, title):
         return f"{title}. {self.test_type} SCAN: {self.get_target()}"
     
@@ -82,7 +82,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         return markdown.markdown_to_html(description)
     
     @staticmethod
-    def fill_config(self, data_obj):
+    def fill_config(data_obj):
         """ Make sample config """
         data_obj.insert(len(data_obj), "url", "http://CENTRY_URL", comment="REST API for reporting")
         data_obj.insert(len(data_obj), "project_id", "1", comment="ID of project to report to")

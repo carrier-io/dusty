@@ -17,7 +17,7 @@ LABEL updated.by="ivan_krakhmaliuk@epam.com"
 
 # Script to avoid OpenShift-Jenkins problems
 COPY docker/scripts/nohung /usr/local/bin/nohung
-RUN set -x && chmod 755 /usr/local/bin/nohung && chown 0:0 /usr/local/bin/nohung
+RUN set -x && dos2unix /usr/local/bin/nohung && chmod 755 /usr/local/bin/nohung && chown 0:0 /usr/local/bin/nohung
 
 # Dusty
 COPY . /tmp/dusty
