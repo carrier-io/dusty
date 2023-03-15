@@ -45,7 +45,7 @@ def parse_findings(filename, scanner):
         "CRITICAL": "Critical",
     }
     # Parse JSON
-    if not isinstance(data, list) or not data or "Results" not in data or not data["Results"]:
+    if not isinstance(data, dict) or "Results" not in data or not data["Results"]:
         log.info("No data in report")
         return
     # Make finding instances
