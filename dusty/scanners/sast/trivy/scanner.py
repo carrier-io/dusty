@@ -58,11 +58,8 @@ class Scanner(DependentModuleModel, ScannerModel):
             set_options.append("--skip-update")
         
         # to know which command to use: fs or image
-        scan_type = "fs"
         scan_target = self.config.get('code')
-        if self.config.get('image_scan'):
-            scan_type = "image"
-            scan_target = self.config['image_name']
+        scan_type = "fs" if os.path.exists(scan_target) else "image"
         #
         db_path = self.config.get("db_path", None)
         if db_path is not None:
