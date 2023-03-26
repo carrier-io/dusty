@@ -25,4 +25,5 @@ FINDING_API = '/api/v1/{test_plugin}/findings/{project_id}/{test_id}'
 TEST_MAPPING = {
     'sast':'security_sast',
     'dast':'security',
+    'dependency': 'security_dependency'
 }

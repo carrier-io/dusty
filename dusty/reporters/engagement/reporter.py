@@ -72,12 +72,12 @@ class Reporter(DependentModuleModel, ReporterModel):
         return f"{title}. {self.test_type} SCAN: {self.get_target()}"
     
     def get_target(self):
-        if self.test_type == "SAST":
+        if self.test_type in ("SAST", "DEPENDENCY"):
             return self.context.config.get('actions', {}).get('git_clone', {}).get('source')
         return list(self.context.config['scanners']['dast'].values())[0]['target']
     
     def format_description(self, description):
-        if self.test_type == 'SAST':
+        if self.test_type in ('SAST', "DEPENDENCY"):
             return description
         return markdown.markdown_to_html(description)
     

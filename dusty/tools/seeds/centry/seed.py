@@ -28,7 +28,8 @@ from dusty.models.seed import SeedModel
 
 TEST_MAPPING = {
     "sast": "security_sast",
-    "dast": "security"
+    "dast": "security",
+    "dependency": "security_dependency",
 }
 
 
