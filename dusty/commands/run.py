@@ -132,6 +132,7 @@ class Command(ModuleModel, CommandModel):
             "percentage": 70,
             "description": "Finished: process scan results",
         })
+
         # Perform reporting
         context.event.emit("status", {
             "status": "Reporting started",
@@ -148,19 +149,36 @@ class Command(ModuleModel, CommandModel):
         actions.post_run(context)
         # Done
         context.state.save()
+        
+        # Show quality gate statistics if any
+        for line in context.get_meta("quality_gate_stats", list()):
+            log.info(line)
+
         context.event.emit("status", {
             "status": "Finished",
             "percentage": 100,
             "description": "All done",
         })
+
         reporting.flush()
         log.debug("Done")
-        # Show quality gate statistics if any
-        for line in context.get_meta("quality_gate_stats", list()):
-            log.info(line)
         # Fail quality gate if needed
-        if context.get_meta("fail_quality_gate", False):
+        quality_gate = context.get_meta("fail_quality_gate")
+        log.info(quality_gate)
+        if quality_gate:
+            context.event.emit("status", {
+                "status": "Failed",
+                "percentage": 100,
+                "description": "All done",
+            })
             os._exit(1)  # pylint: disable=W0212
+        elif quality_gate == False: 
+            context.event.emit("status", {
+                "status": "Passed",
+                "percentage": 100,
+                "description": "All done",
+            })
+        
 
     @staticmethod
     def _fill_context_meta(context):  # pylint: disable=R0912

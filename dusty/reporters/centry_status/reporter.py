@@ -26,6 +26,12 @@ from dusty.tools import log
 from dusty.models.module import DependentModuleModel
 from dusty.models.reporter import ReporterModel
 
+TEST_MAPPING = {
+    "sast": "security_sast",
+    "dast": "security",
+    "dependency": "security_dependency"
+}
+
 
 class Reporter(DependentModuleModel, ReporterModel):
     """ Listen to status events and report to Carrier platform """
@@ -36,6 +42,7 @@ class Reporter(DependentModuleModel, ReporterModel):
         self.context = context
         self.config = \
             self.context.config["reporters"][__name__.split(".")[-2]]
+        self.test_type = self.context.config['settings']['testing_type'].lower()
         self._enable_status_reporting()
 
     def _enable_status_reporting(self):
@@ -44,7 +51,7 @@ class Reporter(DependentModuleModel, ReporterModel):
     def _status_listener(self, event, data):
         log.debug("Got event: event=%s, data=%s", event, data)
         requests.put(
-            f'{self.config["url"]}/api/v1/security/test_status/{self.config["project_id"]}/{self.config["test_id"]}',
+            f'{self.config["url"]}/api/v1/{TEST_MAPPING[self.test_type]}/test_status/{self.config["project_id"]}/{self.config["test_id"]}',
             json={"test_status": data},
             headers={"Authorization": f'Bearer {self.config["token"]}'}
         )

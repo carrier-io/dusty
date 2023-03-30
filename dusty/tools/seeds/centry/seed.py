@@ -22,7 +22,16 @@
 
 from os import environ
 from requests import get
+from dusty.tools import log
 from dusty.models.seed import SeedModel
+
+
+TEST_MAPPING = {
+    "sast": "security_sast",
+    "dast": "security",
+    "dependency": "security_dependency",
+}
+
 
 
 class Seed(SeedModel):
@@ -35,7 +44,15 @@ class Seed(SeedModel):
         }
         if environ.get("token"):
             headers["Authorization"] = f"bearer {environ.get('token')}"
-        seed_url = f"{environ.get('galloper_url')}/api/v1/security/dispatcher/" \
+        
+        try:
+            test_type = config_seed_data.split('_')[0]
+        except Exception as e:
+            log.exception(e)
+            return "Invalid seed data format"
+
+        
+        seed_url = f"{environ.get('galloper_url')}/api/v1/{TEST_MAPPING[test_type]}/dispatcher/" \
                    f"{environ.get('project_id')}/{config_seed_data}"
         return get(seed_url, params={"type": "dusty"}, headers=headers).content
 

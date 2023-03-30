@@ -80,7 +80,8 @@ class Action(ActionModel):
             auth_args["key_filename"] = self.config.get("key")
         if self.config.get("key_data", None) is not None:
             key_obj = io.StringIO(self.config.get("key_data").replace("|", "\n"))
-            pkey = paramiko.RSAKey.from_private_key(key_obj)
+            password = self.config.get("password")
+            pkey = paramiko.RSAKey.from_private_key(key_obj, password)
             # Patch paramiko to use our key
             paramiko.client.SSHClient._auth = _paramiko_client_SSHClient_auth(  # pylint: disable=W0212
                 paramiko.client.SSHClient._auth, pkey  # pylint: disable=W0212
