@@ -22,7 +22,7 @@
 import os
 import pkg_resources
 
-from dusty.tools import log, actions
+from dusty.tools import log, actions, git
 from dusty import constants
 from dusty.models.module import ModuleModel
 from dusty.models.command import CommandModel
@@ -70,6 +70,8 @@ class Command(ModuleModel, CommandModel):
         log.debug("Starting")
         if args.call_from_legacy:
             log.warning("Called from legacy entry point")
+        # Apply patches
+        git.apply_patches()
         # Init context
         context = RunContext(args)
         config = ConfigModel(context)
@@ -164,7 +166,7 @@ class Command(ModuleModel, CommandModel):
         log.debug("Done")
         # Fail quality gate if needed
         should_fail_quality_gate = context.get_meta("fail_quality_gate", None)
-        log.info("Quality gate status: %s", should_fail_quality_gate)
+        log.info("Quality gate fail status: %s", should_fail_quality_gate)
         #
         if should_fail_quality_gate:
             context.event.emit("status", {

@@ -9,8 +9,8 @@ requests==2.25.0
 # Depots
 hvac==0.9.5
 minio==4.0.18
-dulwich==0.19.11
-paramiko==3.0.0
+dulwich==0.21.3
+paramiko==3.1.0
 
 # YAML parsing
 PyYAML==5.4.1

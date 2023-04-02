@@ -22,23 +22,17 @@
 import os
 import io
 import shutil
-import getpass
 
-import dulwich  # pylint: disable=E0401
 from dulwich import refs  # pylint: disable=E0401
 from dulwich import porcelain  # pylint: disable=E0401
-from dulwich.contrib.paramiko_vendor import ParamikoSSHVendor  # pylint: disable=E0401
 
 import paramiko  # pylint: disable=E0401
 import paramiko.client  # pylint: disable=E0401
 import paramiko.transport  # pylint: disable=E0401
 
-from dusty.commands.git_clone import _dulwich_repo_get_default_identity  # pylint: disable=E0401
-from dusty.commands.git_clone import _paramiko_transport_verify_key  # pylint: disable=E0401
-from dusty.commands.git_clone import _paramiko_client_SSHClient_auth  # pylint: disable=E0401
-
 from dusty.models.action import ActionModel
 from dusty.tools import log
+from dusty.tools import git
 
 
 class Action(ActionModel):
@@ -53,18 +47,6 @@ class Action(ActionModel):
 
     def run(self):
         """ Run action """
-        # Patch dulwich to work without valid UID/GID
-        dulwich.repo.__original__get_default_identity = dulwich.repo._get_default_identity  # pylint: disable=W0212
-        dulwich.repo._get_default_identity = _dulwich_repo_get_default_identity  # pylint: disable=W0212
-        # Patch dulwich to use paramiko SSH client
-        dulwich.client.get_ssh_vendor = ParamikoSSHVendor
-        # Patch paramiko to skip key verification
-        paramiko.transport.Transport._verify_key = _paramiko_transport_verify_key  # pylint: disable=W0212
-        # Set USERNAME if needed
-        try:
-            getpass.getuser()
-        except:  # pylint: disable=W0702
-            os.environ["USERNAME"] = "git"
         # Get options
         source = self.config.get("source")
         target = self.config.get("target")
@@ -79,13 +61,14 @@ class Action(ActionModel):
         if self.config.get("key", None) is not None:
             auth_args["key_filename"] = self.config.get("key")
         if self.config.get("key_data", None) is not None:
-            key_obj = io.StringIO(self.config.get("key_data").replace("|", "\n"))
-            password = self.config.get("password", None)
-            pkey = paramiko.RSAKey.from_private_key(key_obj, password)
-            # Patch paramiko to use our key
-            paramiko.client.SSHClient._auth = _paramiko_client_SSHClient_auth(  # pylint: disable=W0212
-                paramiko.client.SSHClient._auth, pkey  # pylint: disable=W0212
-            )
+            key_data_str = self.config.get("key_data").replace("|", "\n")
+            key_data_password = self.config.get("password", None)
+            #
+            pkey = git.get_pkey_from_data(key_data_str, key_data_password)
+            if pkey is None:
+                log.warning("Failed to load key from data")
+            else:
+                auth_args["key_filename"] = pkey
         # Clone repository
         log.info("Cloning repository %s into %s", source, target)
         repository = porcelain.clone(
