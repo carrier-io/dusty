@@ -119,7 +119,7 @@ def get_pkey_from_data(key_data, key_password=None):
     for target_class in (RSAKey, DSSKey, ECDSAKey, Ed25519Key):
         try:
             key_obj = io.StringIO(key_data)
-            pkey = paramiko.RSAKey.from_private_key(key_obj, key_password)
+            pkey = target_class.from_private_key(key_obj, key_password)
             log.debug("Loaded PKey as %s", target_class.__name__)
             return pkey
         except:  # pylint: disable=W0702
