@@ -63,16 +63,20 @@ class Reporter(DependentModuleModel, ReporterModel):
             self.config.get("password"),
             int(self.config.get("port", constants.DEFAULT_SERVER_PORT))
         )
+        mail_from = self.config.get("mail_from", ...)
         mail_to = [item.strip() for item in self.config.get("mail_to").split(",")]
         mail_cc = [item.strip() for item in self.config.get("mail_cc", "").split(",")]
         if mail_cc:
             helper.send_with_cc(
                 mail_to, mail_cc, presenter.subject,
-                html_body=html_body, attachments=presenter.attachments
+                html_body=html_body, attachments=presenter.attachments,
+                mail_from=mail_from,
             )
         else:
             helper.send(
-                mail_to, presenter.subject, html_body=html_body, attachments=presenter.attachments
+                mail_to, presenter.subject,
+                html_body=html_body, attachments=presenter.attachments,
+                mail_from=mail_from,
             )
 
     @staticmethod
@@ -85,6 +89,10 @@ class Reporter(DependentModuleModel, ReporterModel):
         )
         data_obj.insert(
             len(data_obj), "password", "SomeSecurePassword", comment="SMTP server password"
+        )
+        data_obj.insert(
+            len(data_obj),
+            "mail_from", "some_username@example.com", comment="(optional) Value of FROM field"
         )
         data_obj.insert(
             len(data_obj),

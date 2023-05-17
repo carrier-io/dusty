@@ -61,7 +61,9 @@ class EmailHelper:
             self.connection.login(self.login, self.password)
         except smtplib.SMTPServerDisconnected:
             log.warning("Seems like SMTP with TSL didn't work, trying with SMTP_SSL")
-            self.connection = smtplib.SMTP_SSL(host=self.server, port=self.port, timeout=self.timeout)
+            self.connection = smtplib.SMTP_SSL(
+                host=self.server, port=self.port, timeout=self.timeout
+            )
             self.connection.ehlo()
             self.connection.login(self.login, self.password)
         except:  # pylint: disable=W0702
@@ -75,10 +77,15 @@ class EmailHelper:
             if self.connection:
                 self.connection.quit()
 
-    def send(self, mail_to, subject, html_body="", attachments=None):
+    def send(self, mail_to, subject, html_body="", attachments=None, mail_from=...):  # pylint: disable=R0913
         """ Send mail """
         message = MIMEMultipart("alternative")
-        message["From"] = self.login
+        #
+        if mail_from is not ...:
+            message["From"] = mail_from
+        else:
+            message["From"] = self.login
+        #
         message["To"] = ", ".join(mail_to)
         message["Subject"] = subject
         message.attach(MIMEText(html_body, "html"))
@@ -115,9 +122,15 @@ class EmailHelper:
             if self.connection:
                 self.connection.quit()
 
-    def send_with_cc(self, mail_to, mail_cc, subject, html_body="", attachments=None):  # pylint: disable=R0913
+    def send_with_cc(self, mail_to, mail_cc, subject, html_body="", attachments=None, mail_from=...):  # pylint: disable=R0913,C0301
         """ Send mail """
         message = MIMEMultipart("alternative")
+        #
+        if mail_from is not ...:
+            message["From"] = mail_from
+        else:
+            message["From"] = self.login
+        #
         message["From"] = self.login
         message["To"] = ", ".join(mail_to)
         message["Cc"] = ", ".join(mail_cc)
