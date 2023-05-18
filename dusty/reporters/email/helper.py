@@ -131,7 +131,6 @@ class EmailHelper:
         else:
             message["From"] = self.login
         #
-        message["From"] = self.login
         message["To"] = ", ".join(mail_to)
         message["Cc"] = ", ".join(mail_cc)
         message["Subject"] = subject
