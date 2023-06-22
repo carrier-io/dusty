@@ -1,0 +1,29 @@
+name: SAST Image
+
+on:
+  push:
+    tags: [ 'sast-tag-*' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Target
+      id: target
+      run: echo "tag=${{ github.ref_name }}" | sed 's/sast-tag-//g' >> "$GITHUB_OUTPUT"
+
+    - name: Build
+      run: docker build -t getcarrier/sast:${{ steps.target.outputs.tag }} -f docker/sast/Dockerfile --force-rm .
+
+    - name: Login
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push
+      run: docker push getcarrier/sast:${{ steps.target.outputs.tag }}

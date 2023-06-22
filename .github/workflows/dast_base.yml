@@ -1,0 +1,29 @@
+name: DAST Base
+
+on:
+  push:
+    tags: [ 'dast-base-*' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Target
+      id: target
+      run: echo "tag=${{ github.ref_name }}" | sed 's/dast-base-//g' >> "$GITHUB_OUTPUT"
+
+    - name: Build
+      run: docker build -t getcarrier/dast:${{ steps.target.outputs.tag }}-base -f docker/dast/base/Dockerfile --force-rm .
+
+    - name: Login
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push
+      run: docker push getcarrier/dast:${{ steps.target.outputs.tag }}-base
