@@ -7,7 +7,7 @@ setuptools==41.0.0
 requests==2.25.0
 
 # Depots
-hvac==0.9.5
+hvac==1.1.1
 minio==4.0.18
 dulwich==0.21.3
 paramiko==3.1.0

@@ -39,32 +39,88 @@ class Depot(SecretDepotModel):
         self.secrets = self._get_secrets()
 
     def _create_vault_client(self):
-        client = hvac.Client(
-            url=self.config["url"],
-            verify=self.config.get("ssl_verify", False),
-            namespace=self.config.get("namespace", None)
+        vault_url = self.config["url"]
+        vault_namespace = self.config.get("namespace", None)
+        #
+        log.info(
+            "Creating Vault client for %s (namespace=%s)",
+            vault_url, vault_namespace,
         )
+        #
+        client = hvac.Client(
+            url=vault_url,
+            verify=self.config.get("ssl_verify", False),
+            namespace=vault_namespace,
+        )
+        #
         if "auth_token" in self.config:
+            log.info("Logging in with token")
             client.token = self.config["auth_token"]
+        #
         if "auth_username" in self.config:
+            log.info("Logging in with username and password")
             client.auth_userpass(
                 self.config.get("auth_username"), self.config.get("auth_password", "")
             )
+        #
         if "auth_role_id" in self.config:
+            log.info("Logging in with approle")
             client.auth_approle(
                 self.config.get("auth_role_id"), self.config.get("auth_secret_id", "")
             )
-        if not client.is_authenticated():
+        #
+        auth_ok = client.is_authenticated()
+        log.info("Vault is authenticated: %s", auth_ok)
+        #
+        if not auth_ok:
             error = "Vault authentication failed"
             log.error(error)
             raise ValueError(error)
+        #
         return client
 
     def _get_secrets(self):
-        return self.client.secrets.kv.v2.read_secret_version(
-            path=self.config.get("secrets_path", "carrier-secrets"),
-            mount_point=self.config.get("secrets_mount_point", "carrier-kv")
-        ).get("data", dict()).get("data", dict())
+        kv_version = self.config.get("secrets_kv_version", 2)
+        #
+        secrets_path = self.config.get("secrets_path", "carrier-secrets")
+        secrets_mount_point = self.config.get("secrets_mount_point", "carrier-kv")
+        secrets_version = self.config.get("secrets_version", None)
+        #
+        log.info(
+            "Reading secrets from V%s KV engine (mount=%s, path=%s, version=%s)",
+            kv_version, secrets_mount_point, secrets_path, secrets_version,
+        )
+        #
+        try:
+            if kv_version == 1:
+                result = self.client.secrets.kv.v1.read_secret(
+                    path=secrets_path,
+                    mount_point=secrets_mount_point,
+                ).get("data", dict())
+            elif kv_version == 2:
+                data = self.client.secrets.kv.v2.read_secret_version(
+                    path=secrets_path,
+                    version=secrets_version,
+                    mount_point=secrets_mount_point,
+                    raise_on_deleted_version=True,
+                ).get("data", dict())
+                #
+                log.info(
+                    "Secrets meta: version=%s, created=%s",
+                    data["metadata"]["version"], data["metadata"]["created_time"],
+                )
+                #
+                result = data.get("data", dict())
+            else:
+                log.error("Unknown KV version: %s", kv_version)
+                result = dict()
+        except:  # pylint: disable=W0702
+            log.exception("Failed to read secrets")
+            result = dict()
+        #
+        log.info("Got secret keys: %s", len(result))
+        #
+        return result
 
     def get_secret(self, key):
         """ Get secret by key """
