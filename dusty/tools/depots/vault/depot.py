@@ -59,14 +59,16 @@ class Depot(SecretDepotModel):
         #
         if "auth_username" in self.config:
             log.info("Logging in with username and password")
-            client.auth_userpass(
-                self.config.get("auth_username"), self.config.get("auth_password", "")
+            client.auth.userpass.login(
+                username=self.config.get("auth_username"),
+                password=self.config.get("auth_password", ""),
             )
         #
         if "auth_role_id" in self.config:
             log.info("Logging in with approle")
-            client.auth_approle(
-                self.config.get("auth_role_id"), self.config.get("auth_secret_id", "")
+            client.auth.approle.login(
+                role_id=self.config.get("auth_role_id"),
+                secret_id=self.config.get("auth_secret_id", ""),
             )
         #
         auth_ok = client.is_authenticated()
