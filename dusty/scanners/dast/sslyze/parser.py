@@ -39,7 +39,7 @@ def parse_findings(output_file, scanner):
         # Process each scanned target result
         for target in data["server_scan_results"]:
             # Heartbleed
-            if target["scan_commands_results"]["heartbleed"]["is_vulnerable_to_heartbleed"]:
+            if target["scan_result"]["heartbleed"]["result"]["is_vulnerable_to_heartbleed"]:
                 finding = DastFinding(
                     title="SSL: Server is vulnerable to HeartBleed",
                     description=markdown.markdown_escape(
@@ -51,8 +51,8 @@ def parse_findings(output_file, scanner):
                 scanner.findings.append(finding)
             # CCS Injection
             if target[
-                    "scan_commands_results"
-            ]["openssl_ccs_injection"]["is_vulnerable_to_ccs_injection"]:
+                    "scan_result"
+            ]["openssl_ccs_injection"]["result"]["is_vulnerable_to_ccs_injection"]:
                 finding = DastFinding(
                     title="SSL: Server is vulnerable to CCS Injection",
                     description=markdown.markdown_escape(
@@ -63,12 +63,25 @@ def parse_findings(output_file, scanner):
                 finding.set_meta("severity", severity)
                 scanner.findings.append(finding)
             # Robot
-            if "NOT_VULNERABLE" not in target["scan_commands_results"]["robot"]["robot_result"]:
+            if "NOT_VULNERABLE" not in target["scan_result"]["robot"]["result"]["robot_result"]:
                 finding = DastFinding(
                     title="SSL: Server is vulnerable to Robot",
                     description=markdown.markdown_escape(
                         f"SSL server is vulnerable to robot with "
-                        f'{target["scan_commands_results"]["robot"]["robot_result"]}'
+                        f'{target["scan_result"]["robot"]["robot_result"]}'
+                    )
+                )
+                finding.set_meta("tool", scanner.get_name())
+                finding.set_meta("severity", severity)
+                scanner.findings.append(finding)
+            # Client renegotiation DoS
+            if target[
+                    "scan_result"
+            ]["session_renegotiation"]["result"]["is_vulnerable_to_client_renegotiation_dos"]:
+                finding = DastFinding(
+                    title="SSL: Server is vulnerable to Client renegotiation DoS",
+                    description=markdown.markdown_escape(
+                        f"Server is vulnerable to Client renegotiation DoS"
                     )
                 )
                 finding.set_meta("tool", scanner.get_name())
@@ -76,8 +89,8 @@ def parse_findings(output_file, scanner):
                 scanner.findings.append(finding)
             # Certificate validation
             for deployment in target[
-                    "scan_commands_results"
-            ]["certificate_info"]["certificate_deployments"]:
+                    "scan_result"
+            ]["certificate_info"]["result"]["certificate_deployments"]:
                 # Collect target chain info
                 chain_info = ""
                 for each in reversed(deployment["received_certificate_chain"]):
