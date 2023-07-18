@@ -1,4 +1,4 @@
-FROM getcarrier/dast:2.1-base
+FROM getcarrier/dast:2.2-base
 #   Copyright 2018-2021 getcarrier.io
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
