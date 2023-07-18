@@ -124,7 +124,7 @@ RUN set -x \
   && cd /tmp \
   && curl -sL https://nmap.org/dist/nmap-${NMAP_VERSION}.tar.bz2 | tar -xjvf - \
   && cd nmap-${NMAP_VERSION} \
-  && bash configure --without-zenmap \
+  && bash configure --without-zenmap --without-ndiff \
   && make \
   && env LINGUAS="" checkinstall -y \
   && cd .. \
