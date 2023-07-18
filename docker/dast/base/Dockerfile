@@ -19,13 +19,13 @@ LABEL updated.by="ivan_krakhmaliuk@epam.com"
 ARG NODEJS_VERSION=14
 
 # DAST software and tools versions
-ARG AEMHACKER_VERSION=bd242b078032d04b102e96cbf15bc3d9f5dde8e9
-ARG MASSCAN_VERSION=8189d513fb9ecd8333a8be7475044d03fb029318
-ARG NIKTO_VERSION=46df35c7a4ca8569e750b309f04a557a48812502
-ARG NMAP_VERSION=7.80
-ARG SSLYZE_VERSION=4.1.0
-ARG W3AF_VERSION=1910600684c22c767a1105fbfcb051db73ad1280
-ARG ZAP_VERSION=2.12.0
+ARG AEMHACKER_VERSION=3ce91f217b259b0b4e6abd07f56d453b0c82b46b
+ARG MASSCAN_VERSION=9065684c52682d3e12a35559ef72cd0f07838bff
+ARG NIKTO_VERSION=06137391fdd4450de9ea4023ed245b85ed972c28
+ARG NMAP_VERSION=7.94
+ARG SSLYZE_VERSION=5.1.3
+ARG W3AF_VERSION=cd22e5252243a87aaa6d0ddea47cf58dacfe00a9
+ARG ZAP_VERSION=2.13.0
 
 # Default locale
 ENV LC_ALL=C.UTF-8
@@ -157,7 +157,6 @@ RUN set -x \
   && update-alternatives --install /usr/bin/w3af_console w3af_console /opt/w3af/w3af_console 9999
 
 # DAST: ZAP
-ARG ZAP_VERSION=2.13.0
 RUN set -x \
   && cd /opt \
   && curl -sL https://github.com/zaproxy/zaproxy/releases/download/v${ZAP_VERSION}/ZAP_${ZAP_VERSION}_Linux.tar.gz | tar -xzvf - \
