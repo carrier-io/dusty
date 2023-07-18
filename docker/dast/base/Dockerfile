@@ -24,7 +24,7 @@ ARG MASSCAN_VERSION=9065684c52682d3e12a35559ef72cd0f07838bff
 ARG NIKTO_VERSION=06137391fdd4450de9ea4023ed245b85ed972c28
 ARG NMAP_VERSION=7.94
 ARG SSLYZE_VERSION=5.1.3
-ARG W3AF_VERSION=1910600684c22c767a1105fbfcb051db73ad1280
+ARG W3AF_VERSION=cd22e5252243a87aaa6d0ddea47cf58dacfe00a9
 ARG ZAP_VERSION=2.13.0
 
 # Default locale
@@ -154,6 +154,7 @@ RUN set -x \
   && rm -f /tmp/w3af_dependency_install.sh \
   && sed 's/dependency_check()/#dependency_check()/g' -i w3af_console \
   && rm -rf .git \
+  && pip install --upgrade 'swagger-spec-validator<3' \
   && update-alternatives --install /usr/bin/w3af_console w3af_console /opt/w3af/w3af_console 9999
 
 # DAST: ZAP
