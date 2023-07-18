@@ -52,7 +52,7 @@ class Scanner(DependentModuleModel, ScannerModel):
         os.close(output_file_fd)
         # Scan target
         task = subprocess.run([
-            "sslyze", "--regular", f"--json_out={output_file}", "--quiet",
+            "sslyze", f"--json_out={output_file}", "--quiet",
             f"{target_url.hostname}:{url.get_port(target_url)}"
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         log.log_subprocess_result(task)
