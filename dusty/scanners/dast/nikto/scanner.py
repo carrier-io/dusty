@@ -47,7 +47,7 @@ class Scanner(DependentModuleModel, ScannerModel):
         """ Run the scanner """
         # Prepare parameters
         target_url = url.parse_url(self.config.get("target"))
-        nikto_parameters = shlex.split(self.config.get("nikto_parameters", ""))
+        nikto_parameters = shlex.split(self.config.get("nikto_parameters", "-nointeractive -ask no"))
         # Make temporary files
         output_file_fd, output_file = tempfile.mkstemp()
         log.debug("Output file: %s", output_file)
