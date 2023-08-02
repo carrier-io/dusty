@@ -178,3 +178,10 @@ RUN set -x \
     libpq-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+# Additional tools
+RUN set -x \
+  && apt-get update \
+  && apt-get install --no-install-recommends -y firefox-esr \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
