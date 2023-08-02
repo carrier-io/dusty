@@ -89,10 +89,11 @@ class Scanner(DependentModuleModel, ScannerModel):
             if automation_env_vars is None:
                 automation_env_vars = {}
             #
+            automation_env_vars["AUTOMATION_TARGET"] = self.config.get("target")
             automation_env_vars["AUTOMATION_FILE_DIR"] = automation_file_dir
             #
-            automation_report_dir = self.config.get("automation_report_dir", "report")
-            automation_report_file = self.config.get("automation_report_file", "report.json")
+            automation_report_dir = self.config.get("automation_report_dir", "")
+            automation_report_file = self.config.get("automation_report_file", "af_report.json")
             #
             automation_env_vars["AUTOMATION_REPORT_DIR"] = automation_report_dir
             automation_env_vars["AUTOMATION_REPORT_FILE"] = automation_report_file
@@ -124,6 +125,7 @@ class Scanner(DependentModuleModel, ScannerModel):
                     parse_findings(report_data, self)
             finally:
                 self._save_af_intermediates(output_file, task)
+                os.remove(output_file)
         else:
             # Default mode
             try:
@@ -254,16 +256,16 @@ class Scanner(DependentModuleModel, ScannerModel):
             try:
                 # Make directory for artifacts
                 os.makedirs(base, mode=0o755, exist_ok=True)
-                # Save report
-                shutil.copyfile(
-                    output_file,
-                    os.path.join(base, "report.json")
-                )
                 # Save output
                 with open(os.path.join(base, "output.stdout"), "w") as output:
                     output.write(task.stdout.decode("utf-8", errors="ignore"))
                 with open(os.path.join(base, "output.stderr"), "w") as output:
                     output.write(task.stderr.decode("utf-8", errors="ignore"))
+                # Save report
+                shutil.copyfile(
+                    output_file,
+                    os.path.join(base, "report.json")
+                )
             except:
                 log.exception("Failed to save intermediates")
 
