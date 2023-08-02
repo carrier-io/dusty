@@ -25,6 +25,7 @@ import re
 import sys
 import json
 import time
+import shlex
 import shutil
 import base64
 import urllib
@@ -65,53 +66,109 @@ class Scanner(DependentModuleModel, ScannerModel):
 
     def execute(self):
         """ Run the scanner """
-        try:
-            self._start_zap()
-            if not self._wait_for_zap_start():
-                log.error("ZAP failed to start")
+        # Automation framework mode
+        if self.config.get("use_automation_framework", False):
+            log.info("Using Automation Framework mode")
+            #
+            automation_file_path = self.config.get("automation_file_path", None)
+            #
+            if automation_file_path is None or not os.path.exists(automation_file_path):
+                log.error("Automation File path is not set/exists")
                 error = Error(
                     tool=self.get_name(),
-                    error="ZAP failed to start",
-                    details="ZAP daemon failed to start"
+                    error="Automation File path is not set/exists",
+                    details="Automation File path is not set/exists in config"
                 )
                 self.errors.append(error)
                 return
-            log.info("Target: %s", self.config.get("target"))
-            self._prepare_context()
-            self._setup_scan_policy()
-            self._spider()
-            self._wait_for_passive_scan()
-            self._ajax_spider()
-            self._wait_for_passive_scan()
-            self._active_scan()
-            self._wait_for_passive_scan()
-        except:
-            log.exception("Exception during ZAP scanning")
-            error = Error(
-                tool=self.get_name(),
-                error="Exception during ZAP scanning",
-                details=f"```\n{traceback.format_exc()}\n```"
-            )
-            self.errors.append(error)
-        finally:
+            #
+            automation_file_dir = os.path.abspath(os.path.dirname(automation_file_path))
+            #
+            automation_env_vars = self.config.get("automation_env_vars", None)
+            #
+            if automation_env_vars is None:
+                automation_env_vars = {}
+            #
+            automation_env_vars["AUTOMATION_FILE_DIR"] = automation_file_dir
+            #
+            output_file_fd, output_file = tempfile.mkstemp()
+            log.debug("Output file: %s", output_file)
+            os.close(output_file_fd)
+            #
+            automation_env_vars["AUTOMATION_REPORT_PATH"] = output_file
+            #
+            java_options = shlex.split(self.config.get("java_options", "-Xmx1g"))
+            zap_options = shlex.split(self.config.get("zap_options", ""))
+            #
+            zap_env = os.environ.copy()
+            zap_env.update(automation_env_vars)
+            #
+            task = subprocess.run([
+                "/usr/bin/java"
+            ] + java_options + [
+                "-jar", constants.ZAP_PATH,
+            ] + zap_options + [
+                "-cmd",
+                "-autorun", automation_file_path,
+            ], env=zap_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            log.log_subprocess_result(task)
+            #
+            with open(output_file, "rb") as json_file:
+                report_data = json_file.read()
+                parse_findings(report_data, self)
+            #
+            self._save_af_intermediates(output_file, task)
+            #
+            os.remove(output_file)
+        else:
+            # Default mode
             try:
-                # Get report
-                log.info("Getting ZAP report")
-                zap_report = self._zap_api.core.jsonreport()
-                # Parse JSON
-                log.info("Processing findings")
-                parse_findings(zap_report, self)
+                self._start_zap()
+                if not self._wait_for_zap_start():
+                    log.error("ZAP failed to start")
+                    error = Error(
+                        tool=self.get_name(),
+                        error="ZAP failed to start",
+                        details="ZAP daemon failed to start"
+                    )
+                    self.errors.append(error)
+                    return
+                log.info("Target: %s", self.config.get("target"))
+                self._prepare_context()
+                self._setup_scan_policy()
+                self._spider()
+                self._wait_for_passive_scan()
+                self._ajax_spider()
+                self._wait_for_passive_scan()
+                self._active_scan()
+                self._wait_for_passive_scan()
             except:
-                log.exception("Exception during ZAP findings processing")
+                log.exception("Exception during ZAP scanning")
                 error = Error(
                     tool=self.get_name(),
-                    error="Exception during ZAP findings processing",
+                    error="Exception during ZAP scanning",
                     details=f"```\n{traceback.format_exc()}\n```"
                 )
                 self.errors.append(error)
-            self._save_intermediates()
-            pkg_resources.cleanup_resources()
-            self._stop_zap()
+            finally:
+                try:
+                    # Get report
+                    log.info("Getting ZAP report")
+                    zap_report = self._zap_api.core.jsonreport()
+                    # Parse JSON
+                    log.info("Processing findings")
+                    parse_findings(zap_report, self)
+                except:
+                    log.exception("Exception during ZAP findings processing")
+                    error = Error(
+                        tool=self.get_name(),
+                        error="Exception during ZAP findings processing",
+                        details=f"```\n{traceback.format_exc()}\n```"
+                    )
+                    self.errors.append(error)
+                self._save_intermediates()
+                pkg_resources.cleanup_resources()
+                self._stop_zap()
 
     def _start_zap(self):
         """ Start ZAP daemon, create API client """
@@ -137,14 +194,16 @@ class Scanner(DependentModuleModel, ScannerModel):
         zap_home_dir = tempfile.mkdtemp()
         log.debug("ZAP home directory: %s", zap_home_dir)
         self._zap_daemon = subprocess.Popen([
-            "/usr/bin/java", self.config.get("java_options", "-Xmx1g"),
+            "/usr/bin/java",
+        ] + shlex.split(self.config.get("java_options", "-Xmx1g")) + [
             "-jar", constants.ZAP_PATH,
+        ] + shlex.split(self.config.get("zap_options", "")) + [
             "-dir", zap_home_dir,
             "-daemon", "-port", "8091", "-host", bind_host,
             "-config", "api.key=dusty",
             "-config", "api.addrs.addr.regex=true",
             "-config", "api.addrs.addr.name=.*",
-            "-config", "ajaxSpider.browserId=htmlunit"
+            "-config", "ajaxSpider.browserId=htmlunit",
         ], stdout=daemon_out, stderr=daemon_out)
         self._zap_api = ZAPv2(
             apikey="dusty",
@@ -181,6 +240,26 @@ class Scanner(DependentModuleModel, ScannerModel):
                     os.path.join(self._zap_api.core.zap_home_path, "zap.log"),
                     os.path.join(base, "zap.log")
                 )
+            except:
+                log.exception("Failed to save intermediates")
+
+    def _save_af_intermediates(self, output_file, task):
+        if self.config.get("save_intermediates_to", None):
+            log.info("Saving intermediates")
+            base = os.path.join(self.config.get("save_intermediates_to"), __name__.split(".")[-2])
+            try:
+                # Make directory for artifacts
+                os.makedirs(base, mode=0o755, exist_ok=True)
+                # Save report
+                shutil.copyfile(
+                    output_file,
+                    os.path.join(base, "report.json")
+                )
+                # Save output
+                with open(os.path.join(base, "output.stdout"), "w") as output:
+                    output.write(task.stdout.decode("utf-8", errors="ignore"))
+                with open(os.path.join(base, "output.stderr"), "w") as output:
+                    output.write(task.stderr.decode("utf-8", errors="ignore"))
             except:
                 log.exception("Failed to save intermediates")
 
@@ -256,7 +335,7 @@ class Scanner(DependentModuleModel, ScannerModel):
                 for exclude_regex in additional_excludes:
                     self._zap_api.core.exclude_from_proxy(exclude_regex)
         # Auth script
-        if self.config.get("auth_script", None):
+        if self.config.get("use_auth_script", True) and self.config.get("auth_script", None):
             # Load our authentication script
             self._zap_api.script.load(
                 scriptname="zap-selenium-login.js",
