@@ -112,7 +112,8 @@ class Scanner(DependentModuleModel, ScannerModel):
             ] + zap_options + [
                 "-cmd",
                 "-autorun", automation_file_path,
-            ], env=zap_env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            ], cwd=automation_file_dir, env=zap_env,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             log.log_subprocess_result(task)
             #
             with open(output_file, "rb") as json_file:
