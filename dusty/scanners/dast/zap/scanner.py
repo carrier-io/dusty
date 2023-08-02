@@ -91,13 +91,15 @@ class Scanner(DependentModuleModel, ScannerModel):
             #
             automation_env_vars["AUTOMATION_FILE_DIR"] = automation_file_dir
             #
-            output_file_fd, output_file = tempfile.mkstemp()
-            log.debug("Output file: %s", output_file)
-            os.close(output_file_fd)
+            automation_report_dir = self.config.get("automation_report_dir", "report")
+            automation_report_file = self.config.get("automation_report_file", "report.json")
             #
-            automation_env_vars["AUTOMATION_REPORT_PATH"] = output_file
-            automation_env_vars["AUTOMATION_REPORT_DIR"] = os.path.abspath(os.path.dirname(output_file))
-            automation_env_vars["AUTOMATION_REPORT_FILE"] = os.path.basename(output_file)
+            automation_env_vars["AUTOMATION_REPORT_DIR"] = automation_report_dir
+            automation_env_vars["AUTOMATION_REPORT_FILE"] = automation_report_file
+            #
+            output_file = os.path.join(
+                automation_file_dir, automation_report_dir, automation_report_file
+            )
             #
             java_options = shlex.split(self.config.get("java_options", "-Xmx1g"))
             zap_options = shlex.split(self.config.get("zap_options", ""))
@@ -116,13 +118,12 @@ class Scanner(DependentModuleModel, ScannerModel):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             log.log_subprocess_result(task)
             #
-            with open(output_file, "rb") as json_file:
-                report_data = json_file.read()
-                parse_findings(report_data, self)
-            #
-            self._save_af_intermediates(output_file, task)
-            #
-            os.remove(output_file)
+            try:
+                with open(output_file, "rb") as json_file:
+                    report_data = json_file.read()
+                    parse_findings(report_data, self)
+            finally:
+                self._save_af_intermediates(output_file, task)
         else:
             # Default mode
             try:
