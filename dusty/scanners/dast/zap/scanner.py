@@ -96,6 +96,8 @@ class Scanner(DependentModuleModel, ScannerModel):
             os.close(output_file_fd)
             #
             automation_env_vars["AUTOMATION_REPORT_PATH"] = output_file
+            automation_env_vars["AUTOMATION_REPORT_DIR"] = os.path.abspath(os.path.dirname(output_file))
+            automation_env_vars["AUTOMATION_REPORT_FILE"] = os.path.basename(output_file)
             #
             java_options = shlex.split(self.config.get("java_options", "-Xmx1g"))
             zap_options = shlex.split(self.config.get("zap_options", ""))
