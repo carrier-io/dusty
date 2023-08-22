@@ -157,7 +157,7 @@ class Command(ModuleModel, CommandModel):
             log.info(line)
         #
         context.event.emit("status", {
-            "status": "Finished",
+            "status": "Done",
             "percentage": 99,
             "description": "All done: finalizing",
         })
@@ -177,13 +177,13 @@ class Command(ModuleModel, CommandModel):
             os._exit(1)  # pylint: disable=W0212
         elif should_fail_quality_gate is False:
             context.event.emit("status", {
-                "status": "Passed",
+                "status": "Success",
                 "percentage": 100,
                 "description": "All done",
             })
         else:  # should_fail_quality_gate is None
             context.event.emit("status", {
-                "status": "Done",
+                "status": "Finished",
                 "percentage": 100,
                 "description": "All done",
             })
