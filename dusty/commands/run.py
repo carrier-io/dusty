@@ -65,7 +65,7 @@ class Command(ModuleModel, CommandModel):
             action="store_true"
         )
 
-    def execute(self, args):
+    def execute(self, args):  # pylint: disable=R0915
         """ Run the command """
         log.debug("Starting")
         if args.call_from_legacy:
