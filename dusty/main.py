@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # coding=utf-8
-# pylint: disable=I0011,W0702
+# pylint: disable=I0011,W0702,C0413,C0411
 
 #   Copyright 2019 getcarrier.io
 #
@@ -21,6 +21,11 @@
 """
 
 import os
+SSL_CERTS = os.environ.get("SSL_CERTS", "")
+
+from dusty.tools import ssl_support
+ssl_support.init(SSL_CERTS)
+
 import signal
 import pkgutil
 import warnings
