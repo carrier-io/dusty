@@ -44,17 +44,17 @@ class Seed(SeedModel):
         }
         if environ.get("token"):
             headers["Authorization"] = f"bearer {environ.get('token')}"
-        
+
         try:
             test_type = config_seed_data.split('_')[0]
         except Exception as e:
             log.exception(e)
             return "Invalid seed data format"
 
-        
+        seed_ssl_verify = environ.get("SEED_SSL_VERIFY", "").lower() in ["true", "yes"]
         seed_url = f"{environ.get('galloper_url')}/api/v1/{TEST_MAPPING[test_type]}/dispatcher/" \
                    f"{environ.get('project_id')}/{config_seed_data}"
-        return get(seed_url, params={"type": "dusty"}, headers=headers).content
+        return get(seed_url, params={"type": "dusty"}, headers=headers, verify=seed_ssl_verify).content
 
     @staticmethod
     def get_name():
