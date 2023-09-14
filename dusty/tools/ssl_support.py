@@ -60,6 +60,8 @@ def init(ssl_certs_env_str):  # pylint: disable=R0912,R0914
     except:  # pylint: disable=W0702
         pass
     #
+    certs = [item for item in certs if item is not None]
+    #
     # Get all certs, cert files and cert paths
     #
     for item in certs:  # pylint: disable=R1702
