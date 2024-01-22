@@ -50,6 +50,8 @@ class Reporter(DependentModuleModel, ReporterModel):
     def report(self):
         """ Report """
         # Summary
+        log.info("Preparing test results")
+        #
         test_initiation_body = {
             "project_name": self.context.get_meta('project_name'),
             "app_name": self.context.get_meta("project_description"),
@@ -76,7 +78,11 @@ class Reporter(DependentModuleModel, ReporterModel):
         test_initiation_body['false_positives'] = false_positives
         test_initiation_body['info_findings'] = info_findings
         test_initiation_body['excluded_finding'] = excluded
+        #
+        log.info("Creating test results")
         report_id = self.centry.create_test_results(test_initiation_body)
+        #
+        log.info("Preparing findings")
         test_cases = list()
         for item in self.context.findings:
             issue = {
@@ -96,6 +102,7 @@ class Reporter(DependentModuleModel, ReporterModel):
             elif isinstance(item, SastFinding):
                 issue['details'] = markdown.markdown_to_html("\n\n".join(item.description))
             test_cases.append(issue)
+        #
         log.info("Creating findings")
         self.centry.create_findings(test_cases)
 

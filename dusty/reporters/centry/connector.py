@@ -25,12 +25,14 @@ class CentryConnector(object):
         report_id = post(f'{self.url}{self.report_url}',
                          data=dumps(test_results),
                          headers=self.headers,
-                         verify=os.environ.get("SSL_VERIFY", "").lower() in ["true", "yes"]).json()
+                         verify=os.environ.get("SSL_VERIFY", "").lower() in ["true", "yes"],
+                         timeout=120.0).json()
         return report_id['id']
 
     def create_findings(self, findings):
         result = post(f'{self.url}{self.finding_api}',
                       data=dumps(findings),
                       headers=self.headers,
-                      verify=os.environ.get("SSL_VERIFY", "").lower() in ["true", "yes"])
+                      verify=os.environ.get("SSL_VERIFY", "").lower() in ["true", "yes"],
+                      timeout=120.0)
         return result.content
