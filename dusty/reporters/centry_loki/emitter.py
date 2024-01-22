@@ -36,7 +36,7 @@ class CarrierLokiLogEmitter:  # pylint: disable=R0902
             self, loki_push_url,
             loki_user=None, loki_password=None, loki_token=None,
             default_labels=None,
-            verify=True, retries=3, retry_delay=0.5, timeout=15,
+            verify=False, retries=3, retry_delay=0.5, timeout=15,
         ):
         self.loki_push_url = loki_push_url
         self.loki_user = loki_user
@@ -152,7 +152,7 @@ class CarrierLokiLogHandler(logging.Handler):
             loki_password=self.settings.get("password", None),
             loki_token=self.settings.get("token", None),
             default_labels=default_loki_labels,
-            verify=self.settings.get("verify", True),
+            verify=self.settings.get("verify", False),
             # retries=3,
             # retry_delay=0.5,
             # timeout=15,
@@ -198,7 +198,7 @@ class CarrierLokiBufferedLogHandler(logging.handlers.BufferingHandler):
             loki_password=self.settings.get("password", None),
             loki_token=self.settings.get("token", None),
             default_labels=default_loki_labels,
-            verify=self.settings.get("verify", True),
+            verify=self.settings.get("verify", False),
             # retries=3,
             # retry_delay=0.5,
             # timeout=15,

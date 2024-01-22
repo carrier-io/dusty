@@ -1,3 +1,4 @@
+import os
 from requests import post
 from json import dumps
 from . import constants as c
@@ -23,11 +24,13 @@ class CentryConnector(object):
     def create_test_results(self, test_results):
         report_id = post(f'{self.url}{self.report_url}',
                          data=dumps(test_results),
-                         headers=self.headers).json()
+                         headers=self.headers,
+                         verify=os.environ.get("SSL_VERIFY", "").lower() in ["true", "yes"]).json()
         return report_id['id']
 
     def create_findings(self, findings):
         result = post(f'{self.url}{self.finding_api}',
                       data=dumps(findings),
-                      headers=self.headers)
+                      headers=self.headers,
+                      verify=os.environ.get("SSL_VERIFY", "").lower() in ["true", "yes"])
         return result.content

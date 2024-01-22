@@ -53,7 +53,8 @@ class Reporter(DependentModuleModel, ReporterModel):
         requests.put(
             f'{self.config["url"]}/api/v1/{TEST_MAPPING[self.test_type]}/test_status/{self.config["project_id"]}/{self.config["test_id"]}',
             json={"test_status": data},
-            headers={"Authorization": f'Bearer {self.config["token"]}'}
+            headers={"Authorization": f'Bearer {self.config["token"]}'},
+            verify=self.config.get("ssl_verify", False),
         )
 
     @staticmethod
