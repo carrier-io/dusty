@@ -75,7 +75,7 @@ jira==2.0.0
 junit-xml==1.8
 
 # Redis
-redis==3.0.1
+redis==4.5.5
 
 # ReportPortal
 reportportal-client==5.0.5
