@@ -53,7 +53,11 @@ class Action(ActionModel):
         #
         obj_url = f"{os.environ.get('galloper_url')}/api/v1/artifacts/artifact/" \
                    f"{os.environ.get('project_id')}/{bucket}/{srcobj}"
-        data = requests.get(obj_url, headers=headers).content
+        data = requests.get(
+            obj_url,
+            headers=headers,
+            verify=self.config.get("ssl_verify", False),
+        ).content
         # Extract data
         os.makedirs(target, exist_ok=True)
         src_zip = zipfile.ZipFile(io.BytesIO(data))
@@ -62,7 +66,11 @@ class Action(ActionModel):
         if self.config.get("delete", False):
             delete_url = f"{os.environ.get('galloper_url')}/api/v1/artifacts/artifact/" \
                           f"{os.environ.get('project_id')}/{bucket}/{srcobj}"
-            requests.delete(delete_url, headers=headers)
+            requests.delete(
+                delete_url,
+                headers=headers,
+                verify=self.config.get("ssl_verify", False),
+            )
 
     @staticmethod
     def fill_config(data_obj):
