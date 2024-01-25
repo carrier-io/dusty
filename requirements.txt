@@ -62,6 +62,9 @@ packaging==20.4
 # Reporting
 #
 
+# Centry
+git+https://github.com/centry-core/centry_logging.git
+
 # Loki
 python-logging-loki==0.1.0
 
