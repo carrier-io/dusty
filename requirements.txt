@@ -63,7 +63,7 @@ packaging==20.4
 #
 
 # Centry
-git+https://github.com/centry-core/centry_logging.git
+centry_logging @ git+https://github.com/centry-core/centry_logging.git#egg=centry_logging
 
 # Loki
 python-logging-loki==0.1.0
