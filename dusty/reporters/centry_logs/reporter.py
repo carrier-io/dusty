@@ -46,6 +46,8 @@ class Reporter(DependentModuleModel, ReporterModel):
         handler.setFormatter(log.filter_formatters[0])
         #
         logging.getLogger("").addHandler(handler)
+        logging.getLogger("arbiter.eventnode").setLevel(logging.CRITICAL)
+        #
         log.info(
             "Enabled Centry logging for Dusty %s",
             pkg_resources.require("dusty")[0].version
