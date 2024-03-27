@@ -19,6 +19,8 @@
     Processor: issue_hash
 """
 
+import os
+import os.path
 import re
 import hashlib
 
@@ -51,9 +53,28 @@ class Processor(DependentModuleModel, ProcessorModel):
                 ).hexdigest()
             if isinstance(item, SastFinding):
                 title = re.sub('[^A-Za-zА-Яа-я0-9//\\\.\- _]+', '', item.title)  # pylint: disable=W1401
-                cwe = item.get_meta("legacy.cwe", "None")
-                line = item.get_meta("legacy.line", "None")
-                file = item.get_meta("legacy.file", "")
+                #
+                if self.config.get("sast_use_cwe", True):
+                    cwe = item.get_meta("legacy.cwe", "None")
+                else:
+                    cwe = "None"
+                #
+                if self.config.get("sast_use_line", True):
+                    line = item.get_meta("legacy.line", "None")
+                else:
+                    line = "None"
+                #
+                if self.config.get("sast_use_file", True):
+                    skip_roots = self.config.get("sast_skip_file_roots", None)
+                    if isinstance(skip_roots, int) and skip_roots > 0:
+                        file_data = item.get_meta("legacy.file", "")
+                        data_parts = [part for part in file_data.split(os.sep) if part]
+                        file = os.path.join(*data_parts[skip_roots:])
+                    else:
+                        file = item.get_meta("legacy.file", "")
+                else:
+                    file = ""
+                #
                 issue_hash = hashlib.sha256(
                     f'{title}_{cwe}_{line}_{file}_'.strip().encode('utf-8')
                 ).hexdigest()
