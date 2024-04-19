@@ -40,7 +40,7 @@ class Processor(DependentModuleModel, ProcessorModel):
         self.config = \
             self.context.config["processing"][__name__.split(".")[-2]]
 
-    def execute(self):
+    def execute(self):  # pylint: disable=R0912
         """ Run the processor """
         log.info("Injecting issue hashes")
         for item in self.context.findings:
@@ -52,8 +52,6 @@ class Processor(DependentModuleModel, ProcessorModel):
                     f'{title}_None_None__'.strip().encode('utf-8')
                 ).hexdigest()
             if isinstance(item, SastFinding):
-                title = re.sub('[^A-Za-zА-Яа-я0-9//\\\.\- _]+', '', item.title)  # pylint: disable=W1401
-                #
                 if self.config.get("sast_use_cwe", True):
                     cwe = item.get_meta("legacy.cwe", "None")
                 else:
@@ -64,16 +62,27 @@ class Processor(DependentModuleModel, ProcessorModel):
                 else:
                     line = "None"
                 #
+                skipped_parts = []
+                #
                 if self.config.get("sast_use_file", True):
                     skip_roots = self.config.get("sast_skip_file_roots", None)
                     if isinstance(skip_roots, int) and skip_roots > 0:
                         file_data = item.get_meta("legacy.file", "")
                         data_parts = [part for part in file_data.split(os.sep) if part]
                         file = os.path.join(*data_parts[skip_roots:])
+                        skipped_parts.extend(data_parts[:skip_roots])
                     else:
                         file = item.get_meta("legacy.file", "")
                 else:
                     file = ""
+                #
+                item_title = item.title
+                #
+                if skipped_parts:
+                    replace_item = f'{os.sep}{os.path.join(*skipped_parts)}{os.sep}'
+                    item_title = item_title.replace(replace_item, "")
+                #
+                title = re.sub('[^A-Za-zА-Яа-я0-9//\\\.\- _]+', '', item_title)  # pylint: disable=W1401
                 #
                 issue_hash = hashlib.sha256(
                     f'{title}_{cwe}_{line}_{file}_'.strip().encode('utf-8')
